@@ -1,0 +1,116 @@
+import { NavMain } from '@/components/nav-main';
+import { NavUser } from '@/components/nav-user';
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
+import { type NavItem, type SharedData } from '@/types';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, ClipboardList, GraduationCap, LayoutDashboard, Settings, Users } from 'lucide-react';
+
+// Nav items untuk role Admin
+const adminNavItems: NavItem[] = [
+    {
+        title: 'Dashboard',
+        url: '/admin/dashboard',
+        icon: LayoutDashboard,
+    },
+    {
+        title: 'Laporan Masuk',
+        url: '/admin/laporan',
+        icon: ClipboardList,
+    },
+    {
+        title: 'Kelola Murid',
+        url: '/admin/murid',
+        icon: GraduationCap,
+    },
+    {
+        title: 'Kelola Guru',
+        url: '/admin/guru',
+        icon: Users,
+    },
+    {
+        title: 'Master Data',
+        url: '/admin/master/jenis-pelanggaran',
+        icon: BookOpen,
+    },
+    {
+        title: 'Pengaturan',
+        url: '/admin/kelas',
+        icon: Settings,
+    },
+];
+
+// Nav items untuk role Guru (base — selalu ada)
+const guruNavItemsBase: NavItem[] = [
+    {
+        title: 'Dashboard',
+        url: '/guru/dashboard',
+        icon: LayoutDashboard,
+    },
+    {
+        title: 'Buat Laporan',
+        url: '/guru/laporan/buat',
+        icon: ClipboardList,
+    },
+    {
+        title: 'Riwayat Laporan',
+        url: '/guru/laporan/riwayat',
+        icon: BookOpen,
+    },
+];
+
+// Item tambahan khusus wali kelas
+const waliKelasNavItem: NavItem = {
+    title: 'Rekap Kelas',
+    url: '/guru/kelas/rekap',
+    icon: GraduationCap,
+};
+
+export function AppSidebar() {
+    const { auth } = usePage<SharedData>().props;
+    const isAdmin = auth.user?.role === 'admin';
+    const isWaliKelas = auth.guru?.is_wali_kelas === true;
+
+    // Susun nav items sesuai role
+    let navItems: NavItem[] = [];
+    if (isAdmin) {
+        navItems = adminNavItems;
+    } else {
+        navItems = isWaliKelas
+            ? [...guruNavItemsBase, waliKelasNavItem]
+            : guruNavItemsBase;
+    }
+
+    const dashboardUrl = isAdmin ? '/admin/dashboard' : '/guru/dashboard';
+
+    return (
+        <Sidebar collapsible="icon" variant="inset" className="border-r-0">
+            <SidebarHeader>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton size="lg" asChild className="hover:bg-white/10 active:bg-white/15">
+                            <Link href={dashboardUrl} prefetch>
+                                <div className="bg-white/10 border border-white/20 text-white flex aspect-square size-9 items-center justify-center rounded-lg shadow-sm">
+                                    <GraduationCap className="size-5 text-[#F5821F]" />
+                                </div>
+                                <div className="flex flex-col gap-0.5 leading-none">
+                                    <span className="text-sm font-bold text-white tracking-wide">SMKN 69 JAKARTA</span>
+                                    <span className="text-white/70 text-xs font-normal">
+                                        {isAdmin ? 'Panel Admin' : 'Portal Guru'}
+                                    </span>
+                                </div>
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
+            </SidebarHeader>
+
+            <SidebarContent>
+                <NavMain items={navItems} label={isAdmin ? 'Menu Administrator' : 'Menu Utama'} />
+            </SidebarContent>
+
+            <SidebarFooter>
+                <NavUser />
+            </SidebarFooter>
+        </Sidebar>
+    );
+}
