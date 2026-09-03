@@ -7,7 +7,6 @@ use App\Models\Kelas;
 use App\Models\Laporan;
 use App\Models\Murid;
 use App\Models\TahunAjaran;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,38 +17,36 @@ class DashboardController extends Controller
         $tahunAjaran = TahunAjaran::aktif();
 
         // ── Stat cards ───────────────────────────────────────────────────
-        $pending         = Laporan::pending()
+        $pending             = Laporan::pending()
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
-        $totalBulanIni   = Laporan::whereMonth('tanggal_kejadian', now()->month)
+        $totalBulanIni       = Laporan::whereMonth('tanggal_kejadian', now()->month)
             ->whereYear('tanggal_kejadian', now()->year)
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
         $pelanggaranBulanIni = Laporan::whereMonth('tanggal_kejadian', now()->month)
             ->whereYear('tanggal_kejadian', now()->year)
-            ->whereHas('jenisPelanggaran', fn ($q) => $q->where('kategori', 'pelanggaran'))
+            ->where('kategori', 'pelanggaran')
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
-        $kebaikanBulanIni = Laporan::whereMonth('tanggal_kejadian', now()->month)
+        $kebaikanBulanIni    = Laporan::whereMonth('tanggal_kejadian', now()->month)
             ->whereYear('tanggal_kejadian', now()->year)
-            ->whereHas('jenisPelanggaran', fn ($q) => $q->where('kategori', 'kebaikan'))
+            ->where('kategori', 'kebaikan')
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
 
         // ── Tren 6 bulan terakhir ─────────────────────────────────────────
         $tren = [];
         for ($i = 5; $i >= 0; $i--) {
             $bulan = now()->subMonths($i);
-            $label = $bulan->translatedFormat('M Y');
-            // Laravel Carbon format 'M' menghasilkan nama bulan singkat
             $label = $bulan->format('M') . ' ' . $bulan->format('Y');
 
             $pelanggaran = Laporan::whereMonth('tanggal_kejadian', $bulan->month)
                 ->whereYear('tanggal_kejadian', $bulan->year)
                 ->where('tahun_ajaran_id', $tahunAjaran?->id)
-                ->whereHas('jenisPelanggaran', fn ($q) => $q->where('kategori', 'pelanggaran'))
+                ->where('kategori', 'pelanggaran')
                 ->count();
 
             $kebaikan = Laporan::whereMonth('tanggal_kejadian', $bulan->month)
                 ->whereYear('tanggal_kejadian', $bulan->year)
                 ->where('tahun_ajaran_id', $tahunAjaran?->id)
-                ->whereHas('jenisPelanggaran', fn ($q) => $q->where('kategori', 'kebaikan'))
+                ->where('kategori', 'kebaikan')
                 ->count();
 
             $tren[] = ['bulan' => $label, 'pelanggaran' => $pelanggaran, 'kebaikan' => $kebaikan];
@@ -89,10 +86,10 @@ class DashboardController extends Controller
 
         return Inertia::render('admin/dashboard', [
             'stats' => [
-                'pending'              => $pending,
-                'total_bulan_ini'      => $totalBulanIni,
-                'pelanggaran_bulan_ini'=> $pelanggaranBulanIni,
-                'kebaikan_bulan_ini'   => $kebaikanBulanIni,
+                'pending'               => $pending,
+                'total_bulan_ini'       => $totalBulanIni,
+                'pelanggaran_bulan_ini' => $pelanggaranBulanIni,
+                'kebaikan_bulan_ini'    => $kebaikanBulanIni,
             ],
             'tren_laporan'      => $tren,
             'murid_skor_rendah' => $muridSkorRendah,

@@ -3,14 +3,17 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import React from 'react';
 
 interface LaporanDetail {
     id: number;
     tanggal_kejadian: string;
-    murid: { id: number; nama: string; nis: string | null; nama_kelas: string };
+    murid: { id: number; nama: string; nis: string | null; nisn?: string | null; nama_kelas: string };
     guru: { id: number; nama: string };
-    jenis_pelanggaran: { id: number; kode: string; keterangan: string; kategori: string; tingkat_keparahan: string | null };
-    poin_diberikan: number;
+    kategori: string;
+    tingkat_keparahan: string;
+    keterangan: string;
+    poin_diberikan: number | null;
     keterangan_tambahan: string | null;
     status: string;
     tindak_lanjut: string | null;
@@ -20,7 +23,10 @@ interface LaporanDetail {
     bukti: { id: number; nama_asli: string; url: string }[];
 }
 
-interface Props { laporan: LaporanDetail }
+interface Props {
+    laporan: LaporanDetail;
+    poin_ranges?: Record<string, Record<string, { min: number; max: number }>>;
+}
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/admin/dashboard' },
@@ -28,10 +34,11 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Detail', href: '#' },
 ];
 
-export default function AdminLaporanShow({ laporan }: Props) {
+export default function AdminLaporanShow({ laporan, poin_ranges = {} }: Props) {
     const { data, setData, patch, processing, errors } = useForm({
         status: 'ditindaklanjuti' as 'ditindaklanjuti' | 'ditolak',
         tindak_lanjut: laporan.tindak_lanjut ?? '',
+        poin_diberikan: '' as string | number,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -54,15 +61,19 @@ export default function AdminLaporanShow({ laporan }: Props) {
                 </div>
 
                 {/* Info laporan */}
-                <div className="rounded-lg border bg-white">
+                <div className="rounded-lg border bg-white shadow-xs">
                     <div className="border-b px-5 py-3">
-                        <h2 className="text-sm font-medium">Informasi Laporan</h2>
+                        <h2 className="text-sm font-semibold">Informasi Laporan</h2>
                     </div>
                     <div className="grid grid-cols-1 gap-4 p-5 sm:grid-cols-2">
                         <div>
                             <p className="text-xs text-muted-foreground">Murid</p>
-                            <p className="mt-0.5 font-medium">{laporan.murid.nama}</p>
-                            <p className="text-sm text-muted-foreground">{laporan.murid.nama_kelas}{laporan.murid.nis ? ` · NIS: ${laporan.murid.nis}` : ''}</p>
+                            <p className="mt-0.5 font-semibold text-foreground">{laporan.murid.nama}</p>
+                            <p className="text-sm text-muted-foreground">
+                                {laporan.murid.nama_kelas}
+                                {laporan.murid.nis ? ` · NIS: ${laporan.murid.nis}` : ''}
+                                {laporan.murid.nisn ? ` · NISN: ${laporan.murid.nisn}` : ''}
+                            </p>
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Dilaporkan oleh</p>
@@ -70,32 +81,43 @@ export default function AdminLaporanShow({ laporan }: Props) {
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Tanggal Kejadian</p>
-                            <p className="mt-0.5 font-medium">{laporan.tanggal_kejadian}</p>
+                            <p className="mt-0.5 font-medium font-mono text-sm">{laporan.tanggal_kejadian}</p>
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Tahun Ajaran</p>
                             <p className="mt-0.5 font-medium">{laporan.tahun_ajaran}</p>
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Jenis</p>
-                            <p className="mt-0.5 font-medium">{laporan.jenis_pelanggaran.keterangan}</p>
-                            <div className="mt-1 flex gap-1">
-                                <StatusBadge status={laporan.jenis_pelanggaran.kategori} />
-                                {laporan.jenis_pelanggaran.tingkat_keparahan && (
-                                    <StatusBadge status={laporan.jenis_pelanggaran.tingkat_keparahan} />
-                                )}
+                            <p className="text-xs text-muted-foreground">Kategori & Tingkat</p>
+                            <div className="mt-1 flex items-center gap-1.5">
+                                <StatusBadge status={laporan.kategori} />
+                                <span className="text-xs font-semibold capitalize text-muted-foreground">
+                                    Tingkat {laporan.tingkat_keparahan}
+                                </span>
                             </div>
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Poin</p>
-                            <p className={`mt-0.5 text-lg font-semibold ${laporan.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {laporan.poin_diberikan >= 0 ? '+' : ''}{laporan.poin_diberikan}
+                            <p className="text-xs text-muted-foreground">Rekomendasi Poin Skor</p>
+                            {laporan.poin_diberikan !== null ? (
+                                <p className={`mt-0.5 text-lg font-bold font-mono ${laporan.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    {laporan.poin_diberikan >= 0 ? '+' : ''}{laporan.poin_diberikan}
+                                </p>
+                            ) : (
+                                <p className="mt-0.5 text-sm text-muted-foreground italic">Ditentukan admin</p>
+                            )}
+                        </div>
+                        <div className="sm:col-span-2">
+                            <p className="text-xs text-muted-foreground">Keterangan / Tindakan</p>
+                            <p className="mt-0.5 font-medium text-foreground bg-muted/30 p-3 rounded-md border text-sm">
+                                {laporan.keterangan}
                             </p>
                         </div>
                         {laporan.keterangan_tambahan && (
                             <div className="sm:col-span-2">
-                                <p className="text-xs text-muted-foreground">Keterangan Tambahan</p>
-                                <p className="mt-0.5 text-sm">{laporan.keterangan_tambahan}</p>
+                                <p className="text-xs text-muted-foreground">Kronologi / Catatan Tambahan</p>
+                                <p className="mt-0.5 text-sm text-foreground bg-muted/20 p-3 rounded-md border">
+                                    {laporan.keterangan_tambahan}
+                                </p>
                             </div>
                         )}
                     </div>
@@ -103,14 +125,14 @@ export default function AdminLaporanShow({ laporan }: Props) {
 
                 {/* Bukti foto */}
                 {laporan.bukti.length > 0 && (
-                    <div className="rounded-lg border bg-white">
+                    <div className="rounded-lg border bg-white shadow-xs">
                         <div className="border-b px-5 py-3">
-                            <h2 className="text-sm font-medium">Bukti Foto ({laporan.bukti.length})</h2>
+                            <h2 className="text-sm font-semibold">Bukti Foto ({laporan.bukti.length})</h2>
                         </div>
                         <div className="flex flex-wrap gap-3 p-5">
                             {laporan.bukti.map((b) => (
-                                <a key={b.id} href={b.url} target="_blank" rel="noopener noreferrer" className="block">
-                                    <img src={b.url} alt={b.nama_asli} className="h-28 w-28 rounded-md border object-cover hover:opacity-90" />
+                                <a key={b.id} href={b.url} target="_blank" rel="noopener noreferrer" className="block group">
+                                    <img src={b.url} alt={b.nama_asli} className="h-28 w-28 rounded-md border object-cover group-hover:opacity-90 shadow-xs" />
                                     <p className="mt-1 max-w-28 truncate text-xs text-muted-foreground">{b.nama_asli}</p>
                                 </a>
                             ))}
@@ -120,9 +142,9 @@ export default function AdminLaporanShow({ laporan }: Props) {
 
                 {/* Riwayat tindak lanjut (kalau sudah ditindaklanjuti) */}
                 {sudahDitindaklanjuti && laporan.tindak_lanjut && (
-                    <div className="rounded-lg border bg-white">
+                    <div className="rounded-lg border bg-white shadow-xs">
                         <div className="border-b px-5 py-3">
-                            <h2 className="text-sm font-medium">Catatan Tindak Lanjut</h2>
+                            <h2 className="text-sm font-semibold">Catatan Tindak Lanjut</h2>
                         </div>
                         <div className="p-5">
                             <p className="text-sm">{laporan.tindak_lanjut}</p>
@@ -136,9 +158,9 @@ export default function AdminLaporanShow({ laporan }: Props) {
 
                 {/* Form tindak lanjut — hanya kalau masih pending */}
                 {!sudahDitindaklanjuti && (
-                    <div className="rounded-lg border bg-white">
+                    <div className="rounded-lg border bg-white shadow-xs">
                         <div className="border-b px-5 py-3">
-                            <h2 className="text-sm font-medium">Tindak Lanjut</h2>
+                            <h2 className="text-sm font-semibold">Tindak Lanjut</h2>
                         </div>
                         <form onSubmit={handleSubmit} className="space-y-4 p-5">
                             <div className="space-y-1.5">
@@ -159,6 +181,66 @@ export default function AdminLaporanShow({ laporan }: Props) {
                                 </div>
                                 {errors.status && <p className="text-xs text-red-600">{errors.status}</p>}
                             </div>
+
+                            {/* Poin field — only shown when approving */}
+                            {data.status === 'ditindaklanjuti' && (() => {
+                                const range = poin_ranges[laporan.kategori]?.[laporan.tingkat_keparahan];
+                                const isPelanggaran = laporan.kategori === 'pelanggaran';
+                                const poinVal = typeof data.poin_diberikan === 'number' ? data.poin_diberikan : null;
+                                const hasValue = poinVal !== null && !isNaN(poinVal) && data.poin_diberikan !== '';
+                                return (
+                                    <div className={`rounded-xl border-2 p-4 space-y-3 transition-colors ${
+                                        isPelanggaran
+                                            ? 'border-red-200 bg-red-50/60 dark:border-red-900 dark:bg-red-950/20'
+                                            : 'border-green-200 bg-green-50/60 dark:border-green-900 dark:bg-green-950/20'
+                                    }`}>
+                                        <div className="flex items-center justify-between">
+                                            <label htmlFor="poin_diberikan" className={`text-sm font-bold ${isPelanggaran ? 'text-red-800' : 'text-green-800'}`}>
+                                                ✦ Tetapkan Poin {isPelanggaran ? 'Pelanggaran' : 'Kebaikan'}
+                                            </label>
+                                            {/* Live preview badge */}
+                                            <span className={`text-2xl font-black font-mono tracking-tight transition-all ${
+                                                hasValue
+                                                    ? isPelanggaran
+                                                        ? 'text-red-600 dark:text-red-400'
+                                                        : 'text-green-600 dark:text-green-400'
+                                                    : 'text-muted-foreground/40'
+                                            }`}>
+                                                {hasValue
+                                                    ? (poinVal! > 0 ? `+${poinVal}` : `${poinVal}`)
+                                                    : (isPelanggaran ? '−?' : '+?')}
+                                            </span>
+                                        </div>
+
+                                        {range && (
+                                            <p className={`text-xs font-medium ${isPelanggaran ? 'text-red-700/80 dark:text-red-400' : 'text-green-700/80 dark:text-green-400'}`}>
+                                                Rentang acuan tingkat <span className="capitalize font-bold">{laporan.tingkat_keparahan}</span>:
+                                                <span className="font-mono ml-1">{range.min} s/d {range.max} poin</span>
+                                            </p>
+                                        )}
+
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                id="poin_diberikan"
+                                                value={data.poin_diberikan}
+                                                onChange={(e) => setData('poin_diberikan', e.target.value === '' ? '' : parseInt(e.target.value))}
+                                                placeholder={isPelanggaran ? 'Masukkan poin negatif, misal: -10' : 'Masukkan poin positif, misal: 20'}
+                                                className={`flex h-12 w-full rounded-lg border-2 bg-white dark:bg-background px-4 py-2 text-lg font-mono font-bold placeholder:text-sm placeholder:font-normal placeholder:text-muted-foreground/60 focus-visible:outline-none focus-visible:ring-2 transition-all ${
+                                                    isPelanggaran
+                                                        ? 'border-red-300 focus-visible:ring-red-400 dark:border-red-800'
+                                                        : 'border-green-300 focus-visible:ring-green-400 dark:border-green-800'
+                                                } ${errors.poin_diberikan ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                                            />
+                                        </div>
+                                        {errors.poin_diberikan && (
+                                            <p className="text-xs font-medium text-red-600 flex items-center gap-1">
+                                                <span>⚠</span> {errors.poin_diberikan}
+                                            </p>
+                                        )}
+                                    </div>
+                                );
+                            })()}
 
                             <div className="space-y-1.5">
                                 <label className="text-sm font-medium">Catatan Tindak Lanjut <span className="text-red-500">*</span></label>

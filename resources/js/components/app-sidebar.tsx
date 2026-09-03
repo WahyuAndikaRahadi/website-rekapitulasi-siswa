@@ -28,11 +28,6 @@ const adminNavItems: NavItem[] = [
         icon: Users,
     },
     {
-        title: 'Master Data',
-        url: '/admin/master/jenis-pelanggaran',
-        icon: BookOpen,
-    },
-    {
         title: 'Pengaturan',
         url: '/admin/kelas',
         icon: Settings,

@@ -17,12 +17,12 @@ class DashboardController extends Controller
         $tahunAjaran = TahunAjaran::aktif();
 
         $stats = [
-            'total_laporan' => Laporan::where('guru_id', $guru?->id)->count(),
-            'pending'       => Laporan::where('guru_id', $guru?->id)->where('status', 'pending')->count(),
+            'total_laporan'   => Laporan::where('guru_id', $guru?->id)->count(),
+            'pending'         => Laporan::where('guru_id', $guru?->id)->where('status', 'pending')->count(),
             'ditindaklanjuti' => Laporan::where('guru_id', $guru?->id)->where('status', 'ditindaklanjuti')->count(),
         ];
 
-        $laporanTerbaru = Laporan::with(['murid.kelas', 'jenisPelanggaran'])
+        $laporanTerbaru = Laporan::with(['murid.kelas'])
             ->where('guru_id', $guru?->id)
             ->orderByDesc('tanggal_kejadian')
             ->limit(5)
@@ -32,8 +32,9 @@ class DashboardController extends Controller
                 'tanggal_kejadian'   => $l->tanggal_kejadian->format('d/m/Y'),
                 'murid_nama'         => $l->murid->nama,
                 'kelas_nama'         => $l->murid->kelas->nama_kelas,
-                'jenis_keterangan'   => $l->jenisPelanggaran->keterangan,
-                'kategori'           => $l->jenisPelanggaran->kategori,
+                'kategori'           => $l->kategori,
+                'tingkat_keparahan'  => $l->tingkat_keparahan,
+                'keterangan'         => $l->keterangan,
                 'poin_diberikan'     => $l->poin_diberikan,
                 'status'             => $l->status,
                 'bisa_diedit'        => $l->bisaDieditOlehGuru(),

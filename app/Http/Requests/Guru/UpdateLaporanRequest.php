@@ -21,14 +21,16 @@ class UpdateLaporanRequest extends FormRequest
         $maxKilos = $maxKB * 1024;
 
         return [
-            'murid_id'              => ['required', 'integer', 'exists:murids,id'],
-            'jenis_pelanggaran_id'  => ['required', 'integer', 'exists:jenis_pelanggarans,id'],
-            'tanggal_kejadian'      => ['required', 'date', 'before_or_equal:today'],
-            'keterangan_tambahan'   => ['nullable', 'string', 'max:1000'],
-            'bukti_hapus'           => ['nullable', 'array'],
-            'bukti_hapus.*'         => ['integer', 'exists:bukti_laporans,id'],
-            'bukti'                 => ['nullable', 'array', 'max:5'],
-            'bukti.*'               => [
+            'murid_id'            => ['required', 'integer', 'exists:murids,id'],
+            'kategori'            => ['required', 'string', 'in:pelanggaran,kebaikan'],
+            'tingkat_keparahan'   => ['required', 'string', 'in:ringan,sedang,berat'],
+            'keterangan'          => ['required', 'string', 'max:255'],
+            'tanggal_kejadian'    => ['required', 'date', 'before_or_equal:today'],
+            'keterangan_tambahan' => ['nullable', 'string', 'max:1000'],
+            'bukti_hapus'         => ['nullable', 'array'],
+            'bukti_hapus.*'       => ['integer', 'exists:bukti_laporans,id'],
+            'bukti'               => ['nullable', 'array', 'max:5'],
+            'bukti.*'             => [
                 'file',
                 'mimes:jpg,jpeg,png',
                 "max:{$maxKilos}",
@@ -42,7 +44,9 @@ class UpdateLaporanRequest extends FormRequest
 
         return [
             'murid_id.required'             => 'Murid harus dipilih.',
-            'jenis_pelanggaran_id.required' => 'Jenis pelanggaran/kebaikan harus dipilih.',
+            'kategori.required'             => 'Kategori laporan harus dipilih.',
+            'tingkat_keparahan.required'    => 'Tingkat keparahan / kebaikan harus dipilih.',
+            'keterangan.required'           => 'Keterangan/jenis tindakan harus diisi.',
             'tanggal_kejadian.required'     => 'Tanggal kejadian harus diisi.',
             'tanggal_kejadian.before_or_equal' => 'Tanggal kejadian tidak boleh di masa depan.',
             'bukti.*.mimes'                 => 'File bukti harus berformat JPG, JPEG, atau PNG.',

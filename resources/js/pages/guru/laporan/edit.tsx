@@ -1,17 +1,8 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
-import { Head, useForm } from '@inertiajs/react';
-import { Loader2, Search, Upload, X } from 'lucide-react';
-import { useCallback, useRef, useState } from 'react';
-
-interface JenisPelanggaran {
-    id: number;
-    kode: string;
-    keterangan: string;
-    kategori: 'pelanggaran' | 'kebaikan';
-    poin: number;
-    tingkat_keparahan: string | null;
-}
+import { Head, Link, useForm } from '@inertiajs/react';
+import { AlertCircle, CheckCircle2, Loader2, Upload, UserCheck, X } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface BuktiItem {
     id: number;
@@ -23,7 +14,10 @@ interface LaporanData {
     id: number;
     murid_id: number;
     murid: { id: number; nama: string; nis: string | null; nama_kelas: string };
-    jenis_pelanggaran_id: number;
+    kategori: 'pelanggaran' | 'kebaikan';
+    tingkat_keparahan: 'ringan' | 'sedang' | 'berat';
+    keterangan: string;
+    poin_diberikan: number | null;
     tanggal_kejadian: string;
     keterangan_tambahan: string | null;
     bukti: BuktiItem[];
@@ -31,40 +25,26 @@ interface LaporanData {
 
 interface Props {
     laporan: LaporanData;
-    jenis_pelanggarans: JenisPelanggaran[];
-}
-
-interface MuridResult {
-    id: number;
-    nama: string;
-    nis: string | null;
-    nama_kelas: string;
+    poin_ranges: Record<string, Record<string, { min: number; max: number }>>;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/guru/dashboard' },
-    { title: 'Riwayat', href: '/guru/laporan/riwayat' },
+    { title: 'Riwayat Laporan', href: '/guru/laporan/riwayat' },
     { title: 'Edit Laporan', href: '#' },
 ];
 
-export default function EditLaporan({ laporan, jenis_pelanggarans }: Props) {
-    const [selectedMurid, setSelectedMurid] = useState<MuridResult>({
-        id: laporan.murid.id, nama: laporan.murid.nama,
-        nis: laporan.murid.nis, nama_kelas: laporan.murid.nama_kelas,
-    });
-    const [muridQuery, setMuridQuery]       = useState('');
-    const [muridResults, setMuridResults]   = useState<MuridResult[]>([]);
-    const [muridLoading, setMuridLoading]   = useState(false);
-    const [filterKategori, setFilterKategori] = useState<'semua' | 'pelanggaran' | 'kebaikan'>('semua');
+export default function EditLaporan({ laporan, poin_ranges }: Props) {
     const [existingBukti, setExistingBukti] = useState<BuktiItem[]>(laporan.bukti);
     const [toDelete, setToDelete]           = useState<number[]>([]);
     const [newPreviews, setNewPreviews]     = useState<{ file: File; url: string }[]>([]);
-    const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const { data, setData, post, processing, errors } = useForm<{
         _method: string;
         murid_id: number;
-        jenis_pelanggaran_id: number;
+        kategori: 'pelanggaran' | 'kebaikan';
+        tingkat_keparahan: 'ringan' | 'sedang' | 'berat';
+        keterangan: string;
         tanggal_kejadian: string;
         keterangan_tambahan: string;
         bukti_hapus: number[];
@@ -72,31 +52,14 @@ export default function EditLaporan({ laporan, jenis_pelanggarans }: Props) {
     }>({
         _method: 'PUT',
         murid_id: laporan.murid_id,
-        jenis_pelanggaran_id: laporan.jenis_pelanggaran_id,
+        kategori: laporan.kategori,
+        tingkat_keparahan: laporan.tingkat_keparahan,
+        keterangan: laporan.keterangan,
         tanggal_kejadian: laporan.tanggal_kejadian,
         keterangan_tambahan: laporan.keterangan_tambahan ?? '',
         bukti_hapus: [],
         bukti: [],
     });
-
-    const searchMurid = useCallback((q: string) => {
-        setMuridQuery(q);
-        if (q.length < 2) { setMuridResults([]); return; }
-        if (searchTimeout.current) clearTimeout(searchTimeout.current);
-        searchTimeout.current = setTimeout(() => {
-            setMuridLoading(true);
-            fetch(`/guru/murid/search?q=${encodeURIComponent(q)}`)
-                .then((r) => r.json())
-                .then((d) => { setMuridResults(d); setMuridLoading(false); })
-                .catch(() => setMuridLoading(false));
-        }, 300);
-    }, []);
-
-    const selectMurid = (m: MuridResult) => {
-        setSelectedMurid(m);
-        setData('murid_id', m.id);
-        setMuridQuery(''); setMuridResults([]);
-    };
 
     const markDelete = (id: number) => {
         setExistingBukti((prev) => prev.filter((b) => b.id !== id));
@@ -107,6 +70,10 @@ export default function EditLaporan({ laporan, jenis_pelanggarans }: Props) {
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = Array.from(e.target.files ?? []);
+        if (existingBukti.length + newPreviews.length + files.length > 5) {
+            alert('Maksimal 5 foto bukti.');
+            return;
+        }
         setNewPreviews((prev) => [...prev, ...files.map((f) => ({ file: f, url: URL.createObjectURL(f) }))]);
         setData('bukti', [...data.bukti, ...files]);
     };
@@ -122,9 +89,6 @@ export default function EditLaporan({ laporan, jenis_pelanggarans }: Props) {
         post(`/guru/laporan/${laporan.id}`, { forceFormData: true });
     };
 
-    const filteredJenis = jenis_pelanggarans.filter(
-        (j) => filterKategori === 'semua' || j.kategori === filterKategori,
-    );
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -135,98 +99,151 @@ export default function EditLaporan({ laporan, jenis_pelanggarans }: Props) {
                     <p className="text-muted-foreground mt-1 text-sm">Hanya laporan yang masih pending yang dapat diedit.</p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    {/* Murid */}
+                <form onSubmit={handleSubmit} className="space-y-5 rounded-xl border bg-card p-6 shadow-xs">
+                    {/* Murid Info */}
+                    <div className="flex items-center gap-3 rounded-lg border bg-muted/40 p-3">
+                        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                            <UserCheck className="size-5" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="font-semibold text-foreground truncate">{laporan.murid.nama}</p>
+                            <p className="text-xs text-muted-foreground">
+                                Kelas: <span className="font-medium text-foreground">{laporan.murid.nama_kelas}</span>
+                                {laporan.murid.nis && <span> · NIS: {laporan.murid.nis}</span>}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Kategori Toggle */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Murid <span className="text-red-500">*</span></label>
-                        <div className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-2.5">
-                            <div>
-                                <p className="text-sm font-medium">{selectedMurid.nama}</p>
-                                <p className="text-muted-foreground text-xs">{selectedMurid.nama_kelas}</p>
-                            </div>
-                            <button type="button" onClick={() => setSelectedMurid(null as any)} className="text-muted-foreground hover:text-foreground">
-                                <X className="size-4" />
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Kategori <span className="text-red-500">*</span>
+                        </label>
+                        <div className="grid grid-cols-2 gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setData('kategori', 'pelanggaran')}
+                                className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm font-medium transition-all ${
+                                    data.kategori === 'pelanggaran'
+                                        ? 'border-red-500 bg-red-500/10 text-red-700 font-semibold shadow-xs dark:text-red-400'
+                                        : 'border-input bg-background hover:bg-muted text-muted-foreground'
+                                }`}
+                            >
+                                <AlertCircle className="size-4 text-red-500" />
+                                Pelanggaran
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setData('kategori', 'kebaikan')}
+                                className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm font-medium transition-all ${
+                                    data.kategori === 'kebaikan'
+                                        ? 'border-green-500 bg-green-500/10 text-green-700 font-semibold shadow-xs dark:text-green-400'
+                                        : 'border-input bg-background hover:bg-muted text-muted-foreground'
+                                }`}
+                            >
+                                <CheckCircle2 className="size-4 text-green-500" />
+                                Kebaikan / Prestasi
                             </button>
                         </div>
-                        {!selectedMurid && (
-                            <div className="relative">
-                                <div className="pointer-events-none absolute inset-y-0 left-3 flex items-center">
-                                    {muridLoading ? <Loader2 className="size-4 animate-spin text-muted-foreground" /> : <Search className="size-4 text-muted-foreground" />}
-                                </div>
-                                <input type="text" placeholder="Ketik nama murid..." value={muridQuery}
-                                    onChange={(e) => searchMurid(e.target.value)}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background py-2 pl-10 pr-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-                                {muridResults.length > 0 && (
-                                    <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover shadow-md">
-                                        {muridResults.map((m) => (
-                                            <button key={m.id} type="button" onClick={() => selectMurid(m)}
-                                                className="flex w-full items-center justify-between px-3 py-2.5 text-left text-sm hover:bg-accent">
-                                                <span className="font-medium">{m.nama}</span>
-                                                <span className="text-muted-foreground text-xs">{m.nama_kelas}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                        {errors.murid_id && <p className="text-xs text-red-600">{errors.murid_id}</p>}
+                        {errors.kategori && <p className="text-xs text-red-600">{errors.kategori}</p>}
                     </div>
 
-                    {/* Jenis */}
+                    {/* Tingkat / Tahap */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Jenis <span className="text-red-500">*</span></label>
-                        <div className="flex gap-2">
-                            {(['semua', 'pelanggaran', 'kebaikan'] as const).map((k) => (
-                                <button key={k} type="button" onClick={() => setFilterKategori(k)}
-                                    className={`rounded px-3 py-1 text-xs font-medium transition-colors ${filterKategori === k ? k === 'pelanggaran' ? 'bg-red-600 text-white' : k === 'kebaikan' ? 'bg-green-600 text-white' : 'bg-foreground text-background' : 'bg-muted text-muted-foreground hover:bg-muted/80'}`}>
-                                    {k.charAt(0).toUpperCase() + k.slice(1)}
-                                </button>
-                            ))}
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Tingkat / Tahap <span className="text-red-500">*</span>
+                            </label>
+                            <span className="text-xs text-muted-foreground italic">
+                                Poin ditentukan oleh admin
+                            </span>
                         </div>
-                        <div className="max-h-56 overflow-y-auto rounded-md border">
-                            {filteredJenis.map((j) => (
-                                <label key={j.id} className={`flex cursor-pointer items-center justify-between px-3 py-2.5 text-sm hover:bg-accent ${data.jenis_pelanggaran_id === j.id ? 'bg-accent' : ''}`}>
-                                    <div className="flex items-center gap-2">
-                                        <input type="radio" name="jenis_pelanggaran_id" value={j.id}
-                                            checked={data.jenis_pelanggaran_id === j.id}
-                                            onChange={() => setData('jenis_pelanggaran_id', j.id)} className="accent-primary" />
-                                        <span><span className="text-muted-foreground mr-1.5 font-mono text-xs">{j.kode}</span>{j.keterangan}</span>
-                                    </div>
-                                    <span className={`ml-3 shrink-0 text-xs font-medium ${j.kategori === 'kebaikan' ? 'text-green-600' : 'text-red-600'}`}>
-                                        {j.kategori === 'kebaikan' ? '+' : '−'}{j.poin} poin
-                                    </span>
-                                </label>
-                            ))}
+                        <div className="grid grid-cols-3 gap-2">
+                            {(['ringan', 'sedang', 'berat'] as const).map((t) => {
+                                const range = poin_ranges[data.kategori]?.[t];
+                                const hint = range ? `${range.min} s/d ${range.max}` : '';
+                                const isSelected = data.tingkat_keparahan === t;
+                                return (
+                                    <button
+                                        key={t}
+                                        type="button"
+                                        onClick={() => setData('tingkat_keparahan', t)}
+                                        className={`flex flex-col items-center justify-center rounded-lg border p-2.5 text-center transition-all ${
+                                            isSelected
+                                                ? data.kategori === 'pelanggaran'
+                                                    ? 'border-red-500 bg-red-50 text-red-900 ring-2 ring-red-500/20 dark:bg-red-950/40 dark:text-red-200'
+                                                    : 'border-green-500 bg-green-50 text-green-900 ring-2 ring-green-500/20 dark:bg-green-950/40 dark:text-green-200'
+                                                : 'border-input bg-background hover:bg-muted text-muted-foreground'
+                                        }`}
+                                    >
+                                        <span className="text-sm font-semibold capitalize">{t}</span>
+                                        <span className="text-xs font-mono font-medium mt-0.5 opacity-80">
+                                            {hint} poin
+                                        </span>
+                                    </button>
+                                );
+                            })}
                         </div>
-                        {errors.jenis_pelanggaran_id && <p className="text-xs text-red-600">{errors.jenis_pelanggaran_id}</p>}
-                    </div>
-
-                    {/* Tanggal */}
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Tanggal Kejadian <span className="text-red-500">*</span></label>
-                        <input type="date" value={data.tanggal_kejadian} max={new Date().toISOString().split('T')[0]}
-                            onChange={(e) => setData('tanggal_kejadian', e.target.value)}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-                        {errors.tanggal_kejadian && <p className="text-xs text-red-600">{errors.tanggal_kejadian}</p>}
+                        {errors.tingkat_keparahan && <p className="text-xs text-red-600">{errors.tingkat_keparahan}</p>}
                     </div>
 
                     {/* Keterangan */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Keterangan Tambahan</label>
-                        <textarea value={data.keterangan_tambahan} onChange={(e) => setData('keterangan_tambahan', e.target.value)} rows={3}
-                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Keterangan Tindakan <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            value={data.keterangan}
+                            onChange={(e) => setData('keterangan', e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                        {errors.keterangan && <p className="text-xs text-red-600">{errors.keterangan}</p>}
                     </div>
 
-                    {/* Bukti existing */}
+                    {/* Tanggal Kejadian */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Tanggal Kejadian <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="date"
+                            value={data.tanggal_kejadian}
+                            max={new Date().toISOString().split('T')[0]}
+                            onChange={(e) => setData('tanggal_kejadian', e.target.value)}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                        {errors.tanggal_kejadian && <p className="text-xs text-red-600">{errors.tanggal_kejadian}</p>}
+                    </div>
+
+                    {/* Keterangan Tambahan */}
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Kronologi / Catatan Tambahan <span className="text-muted-foreground font-normal lowercase">(opsional)</span>
+                        </label>
+                        <textarea
+                            value={data.keterangan_tambahan}
+                            onChange={(e) => setData('keterangan_tambahan', e.target.value)}
+                            rows={3}
+                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        />
+                    </div>
+
+                    {/* Existing Bukti */}
                     {existingBukti.length > 0 && (
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium">Bukti Saat Ini</label>
+                            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Foto Bukti Saat Ini
+                            </label>
                             <div className="flex flex-wrap gap-2">
                                 {existingBukti.map((b) => (
                                     <div key={b.id} className="group relative">
-                                        <img src={b.url} alt={b.nama_asli} className="h-20 w-20 rounded-md border object-cover" />
-                                        <button type="button" onClick={() => markDelete(b.id)}
-                                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                        <img src={b.url} alt={b.nama_asli} className="h-20 w-20 rounded-md border object-cover shadow-xs" />
+                                        <button
+                                            type="button"
+                                            onClick={() => markDelete(b.id)}
+                                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 p-0.5 text-white shadow-xs transition-opacity hover:bg-red-700"
+                                        >
                                             <X className="size-3" />
                                         </button>
                                     </div>
@@ -235,36 +252,58 @@ export default function EditLaporan({ laporan, jenis_pelanggarans }: Props) {
                         </div>
                     )}
 
-                    {/* Upload baru */}
+                    {/* New Upload */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Tambah Bukti Baru</label>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                            Tambah Foto Bukti Baru
+                        </label>
                         {newPreviews.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 pb-1">
                                 {newPreviews.map((p, i) => (
                                     <div key={i} className="group relative">
-                                        <img src={p.url} alt="" className="h-20 w-20 rounded-md border object-cover" />
-                                        <button type="button" onClick={() => removeNew(i)}
-                                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 p-0.5 text-white opacity-0 transition-opacity group-hover:opacity-100">
+                                        <img src={p.url} alt="" className="h-20 w-20 rounded-md border object-cover shadow-xs" />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeNew(i)}
+                                            className="absolute -right-1.5 -top-1.5 rounded-full bg-red-600 p-0.5 text-white shadow-xs transition-opacity hover:bg-red-700"
+                                        >
                                             <X className="size-3" />
                                         </button>
                                     </div>
                                 ))}
                             </div>
                         )}
-                        <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed px-4 py-3 text-sm text-muted-foreground hover:bg-muted/30">
-                            <Upload className="size-4" />
-                            <span>Pilih foto (JPG, JPEG, PNG)</span>
-                            <input type="file" multiple accept="image/jpg,image/jpeg,image/png" onChange={handleFileChange} className="sr-only" />
-                        </label>
+                        {existingBukti.length + newPreviews.length < 5 && (
+                            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-dashed py-3 px-4 text-xs text-muted-foreground hover:bg-muted/40 transition-colors">
+                                <Upload className="size-4" />
+                                <span>Pilih foto (JPG, PNG)</span>
+                                <input
+                                    type="file"
+                                    multiple
+                                    accept="image/jpg,image/jpeg,image/png"
+                                    onChange={handleFileChange}
+                                    className="sr-only"
+                                />
+                            </label>
+                        )}
                     </div>
 
-                    <div className="flex gap-3 pt-2">
-                        <button type="submit" disabled={processing}
-                            className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                    {/* Actions */}
+                    <div className="flex gap-3 pt-4 border-t">
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                        >
                             {processing && <Loader2 className="size-4 animate-spin" />}
                             Simpan Perubahan
                         </button>
-                        <a href="/guru/laporan/riwayat" className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted">Batal</a>
+                        <Link
+                            href="/guru/laporan/riwayat"
+                            className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
+                        >
+                            Batal
+                        </Link>
                     </div>
                 </form>
             </div>

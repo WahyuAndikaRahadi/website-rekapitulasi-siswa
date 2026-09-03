@@ -4,7 +4,7 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\GuruController as AdminGuruController;
 use App\Http\Controllers\Admin\KelasController as AdminKelasController;
 use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
-use App\Http\Controllers\Admin\JenisPelanggaranController as AdminJenisPelanggaranController;
+
 use App\Http\Controllers\Admin\MuridController as AdminMuridController;
 use App\Http\Controllers\Admin\TahunAjaranController as AdminTahunAjaranController;
 use App\Http\Controllers\Admin\ExportController as AdminExportController;
@@ -45,10 +45,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/laporan/{laporan}',            [AdminLaporanController::class, 'show'])->name('laporan.show');
     Route::patch('/laporan/{laporan}/tindaklanjut', [AdminLaporanController::class, 'tindakLanjut'])->name('laporan.tindaklanjut');
 
-    // Master data jenis pelanggaran/kebaikan
-    Route::resource('/master/jenis-pelanggaran', AdminJenisPelanggaranController::class)
-        ->names('jenis-pelanggaran')
-        ->parameters(['jenis-pelanggaran' => 'jenisPelanggaran']);
 
     // Kelas & TahunAjaran tidak punya halaman show/create terpisah — gunakan only() agar route tidak dibuat
     Route::resource('/kelas', AdminKelasController::class)->only(['index', 'store', 'update', 'destroy'])->names('kelas');

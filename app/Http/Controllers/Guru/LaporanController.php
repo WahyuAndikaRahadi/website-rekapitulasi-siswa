@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Guru\StoreLaporanRequest;
 use App\Http\Requests\Guru\UpdateLaporanRequest;
 use App\Models\BuktiLaporan;
-use App\Models\JenisPelanggaran;
+use App\Models\Kelas;
 use App\Models\Laporan;
 use App\Models\Murid;
 use App\Models\TahunAjaran;
@@ -22,21 +22,73 @@ use Inertia\Response;
 class LaporanController extends Controller
 {
     /**
-     * Form buat laporan baru.
+     * Halaman buat laporan baru — menampilkan tabel murid dengan search & filter serta modal.
      */
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $tahunAjaran = TahunAjaran::aktif();
 
-        $jenisPelanggarans = JenisPelanggaran::aktif()
+        $kelasList = Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)
+            ->orderBy('nama_kelas')
+            ->get(['id', 'nama_kelas', 'tingkat']);
+
+        // Ekstrak daftar jurusan unik dari nama_kelas (misal: "X TO 1" -> "TO")
+        $jurusanList = $kelasList->map(function ($k) {
+            $parts = explode(' ', trim($k->nama_kelas));
+            return count($parts) >= 2 ? $parts[1] : null;
+        })->filter()->unique()->values()->sort()->values();
+
+        $query = Murid::with('kelas')
             ->where('tahun_ajaran_id', $tahunAjaran?->id)
-            ->orderBy('kategori')
-            ->orderBy('kode')
-            ->get(['id', 'kode', 'keterangan', 'kategori', 'poin', 'tingkat_keparahan']);
+            ->orderBy('kelas_id')
+            ->orderBy('nama');
+
+        // Filter: Tingkat
+        if ($request->filled('tingkat')) {
+            $query->whereHas('kelas', fn($q) => $q->where('tingkat', $request->tingkat));
+        }
+
+        // Filter: Jurusan (berdasarkan pola nama_kelas)
+        if ($request->filled('jurusan')) {
+            $jurusan = $request->jurusan;
+            $query->whereHas('kelas', fn($q) => $q->where('nama_kelas', 'like', "% {$jurusan} %")->orWhere('nama_kelas', 'like', "% {$jurusan}"));
+        }
+
+        // Filter: Kelas spesifik
+        if ($request->filled('kelas_id')) {
+            $query->where('kelas_id', $request->kelas_id);
+        }
+
+        // Search bar: Nama, NIS, NISN
+        if ($request->filled('q')) {
+            $q = '%' . $request->q . '%';
+            $query->where(function ($query) use ($q) {
+                $query->where('nama', 'like', $q)
+                      ->orWhere('nis', 'like', $q)
+                      ->orWhere('nisn', 'like', $q);
+            });
+        }
+
+        $murids = $query->paginate(15)->withQueryString();
 
         return Inertia::render('guru/laporan/buat', [
-            'jenis_pelanggarans' => $jenisPelanggarans,
-            'tahun_ajaran'       => $tahunAjaran ? ['id' => $tahunAjaran->id, 'label' => $tahunAjaran->label] : null,
+            'murids' => $murids->through(fn($m) => [
+                'id'             => $m->id,
+                'nama'           => $m->nama,
+                'nis'            => $m->nis,
+                'nisn'           => $m->nisn,
+                'kelas_id'       => $m->kelas_id,
+                'nama_kelas'     => $m->kelas->nama_kelas,
+                'tingkat'        => $m->kelas->tingkat,
+                'skor_resmi'     => $m->skorResmi(),
+                'skor_sementara' => $m->skorSementara(),
+            ]),
+            'filters'      => $request->only(['q', 'tingkat', 'jurusan', 'kelas_id']),
+            'tingkat_list' => ['X', 'XI', 'XII'],
+            'jurusan_list' => $jurusanList,
+            'kelas_list'   => $kelasList,
+            'poin_ranges'  => Laporan::POIN_RANGES,
+            'tahun_ajaran' => $tahunAjaran ? ['id' => $tahunAjaran->id, 'label' => $tahunAjaran->label] : null,
         ]);
     }
 
@@ -47,25 +99,25 @@ class LaporanController extends Controller
     {
         $guru        = $request->user()->guru;
         $tahunAjaran = TahunAjaran::aktif();
-        $jenis       = JenisPelanggaran::findOrFail($request->jenis_pelanggaran_id);
 
-        DB::transaction(function () use ($request, $guru, $tahunAjaran, $jenis) {
+        DB::transaction(function () use ($request, $guru, $tahunAjaran) {
             $laporan = Laporan::create([
-                'guru_id'               => $guru->id,
-                'murid_id'              => $request->murid_id,
-                'jenis_pelanggaran_id'  => $jenis->id,
-                'tanggal_kejadian'      => $request->tanggal_kejadian,
-                'keterangan_tambahan'   => $request->keterangan_tambahan,
-                'poin_diberikan'        => $jenis->poinEfektif(), // snapshot poin saat laporan dibuat
-                'status'                => 'pending',
-                'tahun_ajaran_id'       => $tahunAjaran->id,
+                'guru_id'             => $guru->id,
+                'murid_id'            => $request->murid_id,
+                'kategori'            => $request->kategori,
+                'tingkat_keparahan'   => $request->tingkat_keparahan,
+                'keterangan'          => $request->keterangan,
+                'tanggal_kejadian'    => $request->tanggal_kejadian,
+                'keterangan_tambahan' => $request->keterangan_tambahan,
+                'poin_diberikan'      => null,
+                'status'              => 'pending',
+                'tahun_ajaran_id'     => $tahunAjaran->id,
             ]);
 
             // Upload bukti foto
             if ($request->hasFile('bukti')) {
                 foreach ($request->file('bukti') as $file) {
                     $namaAsli = $file->getClientOriginalName();
-                    // Nama file unik — hindari konflik dan tebak nama asli
                     $path = $file->storeAs(
                         'bukti/' . $laporan->id,
                         Str::uuid() . '.' . $file->getClientOriginalExtension(),
@@ -82,8 +134,7 @@ class LaporanController extends Controller
             }
         });
 
-        return redirect()->route('guru.laporan.riwayat')
-            ->with('success', 'Laporan berhasil disimpan dan menunggu tindak lanjut admin.');
+        return back()->with('success', 'Catatan laporan berhasil disimpan dan menunggu tindak lanjut admin.');
     }
 
     /**
@@ -96,36 +147,31 @@ class LaporanController extends Controller
         // Pastikan laporan milik guru ini dan masih pending
         abort_unless($laporan->guru_id === $guru->id && $laporan->isPending(), 403);
 
-        $tahunAjaran = TahunAjaran::aktif();
-
-        $jenisPelanggarans = JenisPelanggaran::aktif()
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)
-            ->orderBy('kategori')
-            ->orderBy('kode')
-            ->get(['id', 'kode', 'keterangan', 'kategori', 'poin', 'tingkat_keparahan']);
-
         $laporan->load(['murid.kelas', 'bukti']);
 
         return Inertia::render('guru/laporan/edit', [
-            'laporan'            => [
-                'id'                    => $laporan->id,
-                'murid_id'              => $laporan->murid_id,
-                'murid'                 => [
+            'laporan' => [
+                'id'                  => $laporan->id,
+                'murid_id'            => $laporan->murid_id,
+                'murid'               => [
                     'id'         => $laporan->murid->id,
                     'nama'       => $laporan->murid->nama,
                     'nis'        => $laporan->murid->nis,
                     'nama_kelas' => $laporan->murid->kelas->nama_kelas,
                 ],
-                'jenis_pelanggaran_id'  => $laporan->jenis_pelanggaran_id,
-                'tanggal_kejadian'      => $laporan->tanggal_kejadian->format('Y-m-d'),
-                'keterangan_tambahan'   => $laporan->keterangan_tambahan,
-                'bukti'                 => $laporan->bukti->map(fn($b) => [
+                'kategori'            => $laporan->kategori,
+                'tingkat_keparahan'   => $laporan->tingkat_keparahan,
+                'keterangan'          => $laporan->keterangan,
+                'poin_diberikan'      => $laporan->poin_diberikan,
+                'tanggal_kejadian'    => $laporan->tanggal_kejadian->format('Y-m-d'),
+                'keterangan_tambahan' => $laporan->keterangan_tambahan,
+                'bukti'               => $laporan->bukti->map(fn($b) => [
                     'id'        => $b->id,
                     'nama_asli' => $b->nama_asli,
                     'url'       => $b->url(),
                 ]),
             ],
-            'jenis_pelanggarans' => $jenisPelanggarans,
+            'poin_ranges' => Laporan::POIN_RANGES,
         ]);
     }
 
@@ -134,9 +180,7 @@ class LaporanController extends Controller
      */
     public function update(UpdateLaporanRequest $request, Laporan $laporan): RedirectResponse
     {
-        $jenis = JenisPelanggaran::findOrFail($request->jenis_pelanggaran_id);
-
-        DB::transaction(function () use ($request, $laporan, $jenis) {
+        DB::transaction(function () use ($request, $laporan) {
             // Hapus bukti yang diminta
             if ($request->filled('bukti_hapus')) {
                 $buktis = BuktiLaporan::whereIn('id', $request->bukti_hapus)
@@ -168,11 +212,13 @@ class LaporanController extends Controller
             }
 
             $laporan->update([
-                'murid_id'             => $request->murid_id,
-                'jenis_pelanggaran_id' => $jenis->id,
-                'tanggal_kejadian'     => $request->tanggal_kejadian,
-                'keterangan_tambahan'  => $request->keterangan_tambahan,
-                'poin_diberikan'       => $jenis->poinEfektif(),
+                'murid_id'            => $request->murid_id,
+                'kategori'            => $request->kategori,
+                'tingkat_keparahan'   => $request->tingkat_keparahan,
+                'keterangan'          => $request->keterangan,
+                'tanggal_kejadian'    => $request->tanggal_kejadian,
+                'keterangan_tambahan' => $request->keterangan_tambahan,
+                // poin_diberikan stays null — set by admin on tindak lanjut
             ]);
         });
 
@@ -187,13 +233,16 @@ class LaporanController extends Controller
     {
         $guru = $request->user()->guru;
 
-        $query = Laporan::with(['murid.kelas', 'jenisPelanggaran'])
+        $query = Laporan::with(['murid.kelas'])
             ->where('guru_id', $guru->id)
             ->orderByDesc('tanggal_kejadian');
 
         // Filter
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        }
+        if ($request->filled('kategori')) {
+            $query->where('kategori', $request->kategori);
         }
         if ($request->filled('dari')) {
             $query->whereDate('tanggal_kejadian', '>=', $request->dari);
@@ -210,13 +259,14 @@ class LaporanController extends Controller
                 'tanggal_kejadian'   => $l->tanggal_kejadian->format('d/m/Y'),
                 'murid_nama'         => $l->murid->nama,
                 'kelas_nama'         => $l->murid->kelas->nama_kelas,
-                'jenis_keterangan'   => $l->jenisPelanggaran->keterangan,
-                'kategori'           => $l->jenisPelanggaran->kategori,
+                'kategori'           => $l->kategori,
+                'tingkat_keparahan'  => $l->tingkat_keparahan,
+                'keterangan'         => $l->keterangan,
                 'poin_diberikan'     => $l->poin_diberikan,
                 'status'             => $l->status,
                 'bisa_diedit'        => $l->bisaDieditOlehGuru(),
             ]),
-            'filters' => $request->only(['status', 'dari', 'sampai']),
+            'filters' => $request->only(['status', 'kategori', 'dari', 'sampai']),
         ]);
     }
 
@@ -243,7 +293,9 @@ class LaporanController extends Controller
                 'id'         => $m->id,
                 'nama'       => $m->nama,
                 'nis'        => $m->nis,
+                'nisn'       => $m->nisn,
                 'nama_kelas' => $m->kelas->nama_kelas ?? '—',
+                'tingkat'    => $m->kelas->tingkat ?? '',
             ]);
 
         return response()->json($murids);

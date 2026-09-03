@@ -11,10 +11,29 @@ class Laporan extends Model
 {
     use SoftDeletes;
 
+    /**
+     * Range poin sebagai panduan visual untuk guru.
+     * Poin aktual ditetapkan oleh admin saat tindak lanjut.
+     */
+    public const POIN_RANGES = [
+        'pelanggaran' => [
+            'ringan' => ['min' => -5,  'max' => -10],
+            'sedang' => ['min' => -11, 'max' => -25],
+            'berat'  => ['min' => -26, 'max' => -50],
+        ],
+        'kebaikan' => [
+            'ringan' => ['min' => 5,  'max' => 10],
+            'sedang' => ['min' => 11, 'max' => 25],
+            'berat'  => ['min' => 26, 'max' => 50],
+        ],
+    ];
+
     protected $fillable = [
         'guru_id',
         'murid_id',
-        'jenis_pelanggaran_id',
+        'kategori',
+        'tingkat_keparahan',
+        'keterangan',
         'tanggal_kejadian',
         'keterangan_tambahan',
         'poin_diberikan',
@@ -34,6 +53,19 @@ class Laporan extends Model
         ];
     }
 
+    /**
+     * Kembalikan string hint rentang poin untuk tingkat tertentu.
+     * Contoh: poinRangeHint('pelanggaran', 'ringan') => "-5 s/d -10"
+     */
+    public static function poinRangeHint(string $kategori, string $tingkat): string
+    {
+        $range = self::POIN_RANGES[$kategori][$tingkat] ?? null;
+        if (!$range) {
+            return '?';
+        }
+        return "{$range['min']} s/d {$range['max']}";
+    }
+
     // --- Relasi ---
 
     public function guru(): BelongsTo
@@ -44,11 +76,6 @@ class Laporan extends Model
     public function murid(): BelongsTo
     {
         return $this->belongsTo(Murid::class);
-    }
-
-    public function jenisPelanggaran(): BelongsTo
-    {
-        return $this->belongsTo(JenisPelanggaran::class);
     }
 
     public function tahunAjaran(): BelongsTo
@@ -67,6 +94,16 @@ class Laporan extends Model
     }
 
     // --- Scopes ---
+
+    public function scopePelanggaran($query)
+    {
+        return $query->where('kategori', 'pelanggaran');
+    }
+
+    public function scopeKebaikan($query)
+    {
+        return $query->where('kategori', 'kebaikan');
+    }
 
     public function scopePending($query)
     {

@@ -5,7 +5,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { ClipboardList } from 'lucide-react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 
 interface LaporanItem {
     id: number;
@@ -13,8 +13,9 @@ interface LaporanItem {
     murid_nama: string;
     kelas_nama: string;
     guru_nama: string;
-    jenis_keterangan: string;
     kategori: string;
+    tingkat_keparahan: string;
+    keterangan: string;
     poin_diberikan: number;
     status: string;
     jumlah_bukti: number;
@@ -41,12 +42,25 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_list, tahun_ajarans, summary }: Props) {
-    const [f, setF] = useState({ status: filters.status ?? '', kategori: filters.kategori ?? '', kelas_id: filters.kelas_id ?? '', guru_id: filters.guru_id ?? '', dari: filters.dari ?? '', sampai: filters.sampai ?? '', tahun_ajaran_id: filters.tahun_ajaran_id ?? '' });
+    const [f, setF] = useState({
+        status: filters.status ?? '',
+        kategori: filters.kategori ?? '',
+        kelas_id: filters.kelas_id ?? '',
+        guru_id: filters.guru_id ?? '',
+        dari: filters.dari ?? '',
+        sampai: filters.sampai ?? '',
+        tahun_ajaran_id: filters.tahun_ajaran_id ?? '',
+    });
 
     const apply = () => router.get('/admin/laporan', f, { preserveState: true, replace: true });
-    const reset = () => { const empty = { status: '', kategori: '', kelas_id: '', guru_id: '', dari: '', sampai: '', tahun_ajaran_id: '' }; setF(empty); router.get('/admin/laporan', {}, { replace: true }); };
+    const reset = () => {
+        const empty = { status: '', kategori: '', kelas_id: '', guru_id: '', dari: '', sampai: '', tahun_ajaran_id: '' };
+        setF(empty);
+        router.get('/admin/laporan', {}, { replace: true });
+    };
 
-    const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) => setF((p) => ({ ...p, [k]: e.target.value }));
+    const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
+        setF((p) => ({ ...p, [k]: e.target.value }));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -122,7 +136,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                 </div>
 
                 {/* Tabel */}
-                <div className="rounded-lg border bg-white">
+                <div className="rounded-lg border bg-white shadow-xs overflow-hidden">
                     {laporans.data.length === 0 ? (
                         <EmptyState icon={ClipboardList} title="Tidak ada laporan" description="Coba ubah filter atau tunggu laporan masuk dari guru." />
                     ) : (
@@ -133,8 +147,9 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                                         <tr className="border-b bg-muted/40 text-left">
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Murid</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground">Jenis</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground">Poin</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">Kategori & Tingkat</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">Keterangan</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground text-center">Poin</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Dilaporkan</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Bukti</th>
@@ -144,23 +159,32 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                                     <tbody className="divide-y">
                                         {laporans.data.map((l) => (
                                             <tr key={l.id} className="hover:bg-muted/20">
-                                                <td className="px-4 py-3 text-muted-foreground">{l.tanggal_kejadian}</td>
+                                                <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{l.tanggal_kejadian}</td>
                                                 <td className="px-4 py-3">
-                                                    <p className="font-medium">{l.murid_nama}</p>
+                                                    <p className="font-medium text-foreground">{l.murid_nama}</p>
                                                     <p className="text-xs text-muted-foreground">{l.kelas_nama}</p>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <p className="max-w-[200px] truncate">{l.jenis_keterangan}</p>
-                                                    <StatusBadge status={l.kategori} />
+                                                    <div className="flex items-center gap-1.5">
+                                                        <StatusBadge status={l.kategori} />
+                                                        <span className="text-xs font-medium capitalize text-muted-foreground">
+                                                            ({l.tingkat_keparahan})
+                                                        </span>
+                                                    </div>
                                                 </td>
-                                                <td className={`px-4 py-3 font-medium ${l.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {l.poin_diberikan >= 0 ? '+' : ''}{l.poin_diberikan}
+                                                <td className="px-4 py-3 font-medium text-foreground">
+                                                    <p className="max-w-[200px] truncate">{l.keterangan}</p>
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`font-mono font-bold ${l.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {l.poin_diberikan > 0 ? `+${l.poin_diberikan}` : l.poin_diberikan}
+                                                    </span>
                                                 </td>
                                                 <td className="px-4 py-3 text-muted-foreground">{l.guru_nama}</td>
                                                 <td className="px-4 py-3"><StatusBadge status={l.status} /></td>
                                                 <td className="px-4 py-3 text-muted-foreground">{l.jumlah_bukti > 0 ? `${l.jumlah_bukti} foto` : '—'}</td>
-                                                <td className="px-4 py-3">
-                                                    <Link href={`/admin/laporan/${l.id}`} className="rounded px-2 py-1 text-xs text-primary hover:underline">
+                                                <td className="px-4 py-3 text-right">
+                                                    <Link href={`/admin/laporan/${l.id}`} className="rounded px-2 py-1 text-xs font-semibold text-primary hover:underline">
                                                         Detail
                                                     </Link>
                                                 </td>
@@ -169,7 +193,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="p-4">
+                            <div className="p-4 border-t">
                                 <Pagination links={laporans.links} from={laporans.from} to={laporans.to} total={laporans.total} />
                             </div>
                         </>

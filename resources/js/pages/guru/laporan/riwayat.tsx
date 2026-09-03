@@ -12,8 +12,9 @@ interface LaporanItem {
     tanggal_kejadian: string;
     murid_nama: string;
     kelas_nama: string;
-    jenis_keterangan: string;
+    keterangan: string;
     kategori: string;
+    tingkat_keparahan: string;
     poin_diberikan: number;
     status: string;
     bisa_diedit: boolean;
@@ -27,7 +28,7 @@ interface Props {
         to: number;
         total: number;
     };
-    filters: { status?: string; dari?: string; sampai?: string };
+    filters: { status?: string; kategori?: string; dari?: string; sampai?: string };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -36,16 +37,17 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function RiwayatLaporan({ laporans, filters }: Props) {
-    const [status, setStatus]   = useState(filters.status ?? '');
-    const [dari, setDari]       = useState(filters.dari ?? '');
-    const [sampai, setSampai]   = useState(filters.sampai ?? '');
+    const [status, setStatus]     = useState(filters.status ?? '');
+    const [kategori, setKategori] = useState(filters.kategori ?? '');
+    const [dari, setDari]         = useState(filters.dari ?? '');
+    const [sampai, setSampai]     = useState(filters.sampai ?? '');
 
     const applyFilter = () => {
-        router.get('/guru/laporan/riwayat', { status, dari, sampai }, { preserveState: true, replace: true });
+        router.get('/guru/laporan/riwayat', { status, kategori, dari, sampai }, { preserveState: true, replace: true });
     };
 
     const resetFilter = () => {
-        setStatus(''); setDari(''); setSampai('');
+        setStatus(''); setKategori(''); setDari(''); setSampai('');
         router.get('/guru/laporan/riwayat', {}, { preserveState: false, replace: true });
     };
 
@@ -72,10 +74,22 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                             onChange={(e) => setStatus(e.target.value)}
                             className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
-                            <option value="">Semua</option>
+                            <option value="">Semua Status</option>
                             <option value="pending">Pending</option>
                             <option value="ditindaklanjuti">Ditindaklanjuti</option>
                             <option value="ditolak">Ditolak</option>
+                        </select>
+                    </div>
+                    <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">Kategori</label>
+                        <select
+                            value={kategori}
+                            onChange={(e) => setKategori(e.target.value)}
+                            className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                            <option value="">Semua Kategori</option>
+                            <option value="pelanggaran">Pelanggaran</option>
+                            <option value="kebaikan">Kebaikan</option>
                         </select>
                     </div>
                     <div className="space-y-1">
@@ -97,7 +111,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                 </div>
 
                 {/* Tabel */}
-                <div className="rounded-lg border bg-white">
+                <div className="rounded-lg border bg-white shadow-xs overflow-hidden">
                     {laporans.data.length === 0 ? (
                         <EmptyState
                             icon={ClipboardList}
@@ -112,8 +126,9 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                                         <tr className="border-b bg-muted/40 text-left">
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Murid</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground">Jenis</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground">Poin</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">Kategori & Tingkat</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">Keterangan</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground text-center">Poin</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
                                             <th className="px-4 py-3"></th>
                                         </tr>
@@ -121,26 +136,35 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                                     <tbody className="divide-y">
                                         {laporans.data.map((l) => (
                                             <tr key={l.id} className="hover:bg-muted/20">
-                                                <td className="px-4 py-3 text-muted-foreground">{l.tanggal_kejadian}</td>
+                                                <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{l.tanggal_kejadian}</td>
                                                 <td className="px-4 py-3">
-                                                    <p className="font-medium">{l.murid_nama}</p>
+                                                    <p className="font-medium text-foreground">{l.murid_nama}</p>
                                                     <p className="text-xs text-muted-foreground">{l.kelas_nama}</p>
                                                 </td>
                                                 <td className="px-4 py-3">
-                                                    <p>{l.jenis_keterangan}</p>
-                                                    <StatusBadge status={l.kategori} />
+                                                    <div className="flex items-center gap-1.5">
+                                                        <StatusBadge status={l.kategori} />
+                                                        <span className="text-xs font-medium capitalize text-muted-foreground">
+                                                            ({l.tingkat_keparahan})
+                                                        </span>
+                                                    </div>
                                                 </td>
-                                                <td className={`px-4 py-3 font-medium ${l.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {l.poin_diberikan >= 0 ? '+' : ''}{l.poin_diberikan}
+                                                <td className="px-4 py-3 font-medium text-foreground">
+                                                    {l.keterangan}
+                                                </td>
+                                                <td className="px-4 py-3 text-center">
+                                                    <span className={`font-mono font-bold ${l.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                        {l.poin_diberikan > 0 ? `+${l.poin_diberikan}` : l.poin_diberikan}
+                                                    </span>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <StatusBadge status={l.status} />
                                                 </td>
-                                                <td className="px-4 py-3">
+                                                <td className="px-4 py-3 text-right">
                                                     {l.bisa_diedit && (
                                                         <Link
                                                             href={`/guru/laporan/${l.id}/edit`}
-                                                            className="inline-flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                            className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground border"
                                                         >
                                                             <Pencil className="size-3" /> Edit
                                                         </Link>
@@ -151,7 +175,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="p-4">
+                            <div className="p-4 border-t">
                                 <Pagination links={laporans.links} from={laporans.from} to={laporans.to} total={laporans.total} />
                             </div>
                         </>

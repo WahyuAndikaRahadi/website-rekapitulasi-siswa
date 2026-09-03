@@ -30,9 +30,8 @@ class RekapKelasController extends Controller
         $filterDari   = $request->get('dari');
         $filterSampai = $request->get('sampai');
 
-        $muridData = $murids->map(function ($murid) use ($filterStatus, $filterDari, $filterSampai) {
-            $laporanQuery = Laporan::with('jenisPelanggaran')
-                ->where('murid_id', $murid->id);
+        $muridData = $murids->map(function ($murid) use ($filterStatus, $filterDari, $filterSampai, $kelas) {
+            $laporanQuery = Laporan::where('murid_id', $murid->id);
 
             if ($filterStatus !== 'semua') {
                 $laporanQuery->where('status', $filterStatus);
@@ -50,24 +49,29 @@ class RekapKelasController extends Controller
                 'id'               => $murid->id,
                 'nama'             => $murid->nama,
                 'nis'              => $murid->nis,
+                'nisn'             => $murid->nisn,
+                'nama_kelas'       => $kelas->nama_kelas,
+                'kelas_id'         => $kelas->id,
                 'skor_resmi'       => $murid->skorResmi(),
                 'skor_sementara'   => $murid->skorSementara(),
                 'jumlah_laporan'   => $laporans->count(),
                 'laporans'         => $laporans->map(fn($l) => [
-                    'id'               => $l->id,
-                    'tanggal_kejadian' => $l->tanggal_kejadian->format('d/m/Y'),
-                    'kategori'         => $l->jenisPelanggaran->kategori,
-                    'keterangan'       => $l->jenisPelanggaran->keterangan,
-                    'poin_diberikan'   => $l->poin_diberikan,
-                    'status'           => $l->status,
+                    'id'                => $l->id,
+                    'tanggal_kejadian'  => $l->tanggal_kejadian->format('d/m/Y'),
+                    'kategori'          => $l->kategori,
+                    'tingkat_keparahan' => $l->tingkat_keparahan,
+                    'keterangan'        => $l->keterangan,
+                    'poin_diberikan'    => $l->poin_diberikan,
+                    'status'            => $l->status,
                 ]),
             ];
         });
 
         return Inertia::render('guru/rekap-kelas', [
-            'kelas'     => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas],
-            'murids'    => $muridData,
-            'filters'   => $request->only(['status', 'dari', 'sampai']),
+            'kelas'       => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas, 'tingkat' => $kelas->tingkat],
+            'murids'      => $muridData,
+            'filters'     => $request->only(['status', 'dari', 'sampai']),
+            'poin_levels' => Laporan::POIN_LEVELS,
         ]);
     }
 }

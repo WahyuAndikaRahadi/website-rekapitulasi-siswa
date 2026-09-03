@@ -31,10 +31,6 @@ class TahunAjaran extends Model
         return $this->hasMany(Murid::class);
     }
 
-    public function jenisPelanggarans(): HasMany
-    {
-        return $this->hasMany(JenisPelanggaran::class);
-    }
 
     public function laporans(): HasMany
     {

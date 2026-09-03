@@ -16,7 +16,7 @@ class LaporanController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Laporan::with(['murid.kelas', 'guru', 'jenisPelanggaran', 'bukti'])
+        $query = Laporan::with(['murid.kelas', 'guru', 'bukti'])
             ->orderByDesc('tanggal_kejadian');
 
         // Filter
@@ -24,7 +24,7 @@ class LaporanController extends Controller
             $query->where('status', $request->status);
         }
         if ($request->filled('kategori')) {
-            $query->whereHas('jenisPelanggaran', fn($q) => $q->where('kategori', $request->kategori));
+            $query->where('kategori', $request->kategori);
         }
         if ($request->filled('kelas_id')) {
             $query->whereHas('murid', fn($q) => $q->where('kelas_id', $request->kelas_id));
@@ -41,7 +41,6 @@ class LaporanController extends Controller
         if ($request->filled('tahun_ajaran_id')) {
             $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         } else {
-            // Default: tahun ajaran aktif
             $aktif = TahunAjaran::aktif();
             if ($aktif) {
                 $query->where('tahun_ajaran_id', $aktif->id);
@@ -52,16 +51,17 @@ class LaporanController extends Controller
 
         return Inertia::render('admin/laporan/index', [
             'laporans' => $laporans->through(fn($l) => [
-                'id'               => $l->id,
-                'tanggal_kejadian' => $l->tanggal_kejadian->format('d/m/Y'),
-                'murid_nama'       => $l->murid->nama,
-                'kelas_nama'       => $l->murid->kelas->nama_kelas,
-                'guru_nama'        => $l->guru->nama,
-                'jenis_keterangan' => $l->jenisPelanggaran->keterangan,
-                'kategori'         => $l->jenisPelanggaran->kategori,
-                'poin_diberikan'   => $l->poin_diberikan,
-                'status'           => $l->status,
-                'jumlah_bukti'     => $l->bukti->count(),
+                'id'                => $l->id,
+                'tanggal_kejadian'  => $l->tanggal_kejadian->format('d/m/Y'),
+                'murid_nama'        => $l->murid->nama,
+                'kelas_nama'        => $l->murid->kelas->nama_kelas,
+                'guru_nama'         => $l->guru->nama,
+                'kategori'          => $l->kategori,
+                'tingkat_keparahan' => $l->tingkat_keparahan,
+                'keterangan'        => $l->keterangan,
+                'poin_diberikan'    => $l->poin_diberikan,
+                'status'            => $l->status,
+                'jumlah_bukti'      => $l->bukti->count(),
             ]),
             'filters'       => $request->only(['status', 'kategori', 'kelas_id', 'guru_id', 'dari', 'sampai', 'tahun_ajaran_id']),
             'kelas_list'    => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']),
@@ -77,7 +77,7 @@ class LaporanController extends Controller
 
     public function show(Laporan $laporan): Response
     {
-        $laporan->load(['murid.kelas', 'guru', 'jenisPelanggaran', 'bukti', 'ditindaklanjutiOleh', 'tahunAjaran']);
+        $laporan->load(['murid.kelas', 'guru', 'bukti', 'ditindaklanjutiOleh', 'tahunAjaran']);
 
         return Inertia::render('admin/laporan/show', [
             'laporan' => [
@@ -87,16 +87,13 @@ class LaporanController extends Controller
                     'id'         => $laporan->murid->id,
                     'nama'       => $laporan->murid->nama,
                     'nis'        => $laporan->murid->nis,
+                    'nisn'       => $laporan->murid->nisn,
                     'nama_kelas' => $laporan->murid->kelas->nama_kelas,
                 ],
                 'guru'                  => ['id' => $laporan->guru->id, 'nama' => $laporan->guru->nama],
-                'jenis_pelanggaran'     => [
-                    'id'               => $laporan->jenisPelanggaran->id,
-                    'kode'             => $laporan->jenisPelanggaran->kode,
-                    'keterangan'       => $laporan->jenisPelanggaran->keterangan,
-                    'kategori'         => $laporan->jenisPelanggaran->kategori,
-                    'tingkat_keparahan'=> $laporan->jenisPelanggaran->tingkat_keparahan,
-                ],
+                'kategori'              => $laporan->kategori,
+                'tingkat_keparahan'     => $laporan->tingkat_keparahan,
+                'keterangan'            => $laporan->keterangan,
                 'poin_diberikan'        => $laporan->poin_diberikan,
                 'keterangan_tambahan'   => $laporan->keterangan_tambahan,
                 'status'                => $laporan->status,
@@ -110,24 +107,39 @@ class LaporanController extends Controller
                     'url'       => $b->url(),
                 ]),
             ],
+            'poin_ranges' => Laporan::POIN_RANGES,
         ]);
     }
 
     public function tindakLanjut(Request $request, Laporan $laporan): RedirectResponse
     {
         $request->validate([
-            'status'       => ['required', 'in:ditindaklanjuti,ditolak'],
-            'tindak_lanjut'=> ['required', 'string', 'max:1000'],
+            'status'          => ['required', 'in:ditindaklanjuti,ditolak'],
+            'tindak_lanjut'   => ['required', 'string', 'max:1000'],
+            'poin_diberikan'  => [
+                'required_if:status,ditindaklanjuti',
+                'nullable',
+                'integer',
+                'not_in:0',
+            ],
         ], [
-            'status.required'        => 'Status harus dipilih.',
-            'tindak_lanjut.required' => 'Catatan tindak lanjut harus diisi.',
+            'status.required'                    => 'Status harus dipilih.',
+            'tindak_lanjut.required'             => 'Catatan tindak lanjut harus diisi.',
+            'poin_diberikan.required_if'         => 'Poin harus diisi saat laporan disetujui.',
+            'poin_diberikan.integer'             => 'Poin harus berupa angka bulat.',
+            'poin_diberikan.not_in'              => 'Poin tidak boleh nol.',
         ]);
 
+        $poin = $request->status === 'ditindaklanjuti'
+            ? (int) $request->poin_diberikan
+            : null;
+
         $laporan->update([
-            'status'                => $request->status,
-            'tindak_lanjut'         => $request->tindak_lanjut,
-            'ditindaklanjuti_oleh'  => $request->user()->id,
-            'ditindaklanjuti_at'    => now(),
+            'status'               => $request->status,
+            'tindak_lanjut'        => $request->tindak_lanjut,
+            'poin_diberikan'       => $poin,
+            'ditindaklanjuti_oleh' => $request->user()->id,
+            'ditindaklanjuti_at'   => now(),
         ]);
 
         return redirect()->route('admin.laporan.show', $laporan)

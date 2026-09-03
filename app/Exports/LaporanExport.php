@@ -21,7 +21,7 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
 
     public function query()
     {
-        return Laporan::with(['murid.kelas', 'guru', 'jenisPelanggaran'])
+        return Laporan::with(['murid.kelas', 'guru'])
             ->where('tahun_ajaran_id', $this->tahunAjaranId)
             ->when($this->kelasId, fn($q) => $q->whereHas('murid', fn($mq) => $mq->where('kelas_id', $this->kelasId)))
             ->when($this->dari,    fn($q) => $q->whereDate('tanggal_kejadian', '>=', $this->dari))
@@ -34,7 +34,7 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
     {
         return [
             'No', 'Tanggal', 'Nama Murid', 'NIS', 'Kelas',
-            'Kategori', 'Jenis', 'Poin', 'Status', 'Dilaporkan Oleh', 'Tindak Lanjut',
+            'Kategori', 'Tingkat', 'Keterangan', 'Poin', 'Status', 'Dilaporkan Oleh', 'Tindak Lanjut',
         ];
     }
 
@@ -49,8 +49,9 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
             $laporan->murid->nama,
             $laporan->murid->nis ?? '-',
             $laporan->murid->kelas->nama_kelas,
-            $laporan->jenisPelanggaran->kategori === 'pelanggaran' ? 'Pelanggaran' : 'Kebaikan',
-            $laporan->jenisPelanggaran->keterangan,
+            $laporan->kategori === 'pelanggaran' ? 'Pelanggaran' : 'Kebaikan',
+            ucfirst($laporan->tingkat_keparahan ?? '-'),
+            $laporan->keterangan,
             $laporan->poin_diberikan,
             ucfirst($laporan->status),
             $laporan->guru->nama,
