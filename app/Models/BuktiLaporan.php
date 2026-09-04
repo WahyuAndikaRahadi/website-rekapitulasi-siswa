@@ -39,6 +39,7 @@ class BuktiLaporan extends Model
      */
     public function url(): string
     {
-        return Storage::disk('public')->url($this->path_file);
+        $path = ltrim($this->path_file, '/');
+        return '/storage/' . $path;
     }
 }

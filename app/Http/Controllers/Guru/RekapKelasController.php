@@ -19,6 +19,7 @@ class RekapKelasController extends Controller
         abort_unless($guru && $guru->isWaliKelas(), 403, 'Halaman ini hanya untuk wali kelas.');
 
         $kelas = $guru->waliKelasKelas;
+        abort_unless($kelas, 404, 'Data kelas binaan tidak ditemukan.');
 
         $murids = Murid::with('laporans')
             ->where('kelas_id', $kelas->id)
@@ -71,7 +72,7 @@ class RekapKelasController extends Controller
             'kelas'       => ['id' => $kelas->id, 'nama_kelas' => $kelas->nama_kelas, 'tingkat' => $kelas->tingkat],
             'murids'      => $muridData,
             'filters'     => $request->only(['status', 'dari', 'sampai']),
-            'poin_levels' => Laporan::POIN_LEVELS,
+            'poin_ranges' => Laporan::POIN_RANGES,
         ]);
     }
 }

@@ -41,8 +41,14 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             </SheetTrigger>
                             <SheetContent side="left" className="flex h-full w-64 flex-col items-stretch justify-between bg-sidebar">
                                 <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-                                <SheetHeader className="flex justify-start text-left">
-                                    <AppLogoIcon className="h-6 w-6 fill-current text-black dark:text-white" />
+                                <SheetHeader className="flex flex-row items-center gap-2.5 justify-start text-left pt-2">
+                                    <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-white/10 p-1 border border-white/20">
+                                        <AppLogoIcon className="size-6" />
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-bold text-white leading-tight">SMKN 69</span>
+                                        <span className="text-[11px] text-white/70 leading-tight">JAKARTA</span>
+                                    </div>
                                 </SheetHeader>
                                 <div className="mt-6 flex h-full flex-1 flex-col space-y-4">
                                     <div className="flex h-full flex-col justify-between text-sm">

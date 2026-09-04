@@ -4,8 +4,8 @@ import { TambahCatatanModal, type TargetMurid } from '@/components/tambah-catata
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
-import { CheckCircle2, ChevronDown, ChevronRight, GraduationCap, PlusCircle } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, ChevronDown, ChevronRight, Filter, GraduationCap, PlusCircle, RotateCcw, ShieldCheck, Sparkles, Users } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface LaporanRingkas {
     id: number;
@@ -13,7 +13,7 @@ interface LaporanRingkas {
     kategori: string;
     tingkat_keparahan: string;
     keterangan: string;
-    poin_diberikan: number;
+    poin_diberikan: number | null;
     status: string;
 }
 
@@ -31,10 +31,10 @@ interface MuridRekap {
 }
 
 interface Props {
-    kelas: { id: number; nama_kelas: string; tingkat: string };
-    murids: MuridRekap[];
-    filters: { status?: string; dari?: string; sampai?: string };
-    poin_ranges: Record<string, Record<string, { min: number; max: number }>>;
+    kelas?: { id: number; nama_kelas: string; tingkat: string };
+    murids?: MuridRekap[];
+    filters?: { status?: string; dari?: string; sampai?: string };
+    poin_ranges?: Record<string, Record<string, { min: number; max: number }>>;
     flash?: { success?: string; error?: string };
 }
 
@@ -43,24 +43,36 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Rekap Kelas', href: '/guru/kelas/rekap' },
 ];
 
-export default function RekapKelas({ kelas, murids, filters, poin_ranges, flash }: Props) {
+export default function RekapKelas({
+    kelas = { id: 0, nama_kelas: '-', tingkat: '-' },
+    murids = [],
+    filters = {},
+    poin_ranges = {},
+    flash,
+}: Props) {
     const [expanded, setExpanded] = useState<Set<number>>(new Set());
-    const [status, setStatus]     = useState(filters.status ?? 'semua');
-    const [dari, setDari]         = useState(filters.dari ?? '');
-    const [sampai, setSampai]     = useState(filters.sampai ?? '');
+    const [status, setStatus]     = useState(filters?.status ?? 'semua');
+    const [dari, setDari]         = useState(filters?.dari ?? '');
+    const [sampai, setSampai]     = useState(filters?.sampai ?? '');
 
     // Modal state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [targetMurid, setTargetMurid] = useState<TargetMurid | null>(null);
 
     const toggle = (id: number) =>
-        setExpanded((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+        setExpanded((prev) => {
+            const s = new Set(prev);
+            s.has(id) ? s.delete(id) : s.add(id);
+            return s;
+        });
 
     const applyFilter = () =>
         router.get('/guru/kelas/rekap', { status, dari, sampai }, { preserveState: true, replace: true });
 
     const resetFilter = () => {
-        setStatus('semua'); setDari(''); setSampai('');
+        setStatus('semua');
+        setDari('');
+        setSampai('');
         router.get('/guru/kelas/rekap', {}, { replace: true });
     };
 
@@ -71,174 +83,293 @@ export default function RekapKelas({ kelas, murids, filters, poin_ranges, flash 
             nama: m.nama,
             nis: m.nis,
             nisn: m.nisn,
-            nama_kelas: m.nama_kelas,
+            nama_kelas: m.nama_kelas || kelas.nama_kelas,
         });
         setIsModalOpen(true);
     };
 
-    // Sort: skor_resmi ascending (murid bermasalah di atas)
-    const sorted = [...murids].sort((a, b) => a.skor_resmi - b.skor_resmi);
+    // Sort: skor_resmi ascending (murid bermasalah/skor rendah di atas)
+    const sorted = [...(murids || [])].sort((a, b) => (a.skor_resmi ?? 0) - (b.skor_resmi ?? 0));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title={`Rekap ${kelas.nama_kelas}`} />
-            <div className="space-y-5 p-6">
-                <div>
-                    <h1 className="text-xl font-semibold">Rekap Kelas {kelas.nama_kelas}</h1>
-                    <p className="text-muted-foreground mt-1 text-sm">{murids.length} murid terdaftar</p>
+            <Head title={`Rekap Kelas ${kelas.nama_kelas}`} />
+
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+                {/* Header Banner */}
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#071739] via-[#0B2559] to-[#1E5FA8] p-6 text-white shadow-md">
+                    <div className="pointer-events-none absolute -top-12 -right-12 size-48 rounded-full bg-blue-400/20 blur-2xl" />
+                    <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-semibold text-sky-200 border border-white/15">
+                                <GraduationCap className="size-3.5 text-amber-300" />
+                                <span>Wali Kelas Dashboard</span>
+                            </div>
+                            <h1 className="text-2xl font-bold tracking-tight text-white">
+                                Rekapitulasi Kelas {kelas.nama_kelas}
+                            </h1>
+                            <p className="text-xs md:text-sm text-blue-100/80">
+                                Total {murids.length} murid terdaftar dalam binaan kelas Anda.
+                            </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                            <div className="rounded-xl bg-white/10 p-3 text-center border border-white/15 backdrop-blur-xs min-w-24">
+                                <span className="block text-xl font-extrabold text-white">{murids.length}</span>
+                                <span className="text-[10px] text-blue-200 uppercase tracking-wider font-medium">Murid</span>
+                            </div>
+                            <div className="rounded-xl bg-white/10 p-3 text-center border border-white/15 backdrop-blur-xs min-w-28">
+                                <span className="block text-xl font-extrabold text-emerald-300">
+                                    {murids.reduce((acc, m) => acc + (m.jumlah_laporan ?? 0), 0)}
+                                </span>
+                                <span className="text-[10px] text-blue-200 uppercase tracking-wider font-medium">Total Catatan</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 {/* Flash Message */}
                 {flash?.success && (
-                    <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-sm text-emerald-800 dark:text-emerald-300">
-                        <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />
+                    <div className="flex items-center gap-2.5 rounded-xl border border-emerald-500/30 bg-emerald-50 p-4 text-sm font-medium text-emerald-800 shadow-xs">
+                        <CheckCircle2 className="size-5 shrink-0 text-emerald-600" />
                         <span>{flash.success}</span>
                     </div>
                 )}
 
-                {/* Filter */}
-                <div className="flex flex-wrap items-end gap-3 rounded-lg border bg-white p-4">
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground">Status Laporan</label>
-                        <select value={status} onChange={(e) => setStatus(e.target.value)}
-                            className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                            <option value="semua">Semua</option>
-                            <option value="pending">Pending</option>
-                            <option value="ditindaklanjuti">Ditindaklanjuti</option>
-                            <option value="ditolak">Ditolak</option>
-                        </select>
+                {/* Filter Controls */}
+                <div className="rounded-2xl border border-slate-200/80 bg-white p-4 md:p-5 shadow-xs">
+                    <div className="flex items-center gap-2 mb-3 text-xs font-bold uppercase tracking-wider text-[#0B2559]">
+                        <Filter className="size-3.5 text-[#1E5FA8]" />
+                        <span>Filter & Pencarian Laporan</span>
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground">Dari</label>
-                        <input type="date" value={dari} onChange={(e) => setDari(e.target.value)}
-                            className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-3">
+                        <div className="lg:col-span-4 space-y-1">
+                            <label className="text-xs font-semibold text-slate-600">Status Laporan</label>
+                            <select
+                                value={status}
+                                onChange={(e) => setStatus(e.target.value)}
+                                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8] transition-colors"
+                            >
+                                <option value="semua">Semua Status</option>
+                                <option value="pending">Pending (Menunggu Review)</option>
+                                <option value="ditindaklanjuti">Ditindaklanjuti (Disetujui)</option>
+                                <option value="ditolak">Ditolak</option>
+                            </select>
+                        </div>
+
+                        <div className="lg:col-span-3 space-y-1">
+                            <label className="text-xs font-semibold text-slate-600">Dari Tanggal</label>
+                            <input
+                                type="date"
+                                value={dari}
+                                onChange={(e) => setDari(e.target.value)}
+                                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8] transition-colors"
+                            />
+                        </div>
+
+                        <div className="lg:col-span-3 space-y-1">
+                            <label className="text-xs font-semibold text-slate-600">Sampai Tanggal</label>
+                            <input
+                                type="date"
+                                value={sampai}
+                                onChange={(e) => setSampai(e.target.value)}
+                                className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8] transition-colors"
+                            />
+                        </div>
+
+                        <div className="lg:col-span-2 flex items-end gap-2">
+                            <button
+                                type="button"
+                                onClick={applyFilter}
+                                className="h-10 flex-1 rounded-lg bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                            >
+                                Terapkan
+                            </button>
+                            <button
+                                type="button"
+                                onClick={resetFilter}
+                                title="Reset Filter"
+                                className="h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs transition-colors cursor-pointer flex items-center justify-center"
+                            >
+                                <RotateCcw className="size-4" />
+                            </button>
+                        </div>
                     </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-medium text-muted-foreground">Sampai</label>
-                        <input type="date" value={sampai} onChange={(e) => setSampai(e.target.value)}
-                            className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-                    </div>
-                    <button onClick={applyFilter} className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90">Terapkan</button>
-                    <button onClick={resetFilter} className="h-9 rounded-md border px-3 text-sm hover:bg-muted">Reset</button>
                 </div>
 
-                {/* Tabel murid */}
+                {/* Tabel Murid & Rekap */}
                 {murids.length === 0 ? (
-                    <div className="rounded-lg border bg-white">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
                         <EmptyState icon={GraduationCap} title="Tidak ada murid di kelas ini" />
                     </div>
                 ) : (
-                    <div className="rounded-lg border bg-white overflow-hidden shadow-xs">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b bg-muted/40 text-left">
-                                    <th className="px-4 py-3 font-medium text-muted-foreground w-8"></th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Murid</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground text-center">Skor Resmi</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground text-center">Skor Sementara</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Laporan</th>
-                                    <th className="px-4 py-3 font-medium text-muted-foreground text-right">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y">
-                                {sorted.map((m) => (
-                                    <React.Fragment key={m.id}>
-                                        <tr
-                                            className="cursor-pointer hover:bg-muted/20 transition-colors"
-                                            onClick={() => toggle(m.id)}
-                                        >
-                                            <td className="px-4 py-3 text-muted-foreground">
-                                                {expanded.has(m.id)
-                                                    ? <ChevronDown className="size-4" />
-                                                    : <ChevronRight className="size-4" />}
-                                            </td>
-                                            <td className="px-4 py-3">
-                                                <p className="font-medium text-foreground">{m.nama}</p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    NIS: {m.nis ?? '-'} {m.nisn ? `· NISN: ${m.nisn}` : ''}
-                                                </p>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`inline-flex items-center justify-center font-bold px-2 py-0.5 rounded-full text-xs font-mono ${
-                                                    m.skor_resmi < 0
-                                                        ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                                        : m.skor_resmi > 0
-                                                          ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-                                                          : 'bg-muted text-muted-foreground'
-                                                }`}>
-                                                    {m.skor_resmi > 0 ? `+${m.skor_resmi}` : m.skor_resmi}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-center">
-                                                <span className={`inline-flex items-center justify-center font-medium px-2 py-0.5 rounded-full text-xs font-mono ${
-                                                    m.skor_sementara < 0
-                                                        ? 'text-red-600 dark:text-red-400'
-                                                        : m.skor_sementara > 0
-                                                          ? 'text-green-600 dark:text-green-400'
-                                                          : 'text-muted-foreground'
-                                                }`}>
-                                                    {m.skor_sementara > 0 ? `+${m.skor_sementara}` : m.skor_sementara}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-3 text-muted-foreground">{m.jumlah_laporan} laporan</td>
-                                            <td className="px-4 py-3 text-right">
-                                                <button
-                                                    type="button"
-                                                    onClick={(e) => openCatatModal(e, m)}
-                                                    className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-all active:scale-95"
+                    <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-xs">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-sm">
+                                <thead>
+                                    <tr className="border-b border-slate-200 bg-slate-50/80 text-left">
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700 w-10"></th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700">Nama Murid</th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Skor Resmi</th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Skor Sementara</th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Catatan</th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-right">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                    {sorted.map((m) => {
+                                        const isExp = expanded.has(m.id);
+                                        const laporans = m.laporans || [];
+                                        return (
+                                            <React.Fragment key={m.id}>
+                                                <tr
+                                                    className={`cursor-pointer transition-colors ${
+                                                        isExp ? 'bg-blue-50/40' : 'hover:bg-slate-50/70'
+                                                    }`}
+                                                    onClick={() => toggle(m.id)}
                                                 >
-                                                    <PlusCircle className="size-3.5" />
-                                                    Tambah Catatan
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        {expanded.has(m.id) && (
-                                            <tr key={`${m.id}-detail`}>
-                                                <td colSpan={6} className="bg-muted/20 px-4 pb-3 pt-0">
-                                                    {m.laporans.length === 0 ? (
-                                                        <p className="py-3 text-center text-xs text-muted-foreground">
-                                                            Tidak ada laporan sesuai filter.
+                                                    <td className="px-4 py-3.5 text-slate-400">
+                                                        {isExp ? (
+                                                            <ChevronDown className="size-4 text-[#1E5FA8]" />
+                                                        ) : (
+                                                            <ChevronRight className="size-4" />
+                                                        )}
+                                                    </td>
+                                                    <td className="px-4 py-3.5">
+                                                        <p className="font-semibold text-slate-900">{m.nama}</p>
+                                                        <p className="text-xs text-slate-500 font-mono mt-0.5">
+                                                            NIS: {m.nis ?? '-'} {m.nisn ? `· NISN: ${m.nisn}` : ''}
                                                         </p>
-                                                    ) : (
-                                                        <table className="w-full text-xs mt-2">
-                                                            <thead>
-                                                                <tr className="text-left text-muted-foreground border-b border-muted">
-                                                                    <th className="py-1.5 pr-4 font-medium">Tanggal</th>
-                                                                    <th className="py-1.5 pr-4 font-medium">Kategori & Tingkat</th>
-                                                                    <th className="py-1.5 pr-4 font-medium">Keterangan Tindakan</th>
-                                                                    <th className="py-1.5 pr-4 font-medium">Poin</th>
-                                                                    <th className="py-1.5 font-medium">Status</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-muted">
-                                                                {m.laporans.map((l) => (
-                                                                    <tr key={l.id}>
-                                                                        <td className="py-2 pr-4 text-muted-foreground font-mono">{l.tanggal_kejadian}</td>
-                                                                        <td className="py-2 pr-4">
-                                                                            <span className="mr-1.5"><StatusBadge status={l.kategori} /></span>
-                                                                            <span className="text-[11px] capitalize text-muted-foreground font-medium">
-                                                                                ({l.tingkat_keparahan ?? 'ringan'})
-                                                                            </span>
-                                                                        </td>
-                                                                        <td className="py-2 pr-4 font-medium text-foreground">
-                                                                            {l.keterangan}
-                                                                        </td>
-                                                                        <td className={`py-2 pr-4 font-bold font-mono ${l.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                                            {l.poin_diberikan > 0 ? `+${l.poin_diberikan}` : l.poin_diberikan}
-                                                                        </td>
-                                                                        <td className="py-2"><StatusBadge status={l.status} /></td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    )}
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </React.Fragment>
-                                ))}
-                            </tbody>
-                        </table>
+                                                    </td>
+                                                    <td className="px-4 py-3.5 text-center">
+                                                        <span
+                                                            className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono shadow-2xs ${
+                                                                (m.skor_resmi ?? 0) < 0
+                                                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                                                                    : (m.skor_resmi ?? 0) > 0
+                                                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                                                      : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                            }`}
+                                                        >
+                                                            {(m.skor_resmi ?? 0) > 0 ? `+${m.skor_resmi}` : (m.skor_resmi ?? 0)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3.5 text-center">
+                                                        <span
+                                                            className={`inline-flex items-center justify-center font-medium px-2 py-0.5 rounded-full text-xs font-mono ${
+                                                                (m.skor_sementara ?? 0) < 0
+                                                                    ? 'text-rose-600 bg-rose-50'
+                                                                    : (m.skor_sementara ?? 0) > 0
+                                                                      ? 'text-emerald-700 bg-emerald-50'
+                                                                      : 'text-slate-500 bg-slate-50'
+                                                            }`}
+                                                        >
+                                                            {(m.skor_sementara ?? 0) > 0 ? `+${m.skor_sementara}` : (m.skor_sementara ?? 0)}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3.5 text-center">
+                                                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">
+                                                            {m.jumlah_laporan ?? 0} catatan
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3.5 text-right">
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => openCatatModal(e, m)}
+                                                            className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] px-3 py-1.5 text-xs font-semibold text-white shadow-2xs hover:shadow-xs transition-all active:scale-95 cursor-pointer"
+                                                        >
+                                                            <PlusCircle className="size-3.5" />
+                                                            Tambah Catatan
+                                                        </button>
+                                                    </td>
+                                                </tr>
+
+                                                {/* Accordion Detail Laporan */}
+                                                {isExp && (
+                                                    <tr key={`${m.id}-detail`}>
+                                                        <td colSpan={6} className="bg-slate-50/60 px-6 py-4 border-t border-b border-slate-200/70">
+                                                            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+                                                                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
+                                                                    <span className="text-xs font-bold text-[#0B2559] uppercase tracking-wider">
+                                                                        Riwayat Catatan: {m.nama}
+                                                                    </span>
+                                                                    <span className="text-xs text-slate-500">
+                                                                        {laporans.length} data ditampilkan
+                                                                    </span>
+                                                                </div>
+
+                                                                {laporans.length === 0 ? (
+                                                                    <p className="py-4 text-center text-xs text-slate-400 italic">
+                                                                        Belum ada catatan laporan yang sesuai dengan filter yang dipilih.
+                                                                    </p>
+                                                                ) : (
+                                                                    <div className="overflow-x-auto">
+                                                                        <table className="w-full text-xs">
+                                                                            <thead>
+                                                                                <tr className="text-left text-slate-500 border-b border-slate-200 bg-slate-50/50">
+                                                                                    <th className="py-2 px-3 font-semibold">Tanggal</th>
+                                                                                    <th className="py-2 px-3 font-semibold">Kategori & Tingkat</th>
+                                                                                    <th className="py-2 px-3 font-semibold">Keterangan Tindakan</th>
+                                                                                    <th className="py-2 px-3 font-semibold text-center">Poin</th>
+                                                                                    <th className="py-2 px-3 font-semibold text-right">Status</th>
+                                                                                </tr>
+                                                                            </thead>
+                                                                            <tbody className="divide-y divide-slate-100">
+                                                                                {laporans.map((l) => (
+                                                                                    <tr key={l.id} className="hover:bg-slate-50/50">
+                                                                                        <td className="py-2.5 px-3 text-slate-600 font-mono">
+                                                                                            {l.tanggal_kejadian}
+                                                                                        </td>
+                                                                                        <td className="py-2.5 px-3">
+                                                                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                                                                <StatusBadge status={l.kategori} />
+                                                                                                <span className="text-[11px] capitalize text-slate-500 font-medium">
+                                                                                                    ({l.tingkat_keparahan ?? 'ringan'})
+                                                                                                </span>
+                                                                                            </div>
+                                                                                        </td>
+                                                                                        <td className="py-2.5 px-3 font-medium text-slate-900 max-w-md">
+                                                                                            {l.keterangan}
+                                                                                        </td>
+                                                                                        <td className="py-2.5 px-3 text-center">
+                                                                                            {l.poin_diberikan !== null && l.poin_diberikan !== undefined ? (
+                                                                                                <span
+                                                                                                    className={`font-bold font-mono px-2 py-0.5 rounded text-[11px] ${
+                                                                                                        l.poin_diberikan > 0
+                                                                                                            ? 'bg-emerald-50 text-emerald-700'
+                                                                                                            : l.poin_diberikan < 0
+                                                                                                              ? 'bg-rose-50 text-rose-700'
+                                                                                                              : 'bg-slate-100 text-slate-600'
+                                                                                                    }`}
+                                                                                                >
+                                                                                                    {l.poin_diberikan > 0 ? `+${l.poin_diberikan}` : l.poin_diberikan}
+                                                                                                </span>
+                                                                                            ) : (
+                                                                                                <span className="text-slate-400 italic text-[11px]">
+                                                                                                    Menunggu review
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </td>
+                                                                                        <td className="py-2.5 px-3 text-right">
+                                                                                            <StatusBadge status={l.status} />
+                                                                                        </td>
+                                                                                    </tr>
+                                                                                ))}
+                                                                            </tbody>
+                                                                        </table>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </React.Fragment>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 )}
             </div>

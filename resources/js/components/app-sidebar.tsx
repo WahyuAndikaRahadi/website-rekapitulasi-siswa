@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, GraduationCap, LayoutDashboard, Settings, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, File, GraduationCap, LayoutDashboard, Settings, Users } from 'lucide-react';
 
 // Nav items untuk role Admin
 const adminNavItems: NavItem[] = [
@@ -16,6 +16,11 @@ const adminNavItems: NavItem[] = [
         title: 'Laporan Masuk',
         url: '/admin/laporan',
         icon: ClipboardList,
+    },
+        {
+        title: 'Ekspor Data',
+        url: '/admin/export',
+        icon: File,
     },
     {
         title: 'Kelola Murid',
@@ -84,13 +89,11 @@ export function AppSidebar() {
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg" asChild className="hover:bg-white/10 active:bg-white/15">
                             <Link href={dashboardUrl} prefetch>
-                                <div className="bg-white/10 border border-white/20 text-white flex aspect-square size-9 items-center justify-center rounded-lg shadow-sm">
-                                    <GraduationCap className="size-5 text-[#F5821F]" />
-                                </div>
+                                <img src="/logo.png" alt="SMKN 69" className="h-10 w-auto object-contain mt-1" />
                                 <div className="flex flex-col gap-0.5 leading-none">
                                     <span className="text-sm font-bold text-white tracking-wide">SMKN 69 JAKARTA</span>
-                                    <span className="text-white/70 text-xs font-normal">
-                                        {isAdmin ? 'Panel Admin' : 'Portal Guru'}
+                                    <span className="text-white/75 text-xs font-normal">
+                                        {isAdmin ? 'Panel Administrator' : 'Portal Guru'}
                                     </span>
                                 </div>
                             </Link>

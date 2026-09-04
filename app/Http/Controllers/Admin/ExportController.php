@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\KelasExport;
 use App\Exports\LaporanExport;
 use App\Exports\MuridExport;
 use App\Http\Controllers\Controller;
@@ -51,11 +52,27 @@ class ExportController extends Controller
             'kelas_id'        => ['nullable', 'exists:kelas,id'],
         ]);
 
-        $filename = 'murid-' . now()->format('Ymd-His') . '.xlsx';
+        $filename = 'murid-skor-' . now()->format('Ymd-His') . '.xlsx';
 
         return Excel::download(new MuridExport(
             $request->tahun_ajaran_id,
             $request->kelas_id,
         ), $filename);
     }
+
+    public function exportKelas(Request $request)
+    {
+        $request->validate([
+            'tahun_ajaran_id' => ['required', 'exists:tahun_ajarans,id'],
+            'kelas_id'        => ['nullable', 'exists:kelas,id'],
+        ]);
+
+        $filename = 'kelas-akumulasi-skor-' . now()->format('Ymd-His') . '.xlsx';
+
+        return Excel::download(new KelasExport(
+            $request->tahun_ajaran_id,
+            $request->kelas_id,
+        ), $filename);
+    }
 }
+

@@ -52,35 +52,59 @@ class DashboardController extends Controller
             $tren[] = ['bulan' => $label, 'pelanggaran' => $pelanggaran, 'kebaikan' => $kebaikan];
         }
 
-        // ── Ranking murid skor terendah (bermasalah) ──────────────────────
-        $muridSkorRendah = Murid::with('kelas')
+        // ── Semua murid tahun ajaran ini ───────────────────────────────────
+        $allMurids = Murid::with(['kelas', 'laporans'])
             ->where('tahun_ajaran_id', $tahunAjaran?->id)
             ->get()
             ->map(fn ($m) => [
+                'id'         => $m->id,
                 'nama'       => $m->nama,
-                'kelas'      => $m->kelas->nama_kelas,
+                'nis'        => $m->nis,
+                'kelas'      => $m->kelas?->nama_kelas ?? '-',
                 'skor_resmi' => $m->skorResmi(),
-            ])
+            ]);
+
+        // ── Leaderboard Top 10 Siswa Poin Tertinggi ────────────────────────
+        $topMurids = $allMurids
+            ->sortByDesc('skor_resmi')
+            ->take(10)
+            ->values();
+
+        // ── Ranking murid skor terendah (bermasalah/kritis) ────────────────
+        $muridSkorRendah = $allMurids
             ->sortBy('skor_resmi')
             ->take(5)
             ->values();
 
-        // ── Ranking kelas per rata-rata skor ─────────────────────────────
-        $kelasSkor = Kelas::with(['murids'])
+        // ── Data Semua Kelas ──────────────────────────────────────────────
+        $allKelas = Kelas::with(['murids.laporans', 'waliKelas'])
             ->where('tahun_ajaran_id', $tahunAjaran?->id)
             ->get()
             ->map(function ($k) {
                 $murids = $k->murids;
-                if ($murids->isEmpty()) {
-                    return ['nama_kelas' => $k->nama_kelas, 'rata_skor' => 0, 'jumlah_murid' => 0];
-                }
+                $jumlahMurid = $murids->count();
                 $totalSkor = $murids->sum(fn ($m) => $m->skorResmi());
+                $rataSkor = $jumlahMurid > 0 ? round($totalSkor / $jumlahMurid, 1) : 0;
+
                 return [
+                    'id'           => $k->id,
                     'nama_kelas'   => $k->nama_kelas,
-                    'rata_skor'    => round($totalSkor / $murids->count(), 1),
-                    'jumlah_murid' => $murids->count(),
+                    'tingkat'      => $k->tingkat,
+                    'wali_kelas'   => $k->waliKelas?->nama ?? '-',
+                    'total_skor'   => $totalSkor,
+                    'rata_skor'    => $rataSkor,
+                    'jumlah_murid' => $jumlahMurid,
                 ];
-            })
+            });
+
+        // ── Leaderboard Top 10 Kelas Poin Tertinggi ────────────────────────
+        $topKelas = $allKelas
+            ->sortByDesc('total_skor')
+            ->take(10)
+            ->values();
+
+        // Kelas Skor untuk Bar Chart
+        $kelasSkor = $allKelas
             ->sortBy('rata_skor')
             ->values();
 
@@ -92,6 +116,8 @@ class DashboardController extends Controller
                 'kebaikan_bulan_ini'    => $kebaikanBulanIni,
             ],
             'tren_laporan'      => $tren,
+            'top_murids'        => $topMurids,
+            'top_kelas'         => $topKelas,
             'murid_skor_rendah' => $muridSkorRendah,
             'kelas_skor'        => $kelasSkor,
             'tahun_ajaran'      => $tahunAjaran ? ['label' => $tahunAjaran->label] : null,

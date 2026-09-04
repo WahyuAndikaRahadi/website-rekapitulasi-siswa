@@ -139,3 +139,32 @@
         @apply bg-background text-foreground antialiased;
     }
 }
+
+/* SMKN 69 Blue & White Brand Utilities */
+.bg-brand-navy {
+    background-color: #0B2559;
+}
+
+.bg-brand-royal {
+    background-color: #1E5FA8;
+}
+
+.bg-brand-gradient {
+    background: linear-gradient(135deg, #071739 0%, #0B2559 50%, #1E5FA8 100%);
+}
+
+.bg-brand-radial {
+    background: radial-gradient(circle at 20% 20%, #1E5FA8 0%, #0B2559 60%, #071739 100%);
+}
+
+.brand-glass {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.brand-card-glow {
+    box-shadow: 0 10px 30px -10px rgba(11, 37, 89, 0.2), 0 0 0 1px rgba(30, 95, 168, 0.08);
+}
+

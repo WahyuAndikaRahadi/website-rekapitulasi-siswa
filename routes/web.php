@@ -68,6 +68,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/export', [AdminExportController::class, 'index'])->name('export.index');
     Route::post('/export/laporan', [AdminExportController::class, 'exportLaporan'])->name('export.laporan');
     Route::post('/export/murid',   [AdminExportController::class, 'exportMurid'])->name('export.murid');
+    Route::post('/export/kelas',   [AdminExportController::class, 'exportKelas'])->name('export.kelas');
 });
 
 require __DIR__.'/settings.php';

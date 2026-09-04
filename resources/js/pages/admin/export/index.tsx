@@ -1,8 +1,8 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Download, FileSpreadsheet } from 'lucide-react';
-import { useState } from 'react';
+import { Download, FileSpreadsheet, GraduationCap, School, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface KelasItem { id: number; nama_kelas: string; }
 interface TahunAjaranItem { id: number; label: string; }
@@ -15,10 +15,10 @@ interface Props {
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/admin/dashboard' },
-    { title: 'Export Data', href: '/admin/export' },
+    { title: 'Ekspor Data', href: '/admin/export' },
 ];
 
-export default function ExportIndex({ kelas_list, tahun_ajarans, tahun_ajaran_aktif }: Props) {
+export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun_ajaran_aktif }: Props) {
     const [laporanForm, setLaporanForm] = useState({
         tahun_ajaran_id: tahun_ajaran_aktif?.id.toString() ?? '',
         kelas_id: '',
@@ -31,144 +31,290 @@ export default function ExportIndex({ kelas_list, tahun_ajarans, tahun_ajaran_ak
         kelas_id: '',
     });
 
-    const buildQuery = (params: Record<string, string>) => {
-        const q = Object.entries(params)
-            .filter(([, v]) => v !== '')
-            .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
-            .join('&');
-        return q ? `?${q}` : '';
+    const [kelasForm, setKelasForm] = useState({
+        tahun_ajaran_id: tahun_ajaran_aktif?.id.toString() ?? '',
+        kelas_id: '',
+    });
+
+    const submitDownloadForm = (actionUrl: string, formData: Record<string, string>) => {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = actionUrl;
+        Object.entries(formData).forEach(([k, v]) => {
+            if (v) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = k;
+                input.value = v;
+                form.appendChild(input);
+            }
+        });
+        let csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+        if (!csrf) {
+            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+            if (match) {
+                csrf = decodeURIComponent(match[1]);
+            }
+        }
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = csrf;
+        form.appendChild(csrfInput);
+        document.body.appendChild(form);
+        form.submit();
+        document.body.removeChild(form);
     };
 
     const handleExportLaporan = (e: React.FormEvent) => {
         e.preventDefault();
-        // POST ke endpoint download — gunakan form submit biasa agar browser trigger download
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/admin/export/laporan';
-        Object.entries(laporanForm).forEach(([k, v]) => {
-            if (v) {
-                const input = document.createElement('input');
-                input.type = 'hidden'; input.name = k; input.value = v;
-                form.appendChild(input);
-            }
-        });
-        // CSRF
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden'; csrfInput.name = '_token'; csrfInput.value = csrf;
-        form.appendChild(csrfInput);
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
+        submitDownloadForm('/admin/export/laporan', laporanForm);
     };
 
     const handleExportMurid = (e: React.FormEvent) => {
         e.preventDefault();
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/admin/export/murid';
-        Object.entries(muridForm).forEach(([k, v]) => {
-            if (v) {
-                const input = document.createElement('input');
-                input.type = 'hidden'; input.name = k; input.value = v;
-                form.appendChild(input);
-            }
-        });
-        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden'; csrfInput.name = '_token'; csrfInput.value = csrf;
-        form.appendChild(csrfInput);
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
+        submitDownloadForm('/admin/export/murid', muridForm);
+    };
+
+    const handleExportKelas = (e: React.FormEvent) => {
+        e.preventDefault();
+        submitDownloadForm('/admin/export/kelas', kelasForm);
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Export Data" />
-            <div className="space-y-6 p-6">
-                <h1 className="text-xl font-semibold">Export Data</h1>
+            <Head title="Ekspor Data - SMKN 69 Jakarta" />
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+                {/* Header Title */}
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                        Pusat Unduhan & Ekspor Data
+                    </h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">
+                        Unduh rekapitulasi data kedisiplinan siswa, data murid, dan akumulasi nilai kelas dalam format spreadsheet Excel (.xlsx).
+                    </p>
+                </div>
 
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    {/* Export Laporan */}
-                    <div className="rounded-lg border bg-white p-5">
-                        <div className="mb-4 flex items-center gap-2">
-                            <FileSpreadsheet className="size-5 text-muted-foreground" />
-                            <h2 className="text-sm font-medium">Export Rekap Laporan</h2>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+                    {/* Card 1: Export Laporan */}
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div className="mb-5 flex items-center gap-3">
+                                <div className="flex size-10 items-center justify-center rounded-xl bg-blue-50 text-[#1E5FA8] border border-blue-100">
+                                    <FileSpreadsheet className="size-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-900">Rekap Laporan Peristiwa</h2>
+                                    <p className="text-xs text-slate-500">Pelanggaran & Kebaikan Siswa</p>
+                                </div>
+                            </div>
+
+                            <form id="form-export-laporan" onSubmit={handleExportLaporan} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-700">
+                                        Tahun Ajaran <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select
+                                        value={laporanForm.tahun_ajaran_id}
+                                        onChange={(e) => setLaporanForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                        required
+                                    >
+                                        <option value="">Pilih tahun ajaran</option>
+                                        {tahun_ajarans.map((t) => (
+                                            <option key={t.id} value={t.id}>{t.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-700">
+                                        Filter Kelas <span className="text-slate-400 font-normal">(opsional)</span>
+                                    </label>
+                                    <select
+                                        value={laporanForm.kelas_id}
+                                        onChange={(e) => setLaporanForm((p) => ({ ...p, kelas_id: e.target.value }))}
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                    >
+                                        <option value="">Semua Kelas</option>
+                                        {kelas_list.map((k) => (
+                                            <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-700">Dari Tanggal</label>
+                                        <input
+                                            type="date"
+                                            value={laporanForm.dari}
+                                            onChange={(e) => setLaporanForm((p) => ({ ...p, dari: e.target.value }))}
+                                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-slate-700">Sampai Tanggal</label>
+                                        <input
+                                            type="date"
+                                            value={laporanForm.sampai}
+                                            onChange={(e) => setLaporanForm((p) => ({ ...p, sampai: e.target.value }))}
+                                            className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                        />
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleExportLaporan} className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Tahun Ajaran <span className="text-red-500">*</span></label>
-                                <select value={laporanForm.tahun_ajaran_id}
-                                    onChange={(e) => setLaporanForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                    <option value="">Pilih tahun ajaran</option>
-                                    {tahun_ajarans.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Kelas <span className="text-muted-foreground font-normal">(kosongkan = semua kelas)</span></label>
-                                <select value={laporanForm.kelas_id}
-                                    onChange={(e) => setLaporanForm((p) => ({ ...p, kelas_id: e.target.value }))}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                    <option value="">Semua Kelas</option>
-                                    {kelas_list.map((k) => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium">Dari</label>
-                                    <input type="date" value={laporanForm.dari}
-                                        onChange={(e) => setLaporanForm((p) => ({ ...p, dari: e.target.value }))}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-sm font-medium">Sampai</label>
-                                    <input type="date" value={laporanForm.sampai}
-                                        onChange={(e) => setLaporanForm((p) => ({ ...p, sampai: e.target.value }))}
-                                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
-                                </div>
-                            </div>
-                            <button type="submit" disabled={!laporanForm.tahun_ajaran_id}
-                                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                                <Download className="size-4" /> Download Laporan (.xlsx)
+
+                        <div className="mt-6 pt-4 border-t border-slate-100">
+                            <button
+                                type="submit"
+                                form="form-export-laporan"
+                                disabled={!laporanForm.tahun_ajaran_id}
+                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                            >
+                                <Download className="size-4" />
+                                <span>Unduh Laporan (.xlsx)</span>
                             </button>
-                        </form>
+                        </div>
                     </div>
 
-                    {/* Export Murid */}
-                    <div className="rounded-lg border bg-white p-5">
-                        <div className="mb-4 flex items-center gap-2">
-                            <FileSpreadsheet className="size-5 text-muted-foreground" />
-                            <h2 className="text-sm font-medium">Export Data Murid + Skor</h2>
+                    {/* Card 2: Export Data Murid + Skor */}
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div className="mb-5 flex items-center gap-3">
+                                <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100">
+                                    <GraduationCap className="size-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-900">Data Siswa + Peringkat Skor</h2>
+                                    <p className="text-xs text-slate-500">Urut Poin Terbanyak ke Terkecil</p>
+                                </div>
+                            </div>
+
+                            <form id="form-export-murid" onSubmit={handleExportMurid} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-700">
+                                        Tahun Ajaran <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select
+                                        value={muridForm.tahun_ajaran_id}
+                                        onChange={(e) => setMuridForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                        required
+                                    >
+                                        <option value="">Pilih tahun ajaran</option>
+                                        {tahun_ajarans.map((t) => (
+                                            <option key={t.id} value={t.id}>{t.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-700">
+                                        Filter Kelas <span className="text-slate-400 font-normal">(opsional)</span>
+                                    </label>
+                                    <select
+                                        value={muridForm.kelas_id}
+                                        onChange={(e) => setMuridForm((p) => ({ ...p, kelas_id: e.target.value }))}
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                    >
+                                        <option value="">Semua Kelas</option>
+                                        {kelas_list.map((k) => (
+                                            <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="rounded-xl bg-slate-50 border border-slate-200/60 p-3 text-xs text-slate-600 space-y-1">
+                                    <span className="font-semibold text-slate-800">Kolom Data Excel:</span>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                                        Peringkat, Nama Siswa, NIS, NISN, Kelas, Skor Resmi, Skor Sementara.
+                                    </p>
+                                </div>
+                            </form>
                         </div>
-                        <form onSubmit={handleExportMurid} className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Tahun Ajaran <span className="text-red-500">*</span></label>
-                                <select value={muridForm.tahun_ajaran_id}
-                                    onChange={(e) => setMuridForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                    <option value="">Pilih tahun ajaran</option>
-                                    {tahun_ajarans.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium">Kelas <span className="text-muted-foreground font-normal">(kosongkan = semua kelas)</span></label>
-                                <select value={muridForm.kelas_id}
-                                    onChange={(e) => setMuridForm((p) => ({ ...p, kelas_id: e.target.value }))}
-                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                    <option value="">Semua Kelas</option>
-                                    {kelas_list.map((k) => <option key={k.id} value={k.id}>{k.nama_kelas}</option>)}
-                                </select>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                                File Excel berisi: Nama, NIS, NISN, Kelas, Skor Resmi, Skor Sementara.
-                            </p>
-                            <button type="submit" disabled={!muridForm.tahun_ajaran_id}
-                                className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                                <Download className="size-4" /> Download Data Murid (.xlsx)
+
+                        <div className="mt-6 pt-4 border-t border-slate-100">
+                            <button
+                                type="submit"
+                                form="form-export-murid"
+                                disabled={!muridForm.tahun_ajaran_id}
+                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                            >
+                                <Download className="size-4" />
+                                <span>Unduh Data Siswa (.xlsx)</span>
                             </button>
-                        </form>
+                        </div>
+                    </div>
+
+                    {/* Card 3: Export Data Kelas + Akumulasi Skor */}
+                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs flex flex-col justify-between">
+                        <div>
+                            <div className="mb-5 flex items-center gap-3">
+                                <div className="flex size-10 items-center justify-center rounded-xl bg-amber-50 text-amber-700 border border-amber-100">
+                                    <School className="size-5" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-slate-900">Data Kelas + Akumulasi Skor</h2>
+                                    <p className="text-xs text-slate-500">Peringkat & Rata-rata Skor Kelas</p>
+                                </div>
+                            </div>
+
+                            <form id="form-export-kelas" onSubmit={handleExportKelas} className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-700">
+                                        Tahun Ajaran <span className="text-rose-500">*</span>
+                                    </label>
+                                    <select
+                                        value={kelasForm.tahun_ajaran_id}
+                                        onChange={(e) => setKelasForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                        required
+                                    >
+                                        <option value="">Pilih tahun ajaran</option>
+                                        {tahun_ajarans.map((t) => (
+                                            <option key={t.id} value={t.id}>{t.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-700">
+                                        Pilih Kelas Spesifik <span className="text-slate-400 font-normal">(opsional)</span>
+                                    </label>
+                                    <select
+                                        value={kelasForm.kelas_id}
+                                        onChange={(e) => setKelasForm((p) => ({ ...p, kelas_id: e.target.value }))}
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                    >
+                                        <option value="">Semua Kelas (Ranking Total)</option>
+                                        {kelas_list.map((k) => (
+                                            <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div className="rounded-xl bg-slate-50 border border-slate-200/60 p-3 text-xs text-slate-600 space-y-1">
+                                    <span className="font-semibold text-slate-800">Kolom Data Excel:</span>
+                                    <p className="text-[11px] text-slate-500 leading-relaxed">
+                                        Peringkat, Nama Kelas, Tingkat, Wali Kelas, Jumlah Murid, Total Akumulasi Poin, Rata-rata Poin.
+                                    </p>
+                                </div>
+                            </form>
+                        </div>
+
+                        <div className="mt-6 pt-4 border-t border-slate-100">
+                            <button
+                                type="submit"
+                                form="form-export-kelas"
+                                disabled={!kelasForm.tahun_ajaran_id}
+                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                            >
+                                <Download className="size-4" />
+                                <span>Unduh Data Kelas (.xlsx)</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
