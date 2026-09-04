@@ -28,6 +28,8 @@ export interface SharedData {
     flash?: {
         success?: string;
         error?: string;
+        info?: string;
+        warning?: string;
     };
     [key: string]: unknown;
 }

@@ -193,9 +193,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="p-4 border-t">
-                                <Pagination links={laporans.links} from={laporans.from} to={laporans.to} total={laporans.total} />
-                            </div>
+                            <Pagination links={laporans.links} from={laporans.from} to={laporans.to} total={laporans.total} />
                         </>
                     )}
                 </div>

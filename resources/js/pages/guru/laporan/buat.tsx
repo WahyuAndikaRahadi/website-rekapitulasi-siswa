@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
+import { Pagination } from '@/components/pagination';
 import { TambahCatatanModal, type TargetMurid } from '@/components/tambah-catatan-modal';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
@@ -341,30 +342,14 @@ export default function BuatLaporan({
                     )}
 
                     {/* Pagination */}
-                    {murids.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t px-4 py-3 bg-muted/20">
-                            <p className="text-xs text-muted-foreground">
-                                Halaman {murids.current_page} dari {murids.last_page}
-                            </p>
-                            <div className="flex items-center gap-1">
-                                {murids.links.map((link, i) => (
-                                    <Link
-                                        key={i}
-                                        href={link.url ?? '#'}
-                                        preserveScroll
-                                        className={`inline-flex h-8 min-w-8 items-center justify-center rounded-md px-2 text-xs font-medium transition-colors ${
-                                            link.active
-                                                ? 'bg-primary text-primary-foreground font-semibold'
-                                                : link.url
-                                                  ? 'hover:bg-muted text-foreground'
-                                                  : 'pointer-events-none opacity-40 text-muted-foreground'
-                                        }`}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    <Pagination
+                        links={murids.links}
+                        from={murids.from}
+                        to={murids.to}
+                        total={murids.total}
+                        currentPage={murids.current_page}
+                        lastPage={murids.last_page}
+                    />
                 </div>
             </div>
 

@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -47,10 +48,14 @@ export default function TahunAjaranIndex({ tahun_ajarans }: Props) {
                                 className="h-9 w-40 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                             {form.errors.label && <p className="text-xs text-red-600">{form.errors.label}</p>}
                         </div>
-                        <button type="submit" disabled={form.processing}
-                            className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            isLoading={form.processing}
+                            loadingText="Menambahkan..."
+                        >
                             Tambah
-                        </button>
+                        </Button>
                     </form>
                 </div>
 

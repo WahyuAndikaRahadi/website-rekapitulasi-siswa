@@ -1,8 +1,9 @@
 import { StatusBadge } from '@/components/status-badge';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 import React from 'react';
 
 interface LaporanDetail {
@@ -195,8 +196,9 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {} }: Props) {
                                             : 'border-green-200 bg-green-50/60 dark:border-green-900 dark:bg-green-950/20'
                                     }`}>
                                         <div className="flex items-center justify-between">
-                                            <label htmlFor="poin_diberikan" className={`text-sm font-bold ${isPelanggaran ? 'text-red-800' : 'text-green-800'}`}>
-                                                ✦ Tetapkan Poin {isPelanggaran ? 'Pelanggaran' : 'Kebaikan'}
+                                            <label htmlFor="poin_diberikan" className={`text-sm font-bold flex items-center gap-1.5 ${isPelanggaran ? 'text-red-800' : 'text-green-800'}`}>
+                                                <Sparkles className="size-4" />
+                                                <span>Tetapkan Poin {isPelanggaran ? 'Pelanggaran' : 'Kebaikan'}</span>
                                             </label>
                                             {/* Live preview badge */}
                                             <span className={`text-2xl font-black font-mono tracking-tight transition-all ${
@@ -234,8 +236,9 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {} }: Props) {
                                             />
                                         </div>
                                         {errors.poin_diberikan && (
-                                            <p className="text-xs font-medium text-red-600 flex items-center gap-1">
-                                                <span>⚠</span> {errors.poin_diberikan}
+                                            <p className="text-xs font-medium text-red-600 flex items-center gap-1.5">
+                                                <AlertCircle className="size-3.5" />
+                                                <span>{errors.poin_diberikan}</span>
                                             </p>
                                         )}
                                     </div>
@@ -251,13 +254,17 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {} }: Props) {
                             </div>
 
                             <div className="flex gap-3">
-                                <button type="submit" disabled={processing}
-                                    className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                                    {processing && <Loader2 className="size-4 animate-spin" />}
+                                <Button
+                                    type="submit"
+                                    isLoading={processing}
+                                    loadingText="Menyimpan..."
+                                >
                                     Simpan Keputusan
-                                </button>
-                                <Link href="/admin/laporan" className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted">
-                                    Kembali
+                                </Button>
+                                <Link href="/admin/laporan">
+                                    <Button variant="secondary" type="button">
+                                        Kembali
+                                    </Button>
                                 </Link>
                             </div>
                         </form>

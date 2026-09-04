@@ -1,6 +1,7 @@
+import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useForm } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Loader2, Upload, UserCheck, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Upload, UserCheck, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 export interface TargetMurid {
@@ -290,21 +291,20 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
 
                     {/* Submit and Cancel Actions */}
                     <div className="flex justify-end gap-2 pt-3 border-t">
-                        <button
+                        <Button
                             type="button"
+                            variant="secondary"
                             onClick={() => onOpenChange(false)}
-                            className="inline-flex h-9 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
                         >
                             Batal
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                             type="submit"
-                            disabled={processing}
-                            className="inline-flex h-9 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                            isLoading={processing}
+                            loadingText="Menyimpan..."
                         >
-                            {processing && <Loader2 className="size-4 animate-spin" />}
                             Simpan Catatan
-                        </button>
+                        </Button>
                     </div>
                 </form>
             </DialogContent>

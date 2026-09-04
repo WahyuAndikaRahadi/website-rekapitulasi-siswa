@@ -83,7 +83,7 @@ export function AppSidebar() {
     const dashboardUrl = isAdmin ? '/admin/dashboard' : '/guru/dashboard';
 
     return (
-        <Sidebar collapsible="icon" variant="inset" className="border-r-0">
+        <Sidebar collapsible="icon" variant="sidebar" className="border-r border-white/10 bg-[#0B2559]">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

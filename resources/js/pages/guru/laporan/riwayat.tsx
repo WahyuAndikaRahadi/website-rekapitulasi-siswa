@@ -175,9 +175,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="p-4 border-t">
-                                <Pagination links={laporans.links} from={laporans.from} to={laporans.to} total={laporans.total} />
-                            </div>
+                            <Pagination links={laporans.links} from={laporans.from} to={laporans.to} total={laporans.total} />
                         </>
                     )}
                 </div>

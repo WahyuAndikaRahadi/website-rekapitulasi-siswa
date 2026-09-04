@@ -1,4 +1,5 @@
 import { EmptyState } from '@/components/empty-state';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
@@ -95,10 +96,14 @@ export default function KelasIndex({ kelas_list, tahun_ajarans }: Props) {
                                 className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                             {createForm.errors.nama_kelas && <p className="text-xs text-red-600">{createForm.errors.nama_kelas}</p>}
                         </div>
-                        <button type="submit" disabled={createForm.processing}
-                            className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                        <Button
+                            type="submit"
+                            size="sm"
+                            isLoading={createForm.processing}
+                            loadingText="Menambahkan..."
+                        >
                             Tambah
-                        </button>
+                        </Button>
                     </form>
                 </div>
 
@@ -127,15 +132,23 @@ export default function KelasIndex({ kelas_list, tahun_ajarans }: Props) {
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                                     {editForm.errors.nama_kelas && <p className="text-xs text-red-600">{editForm.errors.nama_kelas}</p>}
                                 </div>
-                                <div className="flex gap-3 pt-1">
-                                    <button type="submit" disabled={editForm.processing}
-                                        className="h-9 flex-1 rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                                <div className="flex gap-3 pt-2">
+                                    <Button
+                                        type="submit"
+                                        isLoading={editForm.processing}
+                                        loadingText="Menyimpan..."
+                                        className="flex-1"
+                                    >
                                         Simpan
-                                    </button>
-                                    <button type="button" onClick={() => setEditItem(null)}
-                                        className="h-9 flex-1 rounded-md border text-sm hover:bg-muted">
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => setEditItem(null)}
+                                        className="flex-1"
+                                    >
                                         Batal
-                                    </button>
+                                    </Button>
                                 </div>
                             </form>
                         </div>

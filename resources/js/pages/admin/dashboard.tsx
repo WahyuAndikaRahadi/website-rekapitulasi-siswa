@@ -3,30 +3,19 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    AlertCircle,
     BarChart3,
     Calendar,
     CheckCircle2,
     Clock,
     HeartHandshake,
     ShieldAlert,
-    TrendingDown,
-    TrendingUp,
     Users,
 } from 'lucide-react';
-import {
-    Bar,
-    BarChart,
-    CartesianGrid,
-    Cell,
-    Legend,
-    ResponsiveContainer,
-    Tooltip,
-    XAxis,
-    YAxis,
-} from 'recharts';
+import { Bar, Line } from 'react-chartjs-2';
 
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/admin/dashboard' }];
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface TrenItem {
     bulan: string;
@@ -61,6 +50,8 @@ interface Props {
     tahun_ajaran: { label: string } | null;
 }
 
+// ─── StatCard ─────────────────────────────────────────────────────────────────
+
 function StatCard({
     label,
     value,
@@ -77,10 +68,10 @@ function StatCard({
     href?: string;
 }) {
     const iconStyles = {
-        default: 'bg-[#1E5FA8]/15 text-[#1E5FA8]',
-        warning: 'bg-[#F5B700]/15 text-[#D97706]',
-        destructive: 'bg-[#D6293E]/15 text-[#D6293E]',
-        success: 'bg-[#2E8B57]/15 text-[#2E8B57]',
+        default: 'bg-primary-light/15 text-primary-light',
+        warning: 'bg-warning/15 text-amber-600',
+        destructive: 'bg-destructive/10 text-destructive',
+        success: 'bg-success/10 text-success',
     };
 
     const cardContent = (
@@ -100,15 +91,33 @@ function StatCard({
         return (
             <Link
                 href={href}
-                className="group block rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs transition-all hover:border-[#1E5FA8]/50 hover:shadow-sm"
+                className="group block rounded-2xl border border-border bg-card p-5 shadow-xs transition-all hover:border-primary-light/50 hover:shadow-sm"
             >
                 {cardContent}
             </Link>
         );
     }
 
-    return <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs">{cardContent}</div>;
+    return <div className="rounded-2xl border border-border bg-card p-5 shadow-xs">{cardContent}</div>;
 }
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
+
+function EmptyState({ icon: Icon, title, description }: { icon: React.ElementType; title: string; description?: string }) {
+    return (
+        <div className="flex flex-col items-center justify-center rounded-xl bg-muted/30 py-12 text-center">
+            <div className="mb-3 rounded-full bg-muted p-3 text-muted-foreground">
+                <Icon className="size-6" />
+            </div>
+            <p className="text-sm font-medium text-foreground">{title}</p>
+            {description && (
+                <p className="mt-1 text-xs text-muted-foreground max-w-xs leading-relaxed">{description}</p>
+            )}
+        </div>
+    );
+}
+
+// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboard({
     stats,
@@ -120,13 +129,126 @@ export default function AdminDashboard({
     tahun_ajaran,
 }: Props) {
     const { auth } = usePage<SharedData>().props;
-    const emptyTren = !tren_laporan || tren_laporan.length === 0 || tren_laporan.every((t) => t.pelanggaran === 0 && t.kebaikan === 0);
+
+    const emptyTren =
+        !tren_laporan ||
+        tren_laporan.length === 0 ||
+        tren_laporan.every((t) => t.pelanggaran === 0 && t.kebaikan === 0);
+
+    // ── Chart data: Tren Laporan ───────────────────────────────────────────────
+    const trenChartData = {
+        labels: tren_laporan.map((t) => t.bulan),
+        datasets: [
+            {
+                label: 'Pelanggaran',
+                data: tren_laporan.map((t) => t.pelanggaran),
+                borderColor: '#D6293E',
+                backgroundColor: 'rgba(214, 41, 62, 0.08)',
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#D6293E',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            },
+            {
+                label: 'Kebaikan',
+                data: tren_laporan.map((t) => t.kebaikan),
+                borderColor: '#2E8B57',
+                backgroundColor: 'rgba(46, 139, 87, 0.08)',
+                fill: true,
+                tension: 0.35,
+                pointBackgroundColor: '#2E8B57',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+            },
+        ],
+    };
+
+    const trenChartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top' as const,
+                align: 'end' as const,
+                labels: { padding: 16, boxWidth: 8, boxHeight: 8 },
+            },
+            tooltip: {
+                mode: 'index' as const,
+                intersect: false,
+            },
+        },
+        scales: {
+            x: {
+                grid: { display: false },
+                border: { color: '#E2E8F0' },
+                ticks: { color: '#64748B' },
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: '#F1F5F9' },
+                border: { color: '#E2E8F0', dash: [4, 4] },
+                ticks: { color: '#64748B', precision: 0 },
+            },
+        },
+        interaction: { mode: 'nearest' as const, axis: 'x' as const, intersect: false },
+    };
+
+    // ── Chart data: Rata-rata Skor per Kelas ──────────────────────────────────
+    const kelasChartData = {
+        labels: kelas_skor.map((k) => k.nama_kelas),
+        datasets: [
+            {
+                label: 'Rata-rata Skor',
+                data: kelas_skor.map((k) => k.rata_skor),
+                backgroundColor: kelas_skor.map((k) =>
+                    k.rata_skor < 0 ? 'rgba(214,41,62,0.75)' : k.rata_skor > 0 ? 'rgba(30,95,168,0.75)' : 'rgba(100,116,139,0.5)',
+                ),
+                borderColor: kelas_skor.map((k) =>
+                    k.rata_skor < 0 ? '#D6293E' : k.rata_skor > 0 ? '#1E5FA8' : '#64748B',
+                ),
+                borderWidth: 1.5,
+                borderRadius: 4,
+            },
+        ],
+    };
+
+    const kelasChartOptions = {
+        indexAxis: 'y' as const,
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { display: false },
+            tooltip: {
+                callbacks: {
+                    label: (ctx: { parsed: { x: number } }) => {
+                        const val = ctx.parsed.x;
+                        return ` Rata-rata: ${val >= 0 ? '+' : ''}${val}`;
+                    },
+                },
+            },
+        },
+        scales: {
+            x: {
+                grid: { color: '#F1F5F9' },
+                border: { color: '#E2E8F0', dash: [4, 4] },
+                ticks: { color: '#64748B', precision: 0 },
+            },
+            y: {
+                grid: { display: false },
+                border: { color: '#E2E8F0' },
+                ticks: { color: '#0F172A', font: { weight: 500 as const } },
+            },
+        },
+    };
+
+    const kelasChartHeight = Math.max(kelas_skor.length * 40 + 20, 160);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Dashboard Admin - SMKN 69 Jakarta" />
-            <div className="space-y-6 p-6 md:p-6">
-                {/* Greeting & Info */}
+            <div className="space-y-6 p-6">
+                {/* Greeting */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -137,8 +259,8 @@ export default function AdminDashboard({
                         </p>
                     </div>
                     {tahun_ajaran && (
-                        <div className="inline-flex items-center gap-2 self-start rounded-full border border-blue-200/60 bg-blue-50/70 px-3.5 py-1.5 text-xs font-semibold text-[#0B2559] shadow-2xs">
-                            <Calendar className="size-3.5 text-[#1E5FA8]" />
+                        <div className="inline-flex items-center gap-2 self-start rounded-full border border-blue-200/60 bg-blue-50/70 px-3.5 py-1.5 text-xs font-semibold text-primary shadow-2xs">
+                            <Calendar className="size-3.5 text-primary-light" />
                             <span>Tahun Ajaran {tahun_ajaran.label}</span>
                         </div>
                     )}
@@ -175,103 +297,75 @@ export default function AdminDashboard({
                     />
                 </div>
 
-                {/* ── LEADERBOARD SECTION (TOP 10 STUDENTS & TOP 10 CLASSES) ── */}
+                {/* Leaderboard */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     <TopMuridLeaderboard topMurids={top_murids} />
                     <TopKelasLeaderboard topKelas={top_kelas} />
                 </div>
 
-                {/* Chart tren laporan */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
-                    <div className="mb-4 flex items-center justify-between">
-                        <div>
-                            <h2 className="text-base font-bold text-slate-900">Tren Laporan 6 Bulan Terakhir</h2>
-                            <p className="text-xs text-muted-foreground">Komparasi jumlah peristiwa pelanggaran dan apresiasi kebaikan</p>
-                        </div>
+                {/* Chart: Tren Laporan */}
+                <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
+                    <div className="mb-5">
+                        <h2 className="text-base font-bold text-foreground">Tren Laporan 6 Bulan Terakhir</h2>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Komparasi jumlah peristiwa pelanggaran dan apresiasi kebaikan
+                        </p>
                     </div>
 
                     {emptyTren ? (
-                        <div className="flex flex-col items-center justify-center rounded-xl bg-slate-50/50 py-12 text-center">
-                            <div className="mb-3 rounded-full bg-slate-100 p-3 text-muted-foreground">
-                                <BarChart3 className="size-6" />
-                            </div>
-                            <p className="text-sm font-medium text-foreground">Belum ada data laporan</p>
-                            <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-                                Laporan pelanggaran atau kebaikan yang dibuat oleh guru akan ditampilkan di grafik ini.
-                            </p>
-                        </div>
+                        <EmptyState
+                            icon={BarChart3}
+                            title="Belum ada data laporan"
+                            description="Laporan pelanggaran atau kebaikan yang dibuat guru akan ditampilkan di grafik ini."
+                        />
                     ) : (
-                        <ResponsiveContainer width="100%" height={260}>
-                            <BarChart
-                                data={tren_laporan}
-                                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                            >
-                                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
-                                <XAxis dataKey="bulan" tick={{ fontSize: 12, fill: '#64748B' }} axisLine={{ stroke: '#E2E8F0' }} />
-                                <YAxis tick={{ fontSize: 12, fill: '#64748B' }} allowDecimals={false} axisLine={{ stroke: '#E2E8F0' }} />
-                                <Tooltip
-                                    contentStyle={{
-                                        fontSize: 12,
-                                        borderRadius: 8,
-                                        border: '1px solid #E2E8F0',
-                                        backgroundColor: '#FFFFFF',
-                                        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                                    }}
-                                    cursor={{ fill: 'rgba(30, 95, 168, 0.06)' }}
-                                />
-                                <Legend
-                                    wrapperStyle={{ fontSize: 12, paddingTop: 12 }}
-                                    iconType="circle"
-                                />
-                                <Bar
-                                    dataKey="pelanggaran"
-                                    name="Pelanggaran"
-                                    fill="#D6293E"
-                                    radius={[4, 4, 0, 0]}
-                                />
-                                <Bar
-                                    dataKey="kebaikan"
-                                    name="Kebaikan"
-                                    fill="#2E8B57"
-                                    radius={[4, 4, 0, 0]}
-                                />
-                            </BarChart>
-                        </ResponsiveContainer>
+                        <div style={{ height: 260 }}>
+                            <Line data={trenChartData} options={trenChartOptions} />
+                        </div>
                     )}
                 </div>
 
+                {/* Bottom row */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                     {/* Murid skor terendah */}
-                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+                    <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
                         <div className="mb-4">
-                            <h2 className="text-base font-bold text-slate-900">Siswa Butuh Pembinaan Khusus</h2>
-                            <p className="text-xs text-muted-foreground">Daftar siswa dengan akumulasi skor terendah untuk tindak lanjut konseling/BK</p>
+                            <h2 className="text-base font-bold text-foreground">Siswa Butuh Pembinaan Khusus</h2>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                                Siswa dengan akumulasi skor terendah — tindak lanjut BK/konseling
+                            </p>
                         </div>
 
                         {murid_skor_rendah.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-xl bg-slate-50/50 py-8 text-center">
-                                <div className="mb-2 rounded-full bg-emerald-50 p-2.5 text-[#2E8B57]">
-                                    <CheckCircle2 className="size-5 text-[#2E8B57]" />
-                                </div>
-                                <p className="text-sm font-medium text-foreground">Kondisi Kedisiplinan Aman</p>
-                                <p className="text-xs text-muted-foreground">Tidak ada siswa yang berada pada batas skor kritis.</p>
-                            </div>
+                            <EmptyState
+                                icon={CheckCircle2}
+                                title="Kondisi Kedisiplinan Aman"
+                                description="Tidak ada siswa yang berada pada batas skor kritis."
+                            />
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-xs">
                                     <thead>
-                                        <tr className="border-b border-slate-100 text-left text-slate-400">
-                                            <th className="pb-2.5 px-2 font-semibold">Nama Siswa</th>
-                                            <th className="pb-2.5 px-2 font-semibold">Kelas</th>
-                                            <th className="pb-2.5 px-2 text-right font-semibold">Skor</th>
+                                        <tr className="border-b border-border text-left">
+                                            <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Nama Siswa</th>
+                                            <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Kelas</th>
+                                            <th className="pb-2.5 px-2 text-right font-semibold text-muted-foreground">Skor</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100">
+                                    <tbody className="divide-y divide-border">
                                         {murid_skor_rendah.map((m, i) => (
-                                            <tr key={i} className="hover:bg-slate-50/50">
-                                                <td className="py-2.5 px-2 font-semibold text-slate-900">{m.nama}</td>
-                                                <td className="py-2.5 px-2 text-slate-500 font-medium">{m.kelas}</td>
-                                                <td className={`py-2.5 px-2 text-right font-mono font-bold ${m.skor_resmi < 0 ? 'text-[#D6293E]' : m.skor_resmi > 0 ? 'text-[#2E8B57]' : 'text-slate-500'}`}>
+                                            <tr key={i} className="hover:bg-muted/30 transition-colors">
+                                                <td className="py-2.5 px-2 font-semibold text-foreground">{m.nama}</td>
+                                                <td className="py-2.5 px-2 text-muted-foreground font-medium">{m.kelas}</td>
+                                                <td
+                                                    className={`py-2.5 px-2 text-right font-mono font-bold ${
+                                                        m.skor_resmi < 0
+                                                            ? 'text-destructive'
+                                                            : m.skor_resmi > 0
+                                                              ? 'text-success'
+                                                              : 'text-muted-foreground'
+                                                    }`}
+                                                >
                                                     {m.skor_resmi >= 0 ? `+${m.skor_resmi}` : m.skor_resmi}
                                                 </td>
                                             </tr>
@@ -282,60 +376,23 @@ export default function AdminDashboard({
                         )}
                     </div>
 
-                    {/* Ranking kelas per rata-rata skor */}
-                    <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-xs">
+                    {/* Rata-rata skor per kelas */}
+                    <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
                         <div className="mb-4">
-                            <h2 className="text-base font-bold text-slate-900">Distribusi Rata-rata Skor per Kelas</h2>
-                            <p className="text-xs text-muted-foreground">Sebaran nilai rata-rata kedisiplinan per rombel</p>
+                            <h2 className="text-base font-bold text-foreground">Distribusi Rata-rata Skor per Kelas</h2>
+                            <p className="text-xs text-muted-foreground mt-0.5">Sebaran nilai rata-rata kedisiplinan per rombel</p>
                         </div>
 
                         {kelas_skor.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-xl bg-slate-50/50 py-8 text-center">
-                                <div className="mb-2 rounded-full bg-slate-100 p-2.5 text-muted-foreground">
-                                    <Users className="size-5" />
-                                </div>
-                                <p className="text-sm font-medium text-foreground">Belum ada data kelas</p>
-                                <p className="text-xs text-muted-foreground">Data rekap rata-rata kelas belum tersedia.</p>
-                            </div>
+                            <EmptyState
+                                icon={Users}
+                                title="Belum ada data kelas"
+                                description="Data rekap rata-rata kelas belum tersedia."
+                            />
                         ) : (
-                            <ResponsiveContainer width="100%" height={Math.max(kelas_skor.length * 36 + 20, 160)}>
-                                <BarChart
-                                    layout="vertical"
-                                    data={kelas_skor}
-                                    margin={{ top: 0, right: 20, left: 10, bottom: 0 }}
-                                >
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" horizontal={false} />
-                                    <XAxis type="number" tick={{ fontSize: 11, fill: '#64748B' }} allowDecimals axisLine={{ stroke: '#E2E8F0' }} />
-                                    <YAxis
-                                        dataKey="nama_kelas"
-                                        type="category"
-                                        tick={{ fontSize: 11, fill: '#0F172A', fontWeight: 500 }}
-                                        width={85}
-                                        axisLine={{ stroke: '#E2E8F0' }}
-                                    />
-                                    <Tooltip
-                                        contentStyle={{
-                                            fontSize: 12,
-                                            borderRadius: 8,
-                                            border: '1px solid #E2E8F0',
-                                            backgroundColor: '#FFFFFF',
-                                            boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                                        }}
-                                        formatter={(val: number) => [
-                                            val >= 0 ? `+${val}` : val,
-                                            'Rata-rata Skor',
-                                        ]}
-                                    />
-                                    <Bar dataKey="rata_skor" name="Rata-rata Skor" radius={[0, 4, 4, 0]}>
-                                        {kelas_skor.map((entry, index) => (
-                                            <Cell
-                                                key={index}
-                                                fill={entry.rata_skor < 0 ? '#D6293E' : entry.rata_skor > 0 ? '#1E5FA8' : '#64748B'}
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
+                            <div style={{ height: kelasChartHeight }}>
+                                <Bar data={kelasChartData} options={kelasChartOptions} />
+                            </div>
                         )}
                     </div>
                 </div>

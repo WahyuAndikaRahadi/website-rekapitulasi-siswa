@@ -15,24 +15,36 @@ export function UserMenuContent({ user }: UserMenuContentProps) {
     return (
         <>
             <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
-                    <UserInfo user={user} showEmail={true} />
+                <div className="flex items-center gap-2 px-2 py-1.5 text-left text-sm">
+                    <UserInfo user={user} showEmail={true} textColor="dark" />
                 </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                    <Link className="block w-full" href={route('profile.edit')} as="button" prefetch onClick={cleanup}>
-                        <Settings className="mr-2" />
-                        Settings
+                    <Link
+                        className="block w-full"
+                        href={route('profile.edit')}
+                        as="button"
+                        prefetch
+                        onClick={cleanup}
+                    >
+                        <Settings className="mr-2 size-4" />
+                        Pengaturan Akun
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-                <Link className="block w-full" method="post" href={route('logout')} as="button" onClick={cleanup}>
-                    <LogOut className="mr-2" />
-                    Log out
+                <Link
+                    className="block w-full text-destructive hover:text-destructive focus:text-destructive"
+                    method="post"
+                    href={route('logout')}
+                    as="button"
+                    onClick={cleanup}
+                >
+                    <LogOut className="mr-2 size-4" />
+                    Keluar
                 </Link>
             </DropdownMenuItem>
         </>

@@ -1,5 +1,6 @@
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -90,12 +91,23 @@ export default function MuridIndex({ murids, filters, kelas_list, tahun_ajarans,
                         </select>
                         {form.errors.kelas_id && <p className="text-xs text-red-600">{form.errors.kelas_id}</p>}
                     </div>
-                    <div className="flex gap-3 pt-1">
-                        <button type="submit" disabled={form.processing}
-                            className="h-9 flex-1 rounded-md bg-primary text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+                    <div className="flex gap-3 pt-2">
+                        <Button
+                            type="submit"
+                            isLoading={form.processing}
+                            loadingText="Menyimpan..."
+                            className="flex-1"
+                        >
                             Simpan
-                        </button>
-                        <button type="button" onClick={onClose} className="h-9 flex-1 rounded-md border text-sm hover:bg-muted">Batal</button>
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={onClose}
+                            className="flex-1"
+                        >
+                            Batal
+                        </Button>
                     </div>
                 </form>
             </div>
@@ -180,9 +192,7 @@ export default function MuridIndex({ murids, filters, kelas_list, tahun_ajarans,
                                     </tbody>
                                 </table>
                             </div>
-                            <div className="p-4">
-                                <Pagination links={murids.links} from={murids.from} to={murids.to} total={murids.total} />
-                            </div>
+                            <Pagination links={murids.links} from={murids.from} to={murids.to} total={murids.total} />
                         </>
                     )}
                 </div>

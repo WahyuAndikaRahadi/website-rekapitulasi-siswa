@@ -1,7 +1,7 @@
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Loader2 } from 'lucide-react';
 
 interface GuruData {
     id?: number;
@@ -93,12 +93,18 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                     </div>
 
                     <div className="flex gap-3 pt-2">
-                        <button type="submit" disabled={processing}
-                            className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                            {processing && <Loader2 className="size-4 animate-spin" />}
+                        <Button
+                            type="submit"
+                            isLoading={processing}
+                            loadingText={isEdit ? 'Menyimpan...' : 'Membuat Akun...'}
+                        >
                             {isEdit ? 'Simpan Perubahan' : 'Buat Akun Guru'}
-                        </button>
-                        <Link href="/admin/guru" className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted">Batal</Link>
+                        </Button>
+                        <Link href="/admin/guru">
+                            <Button variant="secondary" type="button">
+                                Batal
+                            </Button>
+                        </Link>
                     </div>
                 </form>
             </div>

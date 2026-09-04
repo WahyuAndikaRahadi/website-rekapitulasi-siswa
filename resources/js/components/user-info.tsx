@@ -1,22 +1,33 @@
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useInitials } from '@/hooks/use-initials';
+import { Avatar } from '@/components/avatar';
 import { type User } from '@/types';
 
-export function UserInfo({ user, showEmail = false }: { user: User; showEmail?: boolean }) {
-    const getInitials = useInitials();
+interface UserInfoProps {
+    user: User;
+    showEmail?: boolean;
+    textColor?: 'white' | 'dark' | 'auto';
+}
+
+export function UserInfo({ user, showEmail = false, textColor = 'white' }: UserInfoProps) {
+    const isDark = textColor === 'dark';
 
     return (
-        <>
-            <Avatar className="h-8 w-8 overflow-hidden rounded-full border border-white/20">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="bg-[#1E5FA8] text-white font-medium text-xs">
-                    {getInitials(user.name)}
-                </AvatarFallback>
-            </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-semibold text-white">{user.name}</span>
-                {showEmail && <span className="text-white/70 truncate text-xs">{user.email}</span>}
+        <div className="flex items-center gap-2.5 min-w-0">
+            <Avatar
+                name={user.name}
+                imageUrl={user.avatar}
+                size="sm"
+                className="ring-2 ring-white/10 shrink-0"
+            />
+            <div className="grid flex-1 text-left text-sm leading-tight min-w-0">
+                <span className={`truncate font-semibold ${isDark ? 'text-foreground' : 'text-white'}`}>
+                    {user.name}
+                </span>
+                {showEmail && (
+                    <span className={`truncate text-xs ${isDark ? 'text-muted-foreground' : 'text-white/70'}`}>
+                        {user.email}
+                    </span>
+                )}
             </div>
-        </>
+        </div>
     );
 }

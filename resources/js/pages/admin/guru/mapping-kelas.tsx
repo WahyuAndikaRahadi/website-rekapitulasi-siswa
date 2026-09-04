@@ -1,7 +1,8 @@
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Loader2, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 
 interface KelasItem { id: number; nama_kelas: string; }
@@ -127,14 +128,17 @@ export default function MappingKelas({ guru, kelas_list, kelas_diampu }: Props) 
                     )}
 
                     <div className="flex gap-3 pt-2">
-                        <button type="submit" disabled={processing}
-                            className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                            {processing && <Loader2 className="size-4 animate-spin" />}
+                        <Button
+                            type="submit"
+                            isLoading={processing}
+                            loadingText="Menyimpan..."
+                        >
                             Simpan Mapping
-                        </button>
-                        <Link href="/admin/guru"
-                            className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted">
-                            Batal
+                        </Button>
+                        <Link href="/admin/guru">
+                            <Button variant="secondary" type="button">
+                                Batal
+                            </Button>
                         </Link>
                     </div>
                 </form>

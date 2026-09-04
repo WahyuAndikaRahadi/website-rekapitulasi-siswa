@@ -1,7 +1,8 @@
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { AlertCircle, CheckCircle, FileSpreadsheet, Loader2, Upload } from 'lucide-react';
+import { AlertCircle, CheckCircle, FileSpreadsheet, Upload } from 'lucide-react';
 
 interface PreviewRow {
     baris: number;
@@ -91,11 +92,15 @@ export default function MuridImport({ kelas_list, tahun_ajaran, preview, errors_
                                 {uploadForm.errors.file && <p className="text-xs text-red-600">{uploadForm.errors.file}</p>}
                             </div>
 
-                            <button type="submit" disabled={uploadForm.processing || !uploadForm.data.file}
-                                className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
-                                {uploadForm.processing && <Loader2 className="size-4 animate-spin" />}
+                            <Button
+                                type="submit"
+                                isLoading={uploadForm.processing}
+                                disabled={!uploadForm.data.file}
+                                loadingText="Mengunggah & Memvalidasi..."
+                            >
+                                <Upload className="size-4" />
                                 Upload & Validasi
-                            </button>
+                            </Button>
                         </form>
                     </div>
                 )}
@@ -174,21 +179,26 @@ export default function MuridImport({ kelas_list, tahun_ajaran, preview, errors_
                         {/* Tombol konfirmasi */}
                         {validRows.length > 0 && (
                             <div className="flex gap-3">
-                                <button onClick={handleConfirm}
-                                    className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                                <Button
+                                    onClick={handleConfirm}
+                                    className="bg-primary text-primary-foreground hover:bg-primary/90"
+                                >
+                                    <CheckCircle className="size-4" />
                                     Konfirmasi Import {validRows.length} Murid
-                                </button>
-                                <Link href="/admin/murid-import"
-                                    className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted">
-                                    Upload Ulang
+                                </Button>
+                                <Link href="/admin/murid-import">
+                                    <Button variant="secondary" type="button">
+                                        Upload Ulang
+                                    </Button>
                                 </Link>
                             </div>
                         )}
                         {validRows.length === 0 && (
                             <div className="flex gap-3">
-                                <Link href="/admin/murid-import"
-                                    className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted">
-                                    Upload Ulang
+                                <Link href="/admin/murid-import">
+                                    <Button variant="secondary" type="button">
+                                        Upload Ulang
+                                    </Button>
                                 </Link>
                             </div>
                         )}

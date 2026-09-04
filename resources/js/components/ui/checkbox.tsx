@@ -1,25 +1,52 @@
-import * as CheckboxPrimitive from '@radix-ui/react-checkbox';
 import { Check } from 'lucide-react';
 import * as React from 'react';
 
 import { cn } from '@/lib/utils';
 
-const Checkbox = React.forwardRef<React.ElementRef<typeof CheckboxPrimitive.Root>, React.ComponentPropsWithoutRef<typeof CheckboxPrimitive.Root>>(
-    ({ className, ...props }, ref) => (
-        <CheckboxPrimitive.Root
-            ref={ref}
-            className={cn(
-                'peer size-5 shrink-0 rounded-sm border border-input ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-accent-foreground',
-                className,
-            )}
-            {...props}
-        >
-            <CheckboxPrimitive.Indicator className={cn('flex items-center justify-center text-current')}>
-                <Check className="size-3.5 stroke-[3]" />
-            </CheckboxPrimitive.Indicator>
-        </CheckboxPrimitive.Root>
-    ),
+export interface CheckboxProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type' | 'onChange'> {
+    /** Controlled checked state */
+    checked?: boolean;
+    /** Called when the checked state changes */
+    onCheckedChange?: (checked: boolean) => void;
+}
+
+const Checkbox = React.forwardRef<HTMLInputElement, CheckboxProps>(
+    ({ className, checked, onCheckedChange, disabled, id, ...props }, ref) => {
+        return (
+            <span className="relative inline-flex size-5 shrink-0">
+                {/* Native input — hidden visually but accessible */}
+                <input
+                    ref={ref}
+                    id={id}
+                    type="checkbox"
+                    checked={checked}
+                    disabled={disabled}
+                    onChange={(e) => onCheckedChange?.(e.target.checked)}
+                    className="peer absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    aria-checked={checked}
+                    {...props}
+                />
+                {/* Custom visual box */}
+                <span
+                    className={cn(
+                        'pointer-events-none flex size-5 shrink-0 items-center justify-center rounded-sm border border-border',
+                        'transition-colors duration-150',
+                        'peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2',
+                        'peer-disabled:opacity-50',
+                        checked
+                            ? 'bg-primary border-primary text-primary-foreground'
+                            : 'bg-card text-transparent',
+                        className,
+                    )}
+                    aria-hidden="true"
+                >
+                    <Check className="size-3.5 stroke-[3]" />
+                </span>
+            </span>
+        );
+    },
 );
-Checkbox.displayName = CheckboxPrimitive.Root.displayName;
+
+Checkbox.displayName = 'Checkbox';
 
 export { Checkbox };

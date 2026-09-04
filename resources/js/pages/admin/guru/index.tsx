@@ -1,8 +1,9 @@
+import { Avatar } from '@/components/avatar';
 import { EmptyState } from '@/components/empty-state';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Trash2, Users } from 'lucide-react';
+import { Pencil, Plus, Trash2, Users } from 'lucide-react';
 
 interface GuruItem {
     id: number;
@@ -12,41 +13,50 @@ interface GuruItem {
     wali_kelas: string | null;
 }
 
-interface Props { gurus: GuruItem[]; }
-
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Dashboard', href: '/admin/dashboard' },
     { title: 'Kelola Guru', href: '/admin/guru' },
 ];
 
-export default function GuruIndex({ gurus }: Props) {
+export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
     const handleDelete = (id: number, nama: string) => {
-        if (!confirm(`Hapus akun guru "${nama}"? Semua laporan yang dibuat guru ini tetap tersimpan.`)) return;
-        router.delete(`/admin/guru/${id}`);
+        if (confirm(`Yakin ingin menghapus data guru "${nama}"?`)) {
+            router.delete(`/admin/guru/${id}`);
+        }
     };
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Kelola Guru" />
-            <div className="space-y-5 p-6">
+            <div className="flex flex-1 flex-col gap-6 p-6">
                 <div className="flex items-center justify-between">
-                    <h1 className="text-xl font-semibold">Kelola Guru</h1>
-                    <Link href="/admin/guru/create"
-                        className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90">
-                        + Tambah Guru
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight text-foreground">Kelola Guru</h1>
+                        <p className="text-sm text-muted-foreground">Daftar semua akun guru dan wali kelas</p>
+                    </div>
+                    <Link
+                        href="/admin/guru/create"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3.5 py-2 text-sm font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition-colors"
+                    >
+                        <Plus className="size-4" />
+                        Tambah Guru
                     </Link>
                 </div>
 
-                <div className="rounded-lg border bg-white">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
                     {gurus.length === 0 ? (
-                        <EmptyState icon={Users} title="Belum ada akun guru"
-                            action={<Link href="/admin/guru/create" className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90">+ Tambah Guru</Link>}
+                        <EmptyState
+                            icon={Users}
+                            title="Belum ada data guru"
+                            description="Tambahkan akun guru untuk mulai memberikan akses pencatatan rekap siswa."
+                            actionLabel="Tambah Guru Sekarang"
+                            onAction={() => router.visit('/admin/guru/create')}
                         />
                     ) : (
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="border-b bg-muted/40 text-left">
-                                    <th className="px-4 py-3 font-medium text-muted-foreground">Nama</th>
+                        <table className="w-full text-left text-sm">
+                            <thead className="border-b bg-muted/40 text-xs">
+                                <tr>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">Nama Guru</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">NIP</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Email</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Wali Kelas</th>
@@ -56,7 +66,12 @@ export default function GuruIndex({ gurus }: Props) {
                             <tbody className="divide-y">
                                 {gurus.map((g) => (
                                     <tr key={g.id} className="hover:bg-muted/20">
-                                        <td className="px-4 py-3 font-medium">{g.nama}</td>
+                                        <td className="px-4 py-3 font-medium">
+                                            <div className="flex items-center gap-2.5">
+                                                <Avatar name={g.nama} size="xs" />
+                                                <span>{g.nama}</span>
+                                            </div>
+                                        </td>
                                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{g.nip ?? '—'}</td>
                                         <td className="px-4 py-3 text-muted-foreground">{g.email}</td>
                                         <td className="px-4 py-3">

@@ -1,7 +1,8 @@
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, Loader2, Upload, UserCheck, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Upload, UserCheck, X } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface BuktiItem {
@@ -290,19 +291,17 @@ export default function EditLaporan({ laporan, poin_ranges }: Props) {
 
                     {/* Actions */}
                     <div className="flex gap-3 pt-4 border-t">
-                        <button
+                        <Button
                             type="submit"
-                            disabled={processing}
-                            className="inline-flex h-10 items-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                            isLoading={processing}
+                            loadingText="Menyimpan..."
                         >
-                            {processing && <Loader2 className="size-4 animate-spin" />}
                             Simpan Perubahan
-                        </button>
-                        <Link
-                            href="/guru/laporan/riwayat"
-                            className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"
-                        >
-                            Batal
+                        </Button>
+                        <Link href="/guru/laporan/riwayat">
+                            <Button variant="secondary" type="button">
+                                Batal
+                            </Button>
                         </Link>
                     </div>
                 </form>

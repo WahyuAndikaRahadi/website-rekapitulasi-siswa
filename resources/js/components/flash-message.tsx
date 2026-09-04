@@ -1,7 +1,7 @@
 import { type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { toast } from 'sonner';
+import { toast } from '@/lib/toast';
 
 export function FlashMessage() {
     const { flash } = usePage<SharedData>().props;
@@ -10,16 +10,15 @@ export function FlashMessage() {
         if (!flash) return;
 
         if (flash.success) {
-            toast.success(flash.success, {
-                duration: 4500,
-            });
+            toast.success(flash.success);
         }
 
         if (flash.error) {
-            toast.error(flash.error, {
-                duration: 7000,
-                dismissible: true,
-            });
+            toast.error(flash.error);
+        }
+
+        if (flash.info) {
+            toast.info(flash.info);
         }
     }, [flash]);
 
