@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
             KelasSeeder::class,        // 2. butuh tahun_ajaran
             UserSeeder::class,         // 3. butuh kelas untuk assign wali kelas
             MuridSeeder::class,        // 4. data dummy siswa/murid
+            PoinMasterSeeder::class,   // 5. master poin pelanggaran dan kebaikan
         ]);
     }
 }

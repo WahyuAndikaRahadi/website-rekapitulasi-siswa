@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\Laporan;
+use App\Models\PoinMaster;
 use App\Models\TahunAjaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -107,7 +108,8 @@ class LaporanController extends Controller
                     'url'       => $b->url(),
                 ]),
             ],
-            'poin_ranges' => Laporan::POIN_RANGES,
+            'poin_ranges'  => Laporan::POIN_RANGES,
+            'poin_masters' => PoinMaster::active()->get(['id', 'kategori', 'nama', 'poin']),
         ]);
     }
 

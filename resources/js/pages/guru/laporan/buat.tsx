@@ -1,6 +1,6 @@
 import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
-import { TambahCatatanModal, type TargetMurid } from '@/components/tambah-catatan-modal';
+import { TambahCatatanModal, type TargetMurid, type PoinMasterItem } from '@/components/tambah-catatan-modal';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
@@ -45,6 +45,7 @@ interface Props {
     jurusan_list: string[];
     kelas_list: { id: number; nama_kelas: string; tingkat: string }[];
     poin_ranges: Record<string, Record<string, { min: number; max: number }>>;
+    poin_masters?: PoinMasterItem[];
     tahun_ajaran: { id: number; label: string } | null;
     flash?: { success?: string; error?: string };
 }
@@ -61,6 +62,7 @@ export default function BuatLaporan({
     jurusan_list,
     kelas_list,
     poin_ranges,
+    poin_masters = [],
     tahun_ajaran,
     flash,
 }: Props) {
@@ -359,6 +361,7 @@ export default function BuatLaporan({
                 onOpenChange={setIsModalOpen}
                 murid={targetMurid}
                 poinRanges={poin_ranges}
+                poinMasters={poin_masters}
             />
         </AppLayout>
     );

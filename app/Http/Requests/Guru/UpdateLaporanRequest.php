@@ -25,6 +25,7 @@ class UpdateLaporanRequest extends FormRequest
             'kategori'            => ['required', 'string', 'in:pelanggaran,kebaikan'],
             'tingkat_keparahan'   => ['required', 'string', 'in:ringan,sedang,berat'],
             'keterangan'          => ['required', 'string', 'max:255'],
+            'poin_diberikan'      => ['required', 'integer', 'not_in:0'],
             'tanggal_kejadian'    => ['required', 'date', 'before_or_equal:today'],
             'keterangan_tambahan' => ['nullable', 'string', 'max:1000'],
             'bukti_hapus'         => ['nullable', 'array'],

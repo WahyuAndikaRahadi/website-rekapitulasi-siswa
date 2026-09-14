@@ -5,6 +5,7 @@ import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, Sparkles } from 'lucide-react';
 import React from 'react';
+import { type PoinMasterItem } from '@/components/tambah-catatan-modal';
 
 interface LaporanDetail {
     id: number;
@@ -27,6 +28,7 @@ interface LaporanDetail {
 interface Props {
     laporan: LaporanDetail;
     poin_ranges?: Record<string, Record<string, { min: number; max: number }>>;
+    poin_masters?: PoinMasterItem[];
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -35,11 +37,16 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Detail', href: '#' },
 ];
 
-export default function AdminLaporanShow({ laporan, poin_ranges = {} }: Props) {
+export default function AdminLaporanShow({ laporan, poin_ranges = {}, poin_masters = [] }: Props) {
+    // Cari apakah keterangan laporan cocok dengan master poin
+    const matchedMaster = poin_masters.find(
+        (pm) => pm.kategori === laporan.kategori && pm.nama === laporan.keterangan
+    );
+
     const { data, setData, patch, processing, errors } = useForm({
         status: 'ditindaklanjuti' as 'ditindaklanjuti' | 'ditolak',
         tindak_lanjut: laporan.tindak_lanjut ?? '',
-        poin_diberikan: '' as string | number,
+        poin_diberikan: (laporan.poin_diberikan ?? matchedMaster?.poin ?? '') as string | number,
     });
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -98,11 +105,18 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {} }: Props) {
                             </div>
                         </div>
                         <div>
-                            <p className="text-xs text-muted-foreground">Rekomendasi Poin Skor</p>
+                            <p className="text-xs text-muted-foreground">Poin Skor</p>
                             {laporan.poin_diberikan !== null ? (
                                 <p className={`mt-0.5 text-lg font-bold font-mono ${laporan.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                     {laporan.poin_diberikan >= 0 ? '+' : ''}{laporan.poin_diberikan}
                                 </p>
+                            ) : matchedMaster ? (
+                                <div className="mt-0.5 flex items-center gap-1.5">
+                                    <span className={`text-base font-bold font-mono ${matchedMaster.poin >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {matchedMaster.poin >= 0 ? '+' : ''}{matchedMaster.poin}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">(Default)</span>
+                                </div>
                             ) : (
                                 <p className="mt-0.5 text-sm text-muted-foreground italic">Ditentukan admin</p>
                             )}
@@ -213,6 +227,19 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {} }: Props) {
                                                     : (isPelanggaran ? '−?' : '+?')}
                                             </span>
                                         </div>
+
+                                        {matchedMaster && (
+                                            <div className="flex items-center justify-between rounded-md border bg-background/80 p-2 text-xs">
+                                                <span className="text-muted-foreground">Poin Default Acuan ({matchedMaster.nama}):</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setData('poin_diberikan', matchedMaster.poin)}
+                                                    className="font-mono font-bold text-xs underline text-primary hover:text-primary/80"
+                                                >
+                                                    Gunakan Poin Default ({matchedMaster.poin > 0 ? `+${matchedMaster.poin}` : matchedMaster.poin})
+                                                </button>
+                                            </div>
+                                        )}
 
                                         {range && (
                                             <p className={`text-xs font-medium ${isPelanggaran ? 'text-red-700/80 dark:text-red-400' : 'text-green-700/80 dark:text-green-400'}`}>

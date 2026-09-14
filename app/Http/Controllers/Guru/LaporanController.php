@@ -9,6 +9,7 @@ use App\Models\BuktiLaporan;
 use App\Models\Kelas;
 use App\Models\Laporan;
 use App\Models\Murid;
+use App\Models\PoinMaster;
 use App\Models\TahunAjaran;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -88,6 +89,7 @@ class LaporanController extends Controller
             'jurusan_list' => $jurusanList,
             'kelas_list'   => $kelasList,
             'poin_ranges'  => Laporan::POIN_RANGES,
+            'poin_masters' => PoinMaster::active()->get(['id', 'kategori', 'nama', 'poin']),
             'tahun_ajaran' => $tahunAjaran ? ['id' => $tahunAjaran->id, 'label' => $tahunAjaran->label] : null,
         ]);
     }
@@ -109,7 +111,7 @@ class LaporanController extends Controller
                 'keterangan'          => $request->keterangan,
                 'tanggal_kejadian'    => $request->tanggal_kejadian,
                 'keterangan_tambahan' => $request->keterangan_tambahan,
-                'poin_diberikan'      => null,
+                'poin_diberikan'      => $request->poin_diberikan,
                 'status'              => 'pending',
                 'tahun_ajaran_id'     => $tahunAjaran->id,
             ]);
@@ -171,7 +173,8 @@ class LaporanController extends Controller
                     'url'       => $b->url(),
                 ]),
             ],
-            'poin_ranges' => Laporan::POIN_RANGES,
+            'poin_ranges'  => Laporan::POIN_RANGES,
+            'poin_masters' => PoinMaster::active()->get(['id', 'kategori', 'nama', 'poin']),
         ]);
     }
 
@@ -218,7 +221,7 @@ class LaporanController extends Controller
                 'keterangan'          => $request->keterangan,
                 'tanggal_kejadian'    => $request->tanggal_kejadian,
                 'keterangan_tambahan' => $request->keterangan_tambahan,
-                // poin_diberikan stays null — set by admin on tindak lanjut
+                'poin_diberikan'      => $request->poin_diberikan,
             ]);
         });
 
