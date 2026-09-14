@@ -17,18 +17,18 @@ class DashboardController extends Controller
         $tahunAjaran = TahunAjaran::aktif();
 
         // ── Stat cards ───────────────────────────────────────────────────
-        $pending             = Laporan::pending()
+        $menungguVerifikasi  = Laporan::menungguVerifikasi()
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
         $totalBulanIni       = Laporan::whereMonth('tanggal_kejadian', now()->month)
             ->whereYear('tanggal_kejadian', now()->year)
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
-        $pelanggaranBulanIni = Laporan::whereMonth('tanggal_kejadian', now()->month)
+        $pelanggaranBulanIni = Laporan::pelanggaran()
+            ->whereMonth('tanggal_kejadian', now()->month)
             ->whereYear('tanggal_kejadian', now()->year)
-            ->where('kategori', 'pelanggaran')
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
-        $kebaikanBulanIni    = Laporan::whereMonth('tanggal_kejadian', now()->month)
+        $prestasiBulanIni    = Laporan::prestasi()
+            ->whereMonth('tanggal_kejadian', now()->month)
             ->whereYear('tanggal_kejadian', now()->year)
-            ->where('kategori', 'kebaikan')
             ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
 
         // ── Tren 6 bulan terakhir ─────────────────────────────────────────
@@ -37,19 +37,24 @@ class DashboardController extends Controller
             $bulan = now()->subMonths($i);
             $label = $bulan->format('M') . ' ' . $bulan->format('Y');
 
-            $pelanggaran = Laporan::whereMonth('tanggal_kejadian', $bulan->month)
+            $pelanggaran = Laporan::pelanggaran()
+                ->whereMonth('tanggal_kejadian', $bulan->month)
                 ->whereYear('tanggal_kejadian', $bulan->year)
                 ->where('tahun_ajaran_id', $tahunAjaran?->id)
-                ->where('kategori', 'pelanggaran')
                 ->count();
 
-            $kebaikan = Laporan::whereMonth('tanggal_kejadian', $bulan->month)
+            $prestasi = Laporan::prestasi()
+                ->whereMonth('tanggal_kejadian', $bulan->month)
                 ->whereYear('tanggal_kejadian', $bulan->year)
                 ->where('tahun_ajaran_id', $tahunAjaran?->id)
-                ->where('kategori', 'kebaikan')
                 ->count();
 
-            $tren[] = ['bulan' => $label, 'pelanggaran' => $pelanggaran, 'kebaikan' => $kebaikan];
+            $tren[] = [
+                'bulan'       => $label,
+                'pelanggaran' => $pelanggaran,
+                'prestasi'    => $prestasi,
+                'kebaikan'    => $prestasi,
+            ];
         }
 
         // ── Semua murid tahun ajaran ini ───────────────────────────────────
@@ -57,22 +62,27 @@ class DashboardController extends Controller
             ->where('tahun_ajaran_id', $tahunAjaran?->id)
             ->get()
             ->map(fn ($m) => [
-                'id'         => $m->id,
-                'nama'       => $m->nama,
-                'nis'        => $m->nis,
-                'kelas'      => $m->kelas?->nama_kelas ?? '-',
-                'skor_resmi' => $m->skorResmi(),
+                'id'               => $m->id,
+                'nama'             => $m->nama,
+                'nis'              => $m->nis,
+                'kelas'            => $m->kelas?->nama_kelas ?? '-',
+                'poin_prestasi'    => $m->poinPrestasi(),
+                'poin_pelanggaran' => $m->poinPelanggaran(),
+                'kualifikasi'      => $m->kualifikasiPoin(),
+                'tahap_pembinaan'  => $m->tahapPembinaan(),
+                'skor_resmi'       => $m->poinPrestasi(),
             ]);
 
-        // ── Leaderboard Top 10 Siswa Poin Tertinggi ────────────────────────
+        // ── Leaderboard Top 10 Siswa Berprestasi Tertinggi ─────────────────
         $topMurids = $allMurids
-            ->sortByDesc('skor_resmi')
+            ->sortByDesc('poin_prestasi')
             ->take(10)
             ->values();
 
-        // ── Ranking murid skor terendah (bermasalah/kritis) ────────────────
+        // ── Siswa dengan Pelanggaran Tertinggi (memerlukan intervensi) ──────
         $muridSkorRendah = $allMurids
-            ->sortBy('skor_resmi')
+            ->sortByDesc('poin_pelanggaran')
+            ->filter(fn($m) => $m['poin_pelanggaran'] > 0)
             ->take(5)
             ->values();
 
@@ -83,23 +93,26 @@ class DashboardController extends Controller
             ->map(function ($k) {
                 $murids = $k->murids;
                 $jumlahMurid = $murids->count();
-                $totalSkor = $murids->sum(fn ($m) => $m->skorResmi());
-                $rataSkor = $jumlahMurid > 0 ? round($totalSkor / $jumlahMurid, 1) : 0;
+                $totalPrestasi = $murids->sum(fn ($m) => $m->poinPrestasi());
+                $totalPelanggaran = $murids->sum(fn ($m) => $m->poinPelanggaran());
+                $rataSkor = $jumlahMurid > 0 ? round($totalPrestasi / $jumlahMurid, 1) : 0;
 
                 return [
-                    'id'           => $k->id,
-                    'nama_kelas'   => $k->nama_kelas,
-                    'tingkat'      => $k->tingkat,
-                    'wali_kelas'   => $k->waliKelas?->nama ?? '-',
-                    'total_skor'   => $totalSkor,
-                    'rata_skor'    => $rataSkor,
-                    'jumlah_murid' => $jumlahMurid,
+                    'id'                => $k->id,
+                    'nama_kelas'        => $k->nama_kelas,
+                    'tingkat'           => $k->tingkat,
+                    'wali_kelas'        => $k->waliKelas?->nama ?? '-',
+                    'total_skor'        => $totalPrestasi,
+                    'total_prestasi'    => $totalPrestasi,
+                    'total_pelanggaran' => $totalPelanggaran,
+                    'rata_skor'         => $rataSkor,
+                    'jumlah_murid'      => $jumlahMurid,
                 ];
             });
 
-        // ── Leaderboard Top 10 Kelas Poin Tertinggi ────────────────────────
+        // ── Leaderboard Top 10 Kelas Berprestasi ──────────────────────────
         $topKelas = $allKelas
-            ->sortByDesc('total_skor')
+            ->sortByDesc('total_prestasi')
             ->take(10)
             ->values();
 
@@ -110,10 +123,12 @@ class DashboardController extends Controller
 
         return Inertia::render('admin/dashboard', [
             'stats' => [
-                'pending'               => $pending,
+                'menunggu_verifikasi'   => $menungguVerifikasi,
+                'pending'               => $menungguVerifikasi,
                 'total_bulan_ini'       => $totalBulanIni,
                 'pelanggaran_bulan_ini' => $pelanggaranBulanIni,
-                'kebaikan_bulan_ini'    => $kebaikanBulanIni,
+                'prestasi_bulan_ini'    => $prestasiBulanIni,
+                'kebaikan_bulan_ini'    => $prestasiBulanIni,
             ],
             'tren_laporan'      => $tren,
             'top_murids'        => $topMurids,

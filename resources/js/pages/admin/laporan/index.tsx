@@ -4,7 +4,7 @@ import { StatusBadge } from '@/components/status-badge';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
-import { ClipboardList } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ClipboardList, Clock } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface LaporanItem {
@@ -16,6 +16,8 @@ interface LaporanItem {
     kategori: string;
     tingkat_keparahan: string;
     keterangan: string;
+    is_manual: boolean;
+    needs_verification: boolean;
     poin_diberikan: number;
     status: string;
     jumlah_bukti: number;
@@ -33,7 +35,13 @@ interface Props {
     kelas_list: FilterOption[];
     guru_list: FilterOption[];
     tahun_ajarans: FilterOption[];
-    summary: { pending: number; ditindaklanjuti: number; ditolak: number };
+    summary: {
+        menunggu_verifikasi: number;
+        baru_dilaporkan: number;
+        pembinaan: number;
+        selesai: number;
+        total: number;
+    };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -52,6 +60,8 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
         tahun_ajaran_id: filters.tahun_ajaran_id ?? '',
     });
 
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
+
     const apply = () => router.get('/admin/laporan', f, { preserveState: true, replace: true });
     const reset = () => {
         const empty = { status: '', kategori: '', kelas_id: '', guru_id: '', dari: '', sampai: '', tahun_ajaran_id: '' };
@@ -62,21 +72,46 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
     const upd = (k: keyof typeof f) => (e: React.ChangeEvent<HTMLSelectElement | HTMLInputElement>) =>
         setF((p) => ({ ...p, [k]: e.target.value }));
 
+    const handleStatusChange = (laporanId: number, newStatus: string) => {
+        setUpdatingId(laporanId);
+        router.patch(
+            `/admin/laporan/${laporanId}/status`,
+            { status: newStatus },
+            {
+                preserveScroll: true,
+                onFinish: () => setUpdatingId(null),
+            }
+        );
+    };
+
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Laporan Masuk" />
             <div className="space-y-5 p-6">
-                <h1 className="text-xl font-semibold">Laporan Masuk</h1>
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-xl font-bold tracking-tight">Laporan Masuk & Manajemen Kasus</h1>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            Pantau laporan masuk dari guru, ubah status pembinaan, atau verifikasi laporan manual.
+                        </p>
+                    </div>
+                </div>
 
                 {/* Summary chips */}
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2.5">
+                    {summary.menunggu_verifikasi > 0 && (
+                        <div className="rounded-lg border border-yellow-300 bg-yellow-50 px-3.5 py-2 text-xs font-semibold text-yellow-900 shadow-2xs animate-pulse flex items-center gap-1.5">
+                            <Clock className="size-3.5 text-yellow-600" />
+                            <span><span className="font-bold">{summary.menunggu_verifikasi}</span> Menunggu Verifikasi Admin</span>
+                        </div>
+                    )}
                     {[
-                        { label: 'Pending', val: summary.pending, cls: 'bg-yellow-50 border-yellow-200 text-yellow-800' },
-                        { label: 'Ditindaklanjuti', val: summary.ditindaklanjuti, cls: 'bg-green-50 border-green-200 text-green-800' },
-                        { label: 'Ditolak', val: summary.ditolak, cls: 'bg-red-50 border-red-200 text-red-800' },
+                        { label: 'Baru Dilaporkan', val: summary.baru_dilaporkan, cls: 'bg-blue-50 border-blue-200 text-blue-800' },
+                        { label: 'Pembinaan Tindak Lanjut', val: summary.pembinaan, cls: 'bg-amber-50 border-amber-300 text-amber-900' },
+                        { label: 'Selesai', val: summary.selesai, cls: 'bg-green-50 border-green-200 text-green-800' },
                     ].map((s) => (
-                        <div key={s.label} className={`rounded-lg border px-4 py-2 text-sm ${s.cls}`}>
-                            <span className="font-semibold">{s.val}</span> {s.label}
+                        <div key={s.label} className={`rounded-lg border px-3.5 py-2 text-xs font-medium ${s.cls}`}>
+                            <span className="font-bold">{s.val}</span> {s.label}
                         </div>
                     ))}
                 </div>
@@ -94,9 +129,11 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Status</label>
                             <select value={f.status} onChange={upd('status')} className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                <option value="">Semua</option>
-                                <option value="pending">Pending</option>
-                                <option value="ditindaklanjuti">Ditindaklanjuti</option>
+                                <option value="">Semua Status</option>
+                                <option value="menunggu verifikasi">Menunggu Verifikasi (Manual)</option>
+                                <option value="baru dilaporkan">Baru Dilaporkan</option>
+                                <option value="pembinaan tindak lanjut">Pembinaan Tindak Lanjut</option>
+                                <option value="selesai">Selesai</option>
                                 <option value="ditolak">Ditolak</option>
                             </select>
                         </div>
@@ -105,7 +142,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                             <select value={f.kategori} onChange={upd('kategori')} className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                                 <option value="">Semua</option>
                                 <option value="pelanggaran">Pelanggaran</option>
-                                <option value="kebaikan">Kebaikan</option>
+                                <option value="prestasi">Prestasi</option>
                             </select>
                         </div>
                         <div className="space-y-1">
@@ -130,8 +167,8 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                             <label className="text-xs font-medium text-muted-foreground">Sampai</label>
                             <input type="date" value={f.sampai} onChange={upd('sampai')} className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         </div>
-                        <button onClick={apply} className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90">Terapkan</button>
-                        <button onClick={reset} className="h-9 rounded-md border px-3 text-sm hover:bg-muted">Reset</button>
+                        <button onClick={apply} className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">Terapkan</button>
+                        <button onClick={reset} className="h-9 rounded-md border px-3 text-sm hover:bg-muted transition-colors">Reset</button>
                     </div>
                 </div>
 
@@ -147,44 +184,80 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                                         <tr className="border-b bg-muted/40 text-left">
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Murid</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground">Kategori & Tingkat</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">Kategori</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Keterangan</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground text-center">Poin</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground">Dilaporkan</th>
-                                            <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">Pelapor</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">Status & Alur</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Bukti</th>
                                             <th className="px-4 py-3"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
                                         {laporans.data.map((l) => (
-                                            <tr key={l.id} className="hover:bg-muted/20">
+                                            <tr key={l.id} className="hover:bg-muted/20 transition-colors">
                                                 <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{l.tanggal_kejadian}</td>
                                                 <td className="px-4 py-3">
-                                                    <p className="font-medium text-foreground">{l.murid_nama}</p>
+                                                    <p className="font-semibold text-foreground">{l.murid_nama}</p>
                                                     <p className="text-xs text-muted-foreground">{l.kelas_nama}</p>
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-1.5">
                                                         <StatusBadge status={l.kategori} />
-                                                        <span className="text-xs font-medium capitalize text-muted-foreground">
-                                                            ({l.tingkat_keparahan})
-                                                        </span>
+                                                        {l.is_manual && (
+                                                            <span className="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold border border-amber-300">
+                                                                Manual
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </td>
                                                 <td className="px-4 py-3 font-medium text-foreground">
-                                                    <p className="max-w-[200px] truncate">{l.keterangan}</p>
+                                                    <p className="max-w-[220px] truncate" title={l.keterangan}>{l.keterangan}</p>
                                                 </td>
                                                 <td className="px-4 py-3 text-center">
                                                     <span className={`font-mono font-bold ${l.poin_diberikan >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                                         {l.poin_diberikan > 0 ? `+${l.poin_diberikan}` : l.poin_diberikan}
                                                     </span>
                                                 </td>
-                                                <td className="px-4 py-3 text-muted-foreground">{l.guru_nama}</td>
-                                                <td className="px-4 py-3"><StatusBadge status={l.status} /></td>
-                                                <td className="px-4 py-3 text-muted-foreground">{l.jumlah_bukti > 0 ? `${l.jumlah_bukti} foto` : '—'}</td>
+                                                <td className="px-4 py-3 text-muted-foreground text-xs">{l.guru_nama}</td>
+                                                <td className="px-4 py-3">
+                                                    {l.status === 'menunggu verifikasi' ? (
+                                                        <div className="flex flex-col gap-1">
+                                                            <StatusBadge status="menunggu verifikasi" />
+                                                            <Link
+                                                                href={`/admin/laporan/${l.id}`}
+                                                                className="text-[11px] font-bold text-amber-700 underline hover:text-amber-900"
+                                                            >
+                                                                Verifikasi Sekarang →
+                                                            </Link>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center gap-2">
+                                                            <select
+                                                                value={l.status}
+                                                                disabled={updatingId === l.id}
+                                                                onChange={(e) => handleStatusChange(l.id, e.target.value)}
+                                                                className={`h-8 rounded-md border text-xs font-semibold px-2 focus:outline-none focus:ring-1 transition-all ${
+                                                                    l.status === 'baru dilaporkan'
+                                                                        ? 'bg-blue-50/80 text-blue-800 border-blue-200'
+                                                                        : l.status === 'pembinaan tindak lanjut'
+                                                                          ? 'bg-amber-50/80 text-amber-800 border-amber-300'
+                                                                          : l.status === 'selesai'
+                                                                            ? 'bg-green-50/80 text-green-800 border-green-200'
+                                                                            : 'bg-muted text-muted-foreground border-border'
+                                                                }`}
+                                                            >
+                                                                <option value="baru dilaporkan">Baru Dilaporkan</option>
+                                                                <option value="pembinaan tindak lanjut">Pembinaan Tindak Lanjut</option>
+                                                                <option value="selesai">Selesai</option>
+                                                                <option value="ditolak">Ditolak</option>
+                                                            </select>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-4 py-3 text-muted-foreground text-xs">{l.jumlah_bukti > 0 ? `${l.jumlah_bukti} foto` : '—'}</td>
                                                 <td className="px-4 py-3 text-right">
-                                                    <Link href={`/admin/laporan/${l.id}`} className="rounded px-2 py-1 text-xs font-semibold text-primary hover:underline">
+                                                    <Link href={`/admin/laporan/${l.id}`} className="rounded px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors">
                                                         Detail
                                                     </Link>
                                                 </td>

@@ -74,15 +74,20 @@ class LaporanController extends Controller
 
         return Inertia::render('guru/laporan/buat', [
             'murids' => $murids->through(fn($m) => [
-                'id'             => $m->id,
-                'nama'           => $m->nama,
-                'nis'            => $m->nis,
-                'nisn'           => $m->nisn,
-                'kelas_id'       => $m->kelas_id,
-                'nama_kelas'     => $m->kelas->nama_kelas,
-                'tingkat'        => $m->kelas->tingkat,
-                'skor_resmi'     => $m->skorResmi(),
-                'skor_sementara' => $m->skorSementara(),
+                'id'               => $m->id,
+                'nama'             => $m->nama,
+                'nis'              => $m->nis,
+                'nisn'             => $m->nisn,
+                'kelas_id'         => $m->kelas_id,
+                'nama_kelas'       => $m->kelas->nama_kelas,
+                'tingkat'          => $m->kelas->tingkat,
+                'poin_pelanggaran' => $m->poinPelanggaran(),
+                'poin_prestasi'    => $m->poinPrestasi(),
+                'kualifikasi'      => $m->kualifikasiPoin(),
+                'tahap_pembinaan'  => $m->tahapPembinaan(),
+                // backward compatibility fields
+                'skor_resmi'       => $m->skorResmi(),
+                'skor_sementara'   => $m->skorResmi(),
             ]),
             'filters'      => $request->only(['q', 'tingkat', 'jurusan', 'kelas_id']),
             'tingkat_list' => ['X', 'XI', 'XII'],
@@ -101,18 +106,21 @@ class LaporanController extends Controller
     {
         $guru        = $request->user()->guru;
         $tahunAjaran = TahunAjaran::aktif();
+        $isManual    = (bool) $request->input('is_manual', false);
+        $status      = $isManual ? 'menunggu verifikasi' : 'baru dilaporkan';
 
-        DB::transaction(function () use ($request, $guru, $tahunAjaran) {
+        DB::transaction(function () use ($request, $guru, $tahunAjaran, $isManual, $status) {
             $laporan = Laporan::create([
                 'guru_id'             => $guru->id,
                 'murid_id'            => $request->murid_id,
                 'kategori'            => $request->kategori,
-                'tingkat_keparahan'   => $request->tingkat_keparahan,
+                'tingkat_keparahan'   => $request->tingkat_keparahan ?? 'ringan',
                 'keterangan'          => $request->keterangan,
                 'tanggal_kejadian'    => $request->tanggal_kejadian,
                 'keterangan_tambahan' => $request->keterangan_tambahan,
+                'is_manual'           => $isManual,
                 'poin_diberikan'      => $request->poin_diberikan,
-                'status'              => 'pending',
+                'status'              => $status,
                 'tahun_ajaran_id'     => $tahunAjaran->id,
             ]);
 
@@ -136,18 +144,22 @@ class LaporanController extends Controller
             }
         });
 
-        return back()->with('success', 'Catatan laporan berhasil disimpan dan menunggu tindak lanjut admin.');
+        $message = $isManual
+            ? 'Catatan laporan manual berhasil disimpan dan menunggu verifikasi admin.'
+            : 'Catatan laporan berhasil disimpan dan poin otomatis diterapkan.';
+
+        return back()->with('success', $message);
     }
 
     /**
-     * Form edit laporan (hanya selama pending).
+     * Form edit laporan (selama masih bisa diedit oleh guru).
      */
     public function edit(Laporan $laporan): Response
     {
         $guru = auth()->user()->guru;
 
-        // Pastikan laporan milik guru ini dan masih pending
-        abort_unless($laporan->guru_id === $guru->id && $laporan->isPending(), 403);
+        // Pastikan laporan milik guru ini dan masih bisa diedit
+        abort_unless($laporan->guru_id === $guru->id && $laporan->bisaDieditOlehGuru(), 403);
 
         $laporan->load(['murid.kelas', 'bukti']);
 
@@ -164,7 +176,9 @@ class LaporanController extends Controller
                 'kategori'            => $laporan->kategori,
                 'tingkat_keparahan'   => $laporan->tingkat_keparahan,
                 'keterangan'          => $laporan->keterangan,
+                'is_manual'           => $laporan->is_manual,
                 'poin_diberikan'      => $laporan->poin_diberikan,
+                'status'              => $laporan->status,
                 'tanggal_kejadian'    => $laporan->tanggal_kejadian->format('Y-m-d'),
                 'keterangan_tambahan' => $laporan->keterangan_tambahan,
                 'bukti'               => $laporan->bukti->map(fn($b) => [
@@ -179,7 +193,7 @@ class LaporanController extends Controller
     }
 
     /**
-     * Update laporan (hanya selama pending).
+     * Update laporan (selama masih bisa diedit).
      */
     public function update(UpdateLaporanRequest $request, Laporan $laporan): RedirectResponse
     {
@@ -214,14 +228,19 @@ class LaporanController extends Controller
                 }
             }
 
+            $isManual = $request->has('is_manual') ? (bool) $request->input('is_manual') : $laporan->is_manual;
+            $status = $isManual ? ($laporan->status === 'baru dilaporkan' ? 'baru dilaporkan' : 'menunggu verifikasi') : 'baru dilaporkan';
+
             $laporan->update([
                 'murid_id'            => $request->murid_id,
                 'kategori'            => $request->kategori,
-                'tingkat_keparahan'   => $request->tingkat_keparahan,
+                'tingkat_keparahan'   => $request->tingkat_keparahan ?? 'ringan',
                 'keterangan'          => $request->keterangan,
+                'is_manual'           => $isManual,
                 'tanggal_kejadian'    => $request->tanggal_kejadian,
                 'keterangan_tambahan' => $request->keterangan_tambahan,
                 'poin_diberikan'      => $request->poin_diberikan,
+                'status'              => $status,
             ]);
         });
 
@@ -265,6 +284,7 @@ class LaporanController extends Controller
                 'kategori'           => $l->kategori,
                 'tingkat_keparahan'  => $l->tingkat_keparahan,
                 'keterangan'         => $l->keterangan,
+                'is_manual'          => $l->is_manual,
                 'poin_diberikan'     => $l->poin_diberikan,
                 'status'             => $l->status,
                 'bisa_diedit'        => $l->bisaDieditOlehGuru(),

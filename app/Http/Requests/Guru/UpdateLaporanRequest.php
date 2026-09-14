@@ -11,8 +11,8 @@ class UpdateLaporanRequest extends FormRequest
         $laporan = $this->route('laporan');
         $guru    = $this->user()->guru;
 
-        // Hanya guru pemilik laporan, dan hanya selama masih pending
-        return $guru && $laporan->guru_id === $guru->id && $laporan->isPending();
+        // Hanya guru pemilik laporan, dan hanya selama masih bisa diedit
+        return $guru && $laporan->guru_id === $guru->id && $laporan->bisaDieditOlehGuru();
     }
 
     public function rules(): array
@@ -22,9 +22,10 @@ class UpdateLaporanRequest extends FormRequest
 
         return [
             'murid_id'            => ['required', 'integer', 'exists:murids,id'],
-            'kategori'            => ['required', 'string', 'in:pelanggaran,kebaikan'],
-            'tingkat_keparahan'   => ['required', 'string', 'in:ringan,sedang,berat'],
+            'kategori'            => ['required', 'string', 'in:pelanggaran,prestasi,kebaikan'],
+            'tingkat_keparahan'   => ['nullable', 'string', 'in:ringan,sedang,berat'],
             'keterangan'          => ['required', 'string', 'max:255'],
+            'is_manual'           => ['nullable', 'boolean'],
             'poin_diberikan'      => ['required', 'integer', 'not_in:0'],
             'tanggal_kejadian'    => ['required', 'date', 'before_or_equal:today'],
             'keterangan_tambahan' => ['nullable', 'string', 'max:1000'],
@@ -46,7 +47,8 @@ class UpdateLaporanRequest extends FormRequest
         return [
             'murid_id.required'             => 'Murid harus dipilih.',
             'kategori.required'             => 'Kategori laporan harus dipilih.',
-            'tingkat_keparahan.required'    => 'Tingkat keparahan / kebaikan harus dipilih.',
+            'kategori.in'                   => 'Kategori tidak valid.',
+            'tingkat_keparahan.in'          => 'Tingkat tidak valid.',
             'keterangan.required'           => 'Keterangan/jenis tindakan harus diisi.',
             'tanggal_kejadian.required'     => 'Tanggal kejadian harus diisi.',
             'tanggal_kejadian.before_or_equal' => 'Tanggal kejadian tidak boleh di masa depan.',

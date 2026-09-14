@@ -23,19 +23,21 @@ interface LaporanItem {
     tanggal_kejadian: string;
     murid_nama: string;
     kelas_nama: string;
-    kategori: 'pelanggaran' | 'kebaikan';
+    kategori: 'pelanggaran' | 'prestasi' | 'kebaikan';
     tingkat_keparahan?: string;
     keterangan: string;
     poin_diberikan: number;
-    status: 'pending' | 'ditindaklanjuti' | 'ditolak';
+    status: string;
     bisa_diedit: boolean;
 }
 
 interface Props {
     stats: {
         total_laporan: number;
-        pending: number;
-        ditindaklanjuti: number;
+        pending?: number;
+        menunggu_verifikasi?: number;
+        ditindaklanjuti?: number;
+        selesai?: number;
     };
     laporan_terbaru: LaporanItem[];
     top_murids: TopMuridItem[];
@@ -52,6 +54,9 @@ export default function GuruDashboard({
 }: Props) {
     const { auth } = usePage<SharedData>().props;
     const guru = auth.guru;
+
+    const pendingCount = stats?.menunggu_verifikasi ?? stats?.pending ?? 0;
+    const selesaiCount = stats?.selesai ?? stats?.ditindaklanjuti ?? 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -91,7 +96,7 @@ export default function GuruDashboard({
                             <div>
                                 <p className="font-semibold text-foreground">Buat Laporan Baru</p>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
-                                    Catat peristiwa pelanggaran tata tertib atau apresiasi kebaikan siswa
+                                    Catat peristiwa pelanggaran tata tertib atau prestasi siswa
                                 </p>
                             </div>
                         </div>
@@ -113,7 +118,10 @@ export default function GuruDashboard({
                                     </span>
                                 </div>
                                 <p className="mt-0.5 text-xs text-muted-foreground">
-                                    <span className="font-medium text-[#D97706]">{stats?.pending ?? 0} pending</span>, {stats?.ditindaklanjuti ?? 0} selesai
+                                    {pendingCount > 0 ? (
+                                        <span className="font-medium text-[#D97706]">{pendingCount} menunggu verifikasi, </span>
+                                    ) : null}
+                                    {stats?.total_laporan ?? 0} total laporan tercatat
                                 </p>
                             </div>
                         </div>
@@ -132,7 +140,7 @@ export default function GuruDashboard({
                                 <div>
                                     <p className="font-semibold text-foreground">Rekap Kelas</p>
                                     <p className="mt-0.5 text-xs text-muted-foreground">
-                                        Pantau akumulasi skor seluruh siswa kelas {guru.wali_kelas?.nama_kelas}
+                                        Pantau poin pelanggaran & prestasi siswa kelas {guru.wali_kelas?.nama_kelas}
                                     </p>
                                 </div>
                             </div>
@@ -151,7 +159,7 @@ export default function GuruDashboard({
                     <div className="mb-4 flex items-center justify-between">
                         <div>
                             <h2 className="text-base font-bold text-slate-900">Laporan Terbaru Anda</h2>
-                            <p className="text-xs text-muted-foreground">Daftar laporan kedisiplinan yang baru saja Anda kirimkan</p>
+                            <p className="text-xs text-muted-foreground">Daftar laporan kedisiplinan dan prestasi yang Anda kirimkan</p>
                         </div>
                         {laporan_terbaru?.length > 0 && (
                             <Link
@@ -170,7 +178,7 @@ export default function GuruDashboard({
                             </div>
                             <p className="text-sm font-medium text-foreground">Belum ada laporan yang Anda buat</p>
                             <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-                                Klik tombol &quot;Buat Laporan Baru&quot; untuk mencatat pelanggaran atau kebaikan murid.
+                                Klik tombol &quot;Buat Laporan Baru&quot; untuk mencatat pelanggaran atau prestasi murid.
                             </p>
                         </div>
                     ) : (

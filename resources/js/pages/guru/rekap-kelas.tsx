@@ -24,8 +24,12 @@ interface MuridRekap {
     nisn: string | null;
     nama_kelas: string;
     kelas_id: number;
-    skor_resmi: number;
-    skor_sementara: number;
+    poin_prestasi: number;
+    poin_pelanggaran: number;
+    kualifikasi?: string;
+    tahap_pembinaan?: string;
+    skor_resmi?: number;
+    skor_sementara?: number;
     jumlah_laporan: number;
     laporans: LaporanRingkas[];
 }
@@ -88,8 +92,8 @@ export default function RekapKelas({
         setIsModalOpen(true);
     };
 
-    // Sort: skor_resmi ascending (murid bermasalah/skor rendah di atas)
-    const sorted = [...(murids || [])].sort((a, b) => (a.skor_resmi ?? 0) - (b.skor_resmi ?? 0));
+    // Sort: poin_pelanggaran descending (murid dengan pelanggaran tertinggi di atas)
+    const sorted = [...(murids || [])].sort((a, b) => (b.poin_pelanggaran ?? 0) - (a.poin_pelanggaran ?? 0));
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -152,9 +156,10 @@ export default function RekapKelas({
                                 className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8] transition-colors"
                             >
                                 <option value="semua">Semua Status</option>
-                                <option value="pending">Pending (Menunggu Review)</option>
-                                <option value="ditindaklanjuti">Ditindaklanjuti (Disetujui)</option>
-                                <option value="ditolak">Ditolak</option>
+                                <option value="baru dilaporkan">Baru Dilaporkan</option>
+                                <option value="menunggu verifikasi">Menunggu Verifikasi</option>
+                                <option value="pembinaan tindak lanjut">Pembinaan / Tindak Lanjut</option>
+                                <option value="selesai">Selesai</option>
                             </select>
                         </div>
 
@@ -211,8 +216,8 @@ export default function RekapKelas({
                                     <tr className="border-b border-slate-200 bg-slate-50/80 text-left">
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 w-10"></th>
                                         <th className="px-4 py-3.5 font-semibold text-slate-700">Nama Murid</th>
-                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Skor Resmi</th>
-                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Skor Sementara</th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Poin Prestasi</th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Poin Pelanggaran</th>
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Catatan</th>
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 text-right">Aksi</th>
                                     </tr>
@@ -243,29 +248,19 @@ export default function RekapKelas({
                                                         </p>
                                                     </td>
                                                     <td className="px-4 py-3.5 text-center">
-                                                        <span
-                                                            className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono shadow-2xs ${
-                                                                (m.skor_resmi ?? 0) < 0
-                                                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                                                                    : (m.skor_resmi ?? 0) > 0
-                                                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                                                      : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                                            }`}
-                                                        >
-                                                            {(m.skor_resmi ?? 0) > 0 ? `+${m.skor_resmi}` : (m.skor_resmi ?? 0)}
+                                                        <span className="inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono shadow-2xs bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                                            +{m.poin_prestasi ?? 0}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3.5 text-center">
                                                         <span
-                                                            className={`inline-flex items-center justify-center font-medium px-2 py-0.5 rounded-full text-xs font-mono ${
-                                                                (m.skor_sementara ?? 0) < 0
-                                                                    ? 'text-rose-600 bg-rose-50'
-                                                                    : (m.skor_sementara ?? 0) > 0
-                                                                      ? 'text-emerald-700 bg-emerald-50'
-                                                                      : 'text-slate-500 bg-slate-50'
+                                                            className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono shadow-2xs ${
+                                                                (m.poin_pelanggaran ?? 0) > 0
+                                                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
+                                                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
                                                             }`}
                                                         >
-                                                            {(m.skor_sementara ?? 0) > 0 ? `+${m.skor_sementara}` : (m.skor_sementara ?? 0)}
+                                                            {m.poin_pelanggaran ?? 0}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3.5 text-center">

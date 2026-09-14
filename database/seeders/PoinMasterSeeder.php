@@ -116,7 +116,7 @@ class PoinMasterSeeder extends Seeder
 
         foreach ($penghargaan as $item) {
             PoinMaster::updateOrCreate(
-                ['nama' => $item['nama'], 'kategori' => 'kebaikan'],
+                ['nama' => $item['nama'], 'kategori' => 'prestasi'],
                 ['poin' => $item['poin'], 'is_active' => true]
             );
         }

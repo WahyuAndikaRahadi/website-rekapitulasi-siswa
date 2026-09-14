@@ -26,23 +26,25 @@ class MuridExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
 
         return $murids->map(function ($m) {
             return (object) [
-                'id'              => $m->id,
-                'nama'            => $m->nama,
-                'nis'             => $m->nis,
-                'nisn'            => $m->nisn,
-                'nama_kelas'      => $m->kelas?->nama_kelas ?? '-',
-                'skor_resmi'      => $m->skorResmi(),
-                'skor_sementara'  => $m->skorSementara(),
+                'id'               => $m->id,
+                'nama'             => $m->nama,
+                'nis'              => $m->nis,
+                'nisn'             => $m->nisn,
+                'nama_kelas'       => $m->kelas?->nama_kelas ?? '-',
+                'poin_prestasi'    => $m->poinPrestasi(),
+                'poin_pelanggaran' => $m->poinPelanggaran(),
+                'kualifikasi'      => $m->kualifikasiPoin(),
+                'tahap_pembinaan'  => $m->tahapPembinaan(),
             ];
         })
-        // Urutkan siswa dari poin tertinggi ke terendah
-        ->sortByDesc('skor_resmi')
+        // Urutkan siswa dari poin prestasi tertinggi
+        ->sortByDesc('poin_prestasi')
         ->values();
     }
 
     public function headings(): array
     {
-        return ['Peringkat', 'Nama Siswa', 'NIS', 'NISN', 'Kelas', 'Skor Resmi', 'Skor Sementara'];
+        return ['Peringkat', 'Nama Siswa', 'NIS', 'NISN', 'Kelas', 'Poin Prestasi', 'Poin Pelanggaran', 'Kualifikasi', 'Tahap Pembinaan'];
     }
 
     public function map($murid): array
@@ -56,8 +58,10 @@ class MuridExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             $murid->nis ?? '-',
             $murid->nisn ?? '-',
             $murid->nama_kelas,
-            $murid->skor_resmi,
-            $murid->skor_sementara,
+            $murid->poin_prestasi,
+            $murid->poin_pelanggaran,
+            $murid->kualifikasi,
+            $murid->tahap_pembinaan,
         ];
     }
 

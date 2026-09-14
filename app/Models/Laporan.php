@@ -13,13 +13,17 @@ class Laporan extends Model
 
     /**
      * Range poin sebagai panduan visual untuk guru.
-     * Poin aktual ditetapkan oleh admin saat tindak lanjut.
      */
     public const POIN_RANGES = [
         'pelanggaran' => [
             'ringan' => ['min' => -5,  'max' => -10],
             'sedang' => ['min' => -11, 'max' => -25],
             'berat'  => ['min' => -26, 'max' => -50],
+        ],
+        'prestasi' => [
+            'ringan' => ['min' => 5,  'max' => 10],
+            'sedang' => ['min' => 11, 'max' => 25],
+            'berat'  => ['min' => 26, 'max' => 50],
         ],
         'kebaikan' => [
             'ringan' => ['min' => 5,  'max' => 10],
@@ -36,6 +40,7 @@ class Laporan extends Model
         'keterangan',
         'tanggal_kejadian',
         'keterangan_tambahan',
+        'is_manual',
         'poin_diberikan',
         'status',
         'tindak_lanjut',
@@ -50,12 +55,12 @@ class Laporan extends Model
             'tanggal_kejadian'   => 'date',
             'ditindaklanjuti_at' => 'datetime',
             'poin_diberikan'     => 'integer',
+            'is_manual'          => 'boolean',
         ];
     }
 
     /**
      * Kembalikan string hint rentang poin untuk tingkat tertentu.
-     * Contoh: poinRangeHint('pelanggaran', 'ringan') => "-5 s/d -10"
      */
     public static function poinRangeHint(string $kategori, string $tingkat): string
     {
@@ -100,19 +105,45 @@ class Laporan extends Model
         return $query->where('kategori', 'pelanggaran');
     }
 
+    public function scopePrestasi($query)
+    {
+        return $query->whereIn('kategori', ['prestasi', 'kebaikan']);
+    }
+
     public function scopeKebaikan($query)
     {
-        return $query->where('kategori', 'kebaikan');
+        return $this->scopePrestasi($query);
     }
 
-    public function scopePending($query)
+    public function scopeValidPoin($query)
     {
-        return $query->where('status', 'pending');
+        return $query->where(function ($q) {
+            $q->where('is_manual', false)
+              ->orWhere(function ($sq) {
+                  $sq->where('is_manual', true)
+                     ->whereNotIn('status', ['menunggu verifikasi', 'ditolak']);
+              });
+        });
     }
 
-    public function scopeDitindaklanjuti($query)
+    public function scopeMenungguVerifikasi($query)
     {
-        return $query->where('status', 'ditindaklanjuti');
+        return $query->where('status', 'menunggu verifikasi');
+    }
+
+    public function scopeBaruDilaporkan($query)
+    {
+        return $query->where('status', 'baru dilaporkan');
+    }
+
+    public function scopePembinaan($query)
+    {
+        return $query->where('status', 'pembinaan tindak lanjut');
+    }
+
+    public function scopeSelesai($query)
+    {
+        return $query->where('status', 'selesai');
     }
 
     public function scopeDitolak($query)
@@ -120,23 +151,52 @@ class Laporan extends Model
         return $query->where('status', 'ditolak');
     }
 
+    // Legacy scope aliases
+    public function scopePending($query)
+    {
+        return $query->whereIn('status', ['pending', 'menunggu verifikasi', 'baru dilaporkan']);
+    }
+
+    public function scopeDitindaklanjuti($query)
+    {
+        return $query->whereIn('status', ['ditindaklanjuti', 'selesai', 'pembinaan tindak lanjut']);
+    }
+
     // --- Helper ---
+
+    public function isManual(): bool
+    {
+        return (bool) $this->is_manual;
+    }
+
+    public function needsVerification(): bool
+    {
+        return $this->isManual() && $this->status === 'menunggu verifikasi';
+    }
+
+    public function isPoinBerlaku(): bool
+    {
+        if (!$this->is_manual) {
+            return $this->status !== 'ditolak';
+        }
+        return !in_array($this->status, ['menunggu verifikasi', 'ditolak'], true);
+    }
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return in_array($this->status, ['pending', 'menunggu verifikasi', 'baru dilaporkan'], true);
     }
 
     public function isDitindaklanjuti(): bool
     {
-        return $this->status === 'ditindaklanjuti';
+        return in_array($this->status, ['ditindaklanjuti', 'selesai'], true);
     }
 
     /**
-     * Guru hanya boleh edit selama laporan masih pending.
+     * Guru boleh edit selama laporan masih baru dilaporkan atau menunggu verifikasi.
      */
     public function bisaDieditOlehGuru(): bool
     {
-        return $this->isPending();
+        return in_array($this->status, ['baru dilaporkan', 'menunggu verifikasi', 'pending'], true);
     }
 }

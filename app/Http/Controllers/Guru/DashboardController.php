@@ -19,9 +19,12 @@ class DashboardController extends Controller
         $tahunAjaran = TahunAjaran::aktif();
 
         $stats = [
-            'total_laporan'   => Laporan::where('guru_id', $guru?->id)->count(),
-            'pending'         => Laporan::where('guru_id', $guru?->id)->where('status', 'pending')->count(),
-            'ditindaklanjuti' => Laporan::where('guru_id', $guru?->id)->where('status', 'ditindaklanjuti')->count(),
+            'total_laporan'       => Laporan::where('guru_id', $guru?->id)->count(),
+            'menunggu_verifikasi' => Laporan::where('guru_id', $guru?->id)->where('status', 'menunggu verifikasi')->count(),
+            'baru_dilaporkan'     => Laporan::where('guru_id', $guru?->id)->where('status', 'baru dilaporkan')->count(),
+            'selesai'             => Laporan::where('guru_id', $guru?->id)->where('status', 'selesai')->count(),
+            'pending'             => Laporan::where('guru_id', $guru?->id)->whereIn('status', ['menunggu verifikasi', 'baru dilaporkan', 'pending'])->count(),
+            'ditindaklanjuti'     => Laporan::where('guru_id', $guru?->id)->whereIn('status', ['selesai', 'pembinaan tindak lanjut', 'ditindaklanjuti'])->count(),
         ];
 
         $laporanTerbaru = Laporan::with(['murid.kelas'])
@@ -37,47 +40,55 @@ class DashboardController extends Controller
                 'kategori'           => $l->kategori,
                 'tingkat_keparahan'  => $l->tingkat_keparahan,
                 'keterangan'         => $l->keterangan,
+                'is_manual'          => (bool) $l->is_manual,
                 'poin_diberikan'     => $l->poin_diberikan,
                 'status'             => $l->status,
                 'bisa_diedit'        => $l->bisaDieditOlehGuru(),
             ]);
 
-        // ── Leaderboard Top 10 Siswa Poin Tertinggi ────────────────────────
+        // ── Leaderboard Top 10 Siswa Berprestasi ───────────────────────────
         $topMurids = Murid::with(['kelas', 'laporans'])
             ->where('tahun_ajaran_id', $tahunAjaran?->id)
             ->get()
             ->map(fn ($m) => [
-                'id'         => $m->id,
-                'nama'       => $m->nama,
-                'nis'        => $m->nis,
-                'kelas'      => $m->kelas?->nama_kelas ?? '-',
-                'skor_resmi' => $m->skorResmi(),
+                'id'               => $m->id,
+                'nama'             => $m->nama,
+                'nis'              => $m->nis,
+                'kelas'            => $m->kelas?->nama_kelas ?? '-',
+                'poin_prestasi'    => $m->poinPrestasi(),
+                'poin_pelanggaran' => $m->poinPelanggaran(),
+                'kualifikasi'      => $m->kualifikasiPoin(),
+                'tahap_pembinaan'  => $m->tahapPembinaan(),
+                'skor_resmi'       => $m->poinPrestasi(),
             ])
-            ->sortByDesc('skor_resmi')
+            ->sortByDesc('poin_prestasi')
             ->take(10)
             ->values();
 
-        // ── Leaderboard Top 10 Kelas Poin Tertinggi ────────────────────────
+        // ── Leaderboard Top 10 Kelas Berprestasi ───────────────────────────
         $topKelas = Kelas::with(['murids.laporans', 'waliKelas'])
             ->where('tahun_ajaran_id', $tahunAjaran?->id)
             ->get()
             ->map(function ($k) {
                 $murids = $k->murids;
                 $jumlahMurid = $murids->count();
-                $totalSkor = $murids->sum(fn ($m) => $m->skorResmi());
-                $rataSkor = $jumlahMurid > 0 ? round($totalSkor / $jumlahMurid, 1) : 0;
+                $totalPrestasi = $murids->sum(fn ($m) => $m->poinPrestasi());
+                $totalPelanggaran = $murids->sum(fn ($m) => $m->poinPelanggaran());
+                $rataSkor = $jumlahMurid > 0 ? round($totalPrestasi / $jumlahMurid, 1) : 0;
 
                 return [
-                    'id'           => $k->id,
-                    'nama_kelas'   => $k->nama_kelas,
-                    'tingkat'      => $k->tingkat,
-                    'wali_kelas'   => $k->waliKelas?->nama ?? '-',
-                    'total_skor'   => $totalSkor,
-                    'rata_skor'    => $rataSkor,
-                    'jumlah_murid' => $jumlahMurid,
+                    'id'                => $k->id,
+                    'nama_kelas'        => $k->nama_kelas,
+                    'tingkat'           => $k->tingkat,
+                    'wali_kelas'        => $k->waliKelas?->nama ?? '-',
+                    'total_skor'        => $totalPrestasi,
+                    'total_prestasi'    => $totalPrestasi,
+                    'total_pelanggaran' => $totalPelanggaran,
+                    'rata_skor'         => $rataSkor,
+                    'jumlah_murid'      => $jumlahMurid,
                 ];
             })
-            ->sortByDesc('total_skor')
+            ->sortByDesc('total_prestasi')
             ->take(10)
             ->values();
 

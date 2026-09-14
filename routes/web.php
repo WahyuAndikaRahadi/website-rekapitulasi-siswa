@@ -41,8 +41,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Laporan
-    Route::get('/laporan',                      [AdminLaporanController::class, 'index'])->name('laporan.index');
-    Route::get('/laporan/{laporan}',            [AdminLaporanController::class, 'show'])->name('laporan.show');
+    Route::get('/laporan',                          [AdminLaporanController::class, 'index'])->name('laporan.index');
+    Route::get('/laporan/{laporan}',                [AdminLaporanController::class, 'show'])->name('laporan.show');
+    Route::patch('/laporan/{laporan}/status',       [AdminLaporanController::class, 'updateStatus'])->name('laporan.update-status');
     Route::patch('/laporan/{laporan}/tindaklanjut', [AdminLaporanController::class, 'tindakLanjut'])->name('laporan.tindaklanjut');
 
 

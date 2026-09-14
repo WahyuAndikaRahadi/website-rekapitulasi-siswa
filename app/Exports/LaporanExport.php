@@ -49,11 +49,11 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
             $laporan->murid->nama,
             $laporan->murid->nis ?? '-',
             $laporan->murid->kelas->nama_kelas,
-            $laporan->kategori === 'pelanggaran' ? 'Pelanggaran' : 'Kebaikan',
+            $laporan->kategori === 'pelanggaran' ? 'Pelanggaran' : 'Prestasi',
             ucfirst($laporan->tingkat_keparahan ?? '-'),
             $laporan->keterangan,
             $laporan->poin_diberikan,
-            ucfirst($laporan->status),
+            ucwords($laporan->status),
             $laporan->guru->nama,
             $laporan->tindak_lanjut ?? '-',
         ];

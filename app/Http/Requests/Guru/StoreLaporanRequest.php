@@ -13,14 +13,15 @@ class StoreLaporanRequest extends FormRequest
 
     public function rules(): array
     {
-        $maxKB   = (int) config('upload.bukti_max_size_kb', 500);
+        $maxKB    = (int) config('upload.bukti_max_size_kb', 500);
         $maxKilos = $maxKB * 1024;
 
         return [
             'murid_id'            => ['required', 'integer', 'exists:murids,id'],
-            'kategori'            => ['required', 'string', 'in:pelanggaran,kebaikan'],
-            'tingkat_keparahan'   => ['required', 'string', 'in:ringan,sedang,berat'],
+            'kategori'            => ['required', 'string', 'in:pelanggaran,prestasi,kebaikan'],
+            'tingkat_keparahan'   => ['nullable', 'string', 'in:ringan,sedang,berat'],
             'keterangan'          => ['required', 'string', 'max:255'],
+            'is_manual'           => ['nullable', 'boolean'],
             'poin_diberikan'      => ['required', 'integer', 'not_in:0'],
             'tanggal_kejadian'    => ['required', 'date', 'before_or_equal:today'],
             'keterangan_tambahan' => ['nullable', 'string', 'max:1000'],
@@ -42,7 +43,6 @@ class StoreLaporanRequest extends FormRequest
             'murid_id.exists'               => 'Murid tidak ditemukan.',
             'kategori.required'             => 'Kategori laporan harus dipilih.',
             'kategori.in'                   => 'Kategori tidak valid.',
-            'tingkat_keparahan.required'    => 'Tingkat keparahan / kebaikan harus dipilih.',
             'tingkat_keparahan.in'          => 'Tingkat tidak valid.',
             'keterangan.required'           => 'Keterangan/jenis tindakan harus diisi.',
             'keterangan.max'                => 'Keterangan maksimal 255 karakter.',

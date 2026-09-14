@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useForm } from '@inertiajs/react';
-import { AlertCircle, CheckCircle2, ChevronDown, ListFilter, Lock, PlusCircle, Search, Sparkles, Upload, UserCheck, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronDown, PlusCircle, Search, Sparkles, Upload, UserCheck, X } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 
 export interface TargetMurid {
@@ -27,36 +27,22 @@ interface Props {
     poinMasters?: PoinMasterItem[];
 }
 
-const DEFAULT_POIN_RANGES: Record<'pelanggaran' | 'kebaikan', Record<'ringan' | 'sedang' | 'berat', { min: number; max: number }>> = {
-    pelanggaran: {
-        ringan: { min: -5,  max: -10 },
-        sedang: { min: -11, max: -25 },
-        berat:  { min: -26, max: -50 },
-    },
-    kebaikan: {
-        ringan: { min: 5,  max: 10 },
-        sedang: { min: 11, max: 25 },
-        berat:  { min: 26, max: 50 },
-    },
-};
-
-export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEFAULT_POIN_RANGES, poinMasters = [] }: Props) {
+export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = [] }: Props) {
     const [previewFiles, setPreviewFiles] = useState<{ file: File; url: string }[]>([]);
     
-    // Mode pilihan: 'master' (dapat dicari & read-only point) vs 'lainnya' (input sendiri & poin sendiri)
-    const [sourceMode, setSourceMode] = useState<'master' | 'lainnya'>('master');
-    
-    // Searchbar State untuk Mode Master
+    // Searchbar State
     const [searchQuery, setSearchQuery] = useState('');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [selectedMaster, setSelectedMaster] = useState<PoinMasterItem | null>(null);
+    const [isManualMode, setIsManualMode] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm<{
         murid_id: number | '';
-        kategori: 'pelanggaran' | 'kebaikan';
+        kategori: 'pelanggaran' | 'prestasi';
         tingkat_keparahan: 'ringan' | 'sedang' | 'berat';
         keterangan: string;
+        is_manual: boolean;
         poin_diberikan: number | '';
         tanggal_kejadian: string;
         keterangan_tambahan: string;
@@ -66,6 +52,7 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
         kategori: 'pelanggaran',
         tingkat_keparahan: 'ringan',
         keterangan: '',
+        is_manual: false,
         poin_diberikan: '',
         tanggal_kejadian: new Date().toISOString().split('T')[0],
         keterangan_tambahan: '',
@@ -80,14 +67,15 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
                 kategori: 'pelanggaran',
                 tingkat_keparahan: 'ringan',
                 keterangan: '',
+                is_manual: false,
                 poin_diberikan: '',
                 tanggal_kejadian: new Date().toISOString().split('T')[0],
                 keterangan_tambahan: '',
                 bukti: [],
             }));
-            setSourceMode('master');
             setSearchQuery('');
             setSelectedMaster(null);
+            setIsManualMode(false);
             setIsDropdownOpen(false);
             setPreviewFiles([]);
             clearErrors();
@@ -105,34 +93,41 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    // Filter master poin berdasarkan kategori aktif dan kata kunci pencarian
-    const categoryMasters = poinMasters.filter((pm) => pm.kategori === data.kategori);
+    // Filter master poin berdasarkan kategori aktif (support both 'prestasi' and 'kebaikan')
+    const categoryMasters = poinMasters.filter((pm) => 
+        data.kategori === 'prestasi'
+            ? pm.kategori === 'prestasi' || pm.kategori === 'kebaikan'
+            : pm.kategori === 'pelanggaran'
+    );
     const filteredMasters = categoryMasters.filter((pm) =>
         pm.nama.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
-    const handleKategoriChange = (newKategori: 'pelanggaran' | 'kebaikan') => {
+    const handleKategoriChange = (newKategori: 'pelanggaran' | 'prestasi') => {
         setData((prev) => ({
             ...prev,
             kategori: newKategori,
             keterangan: '',
+            is_manual: false,
             poin_diberikan: '',
             tingkat_keparahan: 'ringan',
         }));
         setSearchQuery('');
         setSelectedMaster(null);
+        setIsManualMode(false);
         setIsDropdownOpen(false);
     };
 
     const handleSelectMasterItem = (item: PoinMasterItem) => {
         setSelectedMaster(item);
+        setIsManualMode(false);
         setSearchQuery(item.nama);
         setIsDropdownOpen(false);
 
         let inferredSeverity: 'ringan' | 'sedang' | 'berat' = 'ringan';
         if (item.kategori === 'pelanggaran') {
-            if (item.poin >= -10) inferredSeverity = 'ringan';
-            else if (item.poin >= -25) inferredSeverity = 'sedang';
+            if (Math.abs(item.poin) <= 10) inferredSeverity = 'ringan';
+            else if (Math.abs(item.poin) <= 25) inferredSeverity = 'sedang';
             else inferredSeverity = 'berat';
         } else {
             if (item.poin <= 10) inferredSeverity = 'ringan';
@@ -143,30 +138,23 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
         setData((prev) => ({
             ...prev,
             keterangan: item.nama,
+            is_manual: false,
             poin_diberikan: item.poin,
             tingkat_keparahan: inferredSeverity,
         }));
     };
 
-    const handleSwitchMode = (mode: 'master' | 'lainnya') => {
-        setSourceMode(mode);
-        if (mode === 'master') {
-            setSearchQuery('');
-            setSelectedMaster(null);
-            setData((prev) => ({
-                ...prev,
-                keterangan: '',
-                poin_diberikan: '',
-            }));
-        } else {
-            setSelectedMaster(null);
-            setSearchQuery('');
-            setData((prev) => ({
-                ...prev,
-                keterangan: '',
-                poin_diberikan: '',
-            }));
-        }
+    const handleSelectManualOption = () => {
+        setSelectedMaster(null);
+        setIsManualMode(true);
+        setSearchQuery('');
+        setIsDropdownOpen(false);
+        setData((prev) => ({
+            ...prev,
+            keterangan: '',
+            is_manual: true,
+            poin_diberikan: '',
+        }));
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -197,7 +185,7 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
                 setPreviewFiles([]);
                 setSearchQuery('');
                 setSelectedMaster(null);
-                setSourceMode('master');
+                setIsManualMode(false);
             },
         });
     };
@@ -249,148 +237,127 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
                             </button>
                             <button
                                 type="button"
-                                onClick={() => handleKategoriChange('kebaikan')}
+                                onClick={() => handleKategoriChange('prestasi')}
                                 className={`flex items-center justify-center gap-2 rounded-lg border p-2.5 text-sm font-medium transition-all ${
-                                    data.kategori === 'kebaikan'
+                                    data.kategori === 'prestasi'
                                         ? 'border-green-500 bg-green-500/10 text-green-700 font-semibold shadow-xs dark:text-green-400'
                                         : 'border-input bg-background hover:bg-muted text-muted-foreground'
                                 }`}
                             >
                                 <CheckCircle2 className="size-4 text-green-500" />
-                                Kebaikan / Prestasi
+                                Prestasi / Penghargaan
                             </button>
                         </div>
                         {errors.kategori && <p className="text-xs text-red-600">{errors.kategori}</p>}
                     </div>
 
-                    {/* Sumber Pilihan Mode: Pilih dari Master Data vs Opsi Lainnya */}
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                            Sumber Pilihan Tindakan <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid grid-cols-2 gap-2">
+                    {/* Cari Jenis Pelanggaran/Prestasi Dropdown (dengan Opsi Lainnya di dalamnya) */}
+                    <div className="space-y-1.5 relative" ref={dropdownRef}>
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                Cari Jenis {data.kategori === 'pelanggaran' ? 'Pelanggaran' : 'Prestasi'} <span className="text-red-500">*</span>
+                            </label>
+                            {isManualMode && (
+                                <span className="text-xs text-amber-600 font-semibold flex items-center gap-1">
+                                    <Sparkles className="size-3" /> Mode Input Manual (Lainnya)
+                                </span>
+                            )}
+                        </div>
+                        
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={isManualMode ? 'Lainnya (Input Manual)' : searchQuery}
+                                onFocus={() => setIsDropdownOpen(true)}
+                                onChange={(e) => {
+                                    if (isManualMode) {
+                                        setIsManualMode(false);
+                                    }
+                                    setSearchQuery(e.target.value);
+                                    setIsDropdownOpen(true);
+                                }}
+                                placeholder={
+                                    data.kategori === 'pelanggaran'
+                                        ? 'Ketik untuk mencari (misal: upacara, rokok, terlambat)...'
+                                        : 'Ketik untuk mencari (misal: OSIS, kepanitiaan, juara lomba)...'
+                                }
+                                className="flex h-10 w-full rounded-md border border-input bg-background pl-9 pr-8 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            />
+                            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                             <button
                                 type="button"
-                                onClick={() => handleSwitchMode('master')}
-                                className={`flex items-center justify-center gap-2 rounded-lg border p-2 text-xs font-semibold transition-all ${
-                                    sourceMode === 'master'
-                                        ? 'border-primary bg-primary/10 text-primary shadow-xs'
-                                        : 'border-input bg-background text-muted-foreground hover:bg-muted'
-                                }`}
+                                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
                             >
-                                <ListFilter className="size-3.5" />
-                                Pilih dari Daftar Master
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => handleSwitchMode('lainnya')}
-                                className={`flex items-center justify-center gap-2 rounded-lg border p-2 text-xs font-semibold transition-all ${
-                                    sourceMode === 'lainnya'
-                                        ? 'border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400 shadow-xs'
-                                        : 'border-input bg-background text-muted-foreground hover:bg-muted'
-                                }`}
-                            >
-                                <PlusCircle className="size-3.5" />
-                                Opsi Lainnya (Input Manual)
+                                <ChevronDown className="size-4" />
                             </button>
                         </div>
+
+                        {/* Dropdown Menu */}
+                        {isDropdownOpen && (
+                            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border bg-popover py-1 text-popover-foreground shadow-lg">
+                                {filteredMasters.map((item) => (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => handleSelectMasterItem(item)}
+                                        className={`cursor-pointer px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors flex items-center justify-between ${
+                                            selectedMaster?.id === item.id ? 'bg-accent/60 font-semibold' : ''
+                                        }`}
+                                    >
+                                        <span className="truncate pr-2">{item.nama}</span>
+                                        <span className={`text-xs font-mono font-bold shrink-0 ${
+                                            data.kategori === 'pelanggaran' ? 'text-red-600' : 'text-green-600'
+                                        }`}>
+                                            {data.kategori === 'pelanggaran' ? `${Math.abs(item.poin)} poin` : `+${item.poin} poin`}
+                                        </span>
+                                    </div>
+                                ))}
+
+                                {/* Pilihan Lainnya / Input Manual di dalam Dropdown */}
+                                <div
+                                    onClick={handleSelectManualOption}
+                                    className="cursor-pointer border-t border-border px-3 py-2.5 text-sm font-semibold text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/30 flex items-center gap-2 transition-colors"
+                                >
+                                    <PlusCircle className="size-4" />
+                                    <span>+ Lainnya (Input Manual yang tidak ada di daftar)</span>
+                                </div>
+                            </div>
+                        )}
+                        {errors.keterangan && <p className="text-xs text-red-600">{errors.keterangan}</p>}
                     </div>
 
-                    {/* MODE A: Pilihan dari Daftar Master (Searchbar & Read-Only Point) */}
-                    {sourceMode === 'master' && (
-                        <>
-                            {/* Searchbar Autocomplete */}
-                            <div className="space-y-1.5 relative" ref={dropdownRef}>
-                                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Cari Jenis {data.kategori === 'pelanggaran' ? 'Pelanggaran' : 'Kebaikan/Prestasi'} <span className="text-red-500">*</span>
-                                </label>
-                                
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={searchQuery}
-                                        onFocus={() => setIsDropdownOpen(true)}
-                                        onChange={(e) => {
-                                            setSearchQuery(e.target.value);
-                                            setIsDropdownOpen(true);
-                                        }}
-                                        placeholder={
-                                            data.kategori === 'pelanggaran'
-                                                ? 'Ketik untuk mencari (misal: upacara, rokok, terlambat)...'
-                                                : 'Ketik untuk mencari (misal: pengurus kelas, OSIS, cerdas cermat)...'
-                                        }
-                                        className="flex h-10 w-full rounded-md border border-input bg-background pl-9 pr-8 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                    />
-                                    <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground p-1"
-                                    >
-                                        <ChevronDown className="size-4" />
-                                    </button>
-                                </div>
-
-                                {/* Filtered Dropdown Options */}
-                                {isDropdownOpen && (
-                                    <div className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border bg-popover py-1 text-popover-foreground shadow-md">
-                                        {filteredMasters.length > 0 ? (
-                                            filteredMasters.map((item) => (
-                                                <div
-                                                    key={item.id}
-                                                    onClick={() => handleSelectMasterItem(item)}
-                                                    className={`cursor-pointer px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors ${
-                                                        selectedMaster?.id === item.id ? 'bg-accent/60 font-semibold' : ''
-                                                    }`}
-                                                >
-                                                    {item.nama}
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="px-3 py-2 text-xs text-muted-foreground italic">
-                                                Tidak ditemukan "{searchQuery}". Gunakan tombol "Opsi Lainnya" di atas untuk input manual.
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-                                {errors.keterangan && <p className="text-xs text-red-600">{errors.keterangan}</p>}
+                    {/* Jika Bukan Manual & Memilih dari Master: Tampilkan Teks Info Poin (Hide Field Nilai Poin) */}
+                    {!isManualMode && selectedMaster && (
+                        <div className={`rounded-lg border p-3 text-sm ${
+                            data.kategori === 'pelanggaran'
+                                ? 'border-red-200 bg-red-50/60 text-red-900 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300'
+                                : 'border-green-200 bg-green-50/60 text-green-900 dark:border-green-900 dark:bg-green-950/30 dark:text-green-300'
+                        }`}>
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs font-semibold uppercase tracking-wider">
+                                    {data.kategori === 'pelanggaran' ? 'Poin Pelanggaran Diterapkan' : 'Poin Prestasi & Pengurangan Pelanggaran'}
+                                </span>
+                                <span className="font-mono font-extrabold text-base">
+                                    {data.kategori === 'pelanggaran'
+                                        ? `+${Math.abs(selectedMaster.poin)} Poin Pelanggaran`
+                                        : `+${selectedMaster.poin} Poin Prestasi`}
+                                </span>
                             </div>
-
-                            {/* Kolom Poin Master — READ ONLY (Terkunci Otomatis) */}
-                            <div className="space-y-1.5">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Nilai Poin <span className="text-red-500">*</span>
-                                    </label>
-                                    <span className="text-xs text-muted-foreground font-medium flex items-center gap-1">
-                                        <Lock className="size-3 text-amber-500" /> Read Only (Poin Pasti dari Master)
-                                    </span>
-                                </div>
-                                <input
-                                    type="number"
-                                    value={data.poin_diberikan}
-                                    readOnly
-                                    placeholder="Poin otomatis terisi saat memilih jenis tindakan..."
-                                    className={`flex h-10 w-full rounded-md border border-dashed border-input bg-muted/60 px-3 py-2 text-sm font-mono font-bold cursor-not-allowed text-muted-foreground ${
-                                        typeof data.poin_diberikan === 'number'
-                                            ? data.poin_diberikan < 0
-                                                ? 'text-red-600 dark:text-red-400'
-                                                : 'text-green-600 dark:text-green-400'
-                                            : ''
-                                    }`}
-                                />
-                                {errors.poin_diberikan && <p className="text-xs text-red-600">{errors.poin_diberikan}</p>}
-                            </div>
-                        </>
+                            {data.kategori === 'prestasi' && (
+                                <p className="mt-1 text-xs text-green-700 dark:text-green-400">
+                                    ✨ Sekaligus otomatis <strong>mengurangi {selectedMaster.poin} poin pelanggaran aktif</strong> siswa.
+                                </p>
+                            )}
+                        </div>
                     )}
 
-                    {/* MODE B: Opsi Lainnya (Terpisah, Input Keterangan Sendiri & Kolom Poin Sendiri) */}
-                    {sourceMode === 'lainnya' && (
-                        <>
-                            {/* Input Keterangan Sendiri */}
+                    {/* Jika Mode Manual ("Lainnya"): Tampilkan Input Keterangan & Input Nilai Poin */}
+                    {isManualMode && (
+                        <div className="space-y-3 rounded-lg border border-amber-200 bg-amber-50/40 p-3.5 dark:border-amber-900 dark:bg-amber-950/20">
+                            {/* Input Keterangan Manual */}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                    Keterangan Tindakan / Prestasi (Lainnya) <span className="text-red-500">*</span>
+                                    Keterangan Tindakan / Prestasi <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
@@ -398,40 +365,61 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinRanges = DEF
                                     onChange={(e) => setData('keterangan', e.target.value)}
                                     placeholder={
                                         data.kategori === 'pelanggaran'
-                                            ? 'Tuliskan jenis pelanggaran yang tidak ada di daftar...'
-                                            : 'Tuliskan jenis kebaikan/prestasi yang tidak ada di daftar...'
+                                            ? 'Tuliskan jenis tindakan pelanggaran...'
+                                            : 'Tuliskan jenis prestasi / peran aktif...'
                                     }
                                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                                 />
                                 {errors.keterangan && <p className="text-xs text-red-600">{errors.keterangan}</p>}
                             </div>
 
-                            {/* Kolom Poin Sendiri (Editable) */}
+                            {/* Input Nilai Poin Manual */}
                             <div className="space-y-1.5">
                                 <div className="flex items-center justify-between">
                                     <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                                        Nilai Poin Sendiri <span className="text-red-500">*</span>
+                                        Nilai Poin <span className="text-red-500">*</span>
                                     </label>
-                                    <span className="text-xs text-primary font-medium flex items-center gap-1">
+                                    <span className="text-xs text-amber-700 font-medium flex items-center gap-1 dark:text-amber-400">
                                         <Sparkles className="size-3" /> Input Poin Manual
                                     </span>
                                 </div>
                                 <input
                                     type="number"
                                     value={data.poin_diberikan}
-                                    onChange={(e) => setData('poin_diberikan', e.target.value === '' ? '' : parseInt(e.target.value))}
-                                    placeholder={data.kategori === 'pelanggaran' ? 'Masukkan poin negatif, misal: -15' : 'Masukkan poin positif, misal: 20'}
+                                    max={data.kategori === 'pelanggaran' ? 0 : undefined}
+                                    min={data.kategori === 'pelanggaran' ? undefined : 1}
+                                    onChange={(e) => {
+                                        if (e.target.value === '' || e.target.value === '-') {
+                                            setData('poin_diberikan', '');
+                                            return;
+                                        }
+                                        const parsed = parseInt(e.target.value);
+                                        if (data.kategori === 'pelanggaran') {
+                                            // Always force negative for pelanggaran
+                                            setData('poin_diberikan', parsed > 0 ? -parsed : parsed);
+                                        } else {
+                                            // Always force positive for prestasi
+                                            setData('poin_diberikan', parsed < 0 ? -parsed : parsed);
+                                        }
+                                    }}
+                                    placeholder={data.kategori === 'pelanggaran' ? '-15 (otomatis negatif)' : '20 (positif untuk prestasi)'}
                                     className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                                         typeof data.poin_diberikan === 'number'
                                             ? data.poin_diberikan < 0
                                                 ? 'text-red-600 dark:text-red-400'
-                                                : 'text-green-600 dark:text-green-400'
+                                                : data.poin_diberikan > 0
+                                                  ? 'text-green-600 dark:text-green-400'
+                                                  : ''
                                             : ''
                                     }`}
                                 />
                                 {errors.poin_diberikan && <p className="text-xs text-red-600">{errors.poin_diberikan}</p>}
                             </div>
-                        </>
+
+                            <p className="text-xs text-amber-800 dark:text-amber-300 italic">
+                                ℹ️ Laporan manual akan berstatus <strong>Menunggu Verifikasi</strong> dan diverifikasi admin sebelum poin aktif.
+                            </p>
+                        </div>
                     )}
 
                     {/* Tanggal Kejadian */}

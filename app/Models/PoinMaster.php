@@ -26,9 +26,14 @@ class PoinMaster extends Model
         return $query->where('kategori', 'pelanggaran');
     }
 
+    public function scopePrestasi($query)
+    {
+        return $query->whereIn('kategori', ['prestasi', 'kebaikan']);
+    }
+
     public function scopeKebaikan($query)
     {
-        return $query->where('kategori', 'kebaikan');
+        return $this->scopePrestasi($query);
     }
 
     public function scopeActive($query)

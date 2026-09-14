@@ -20,13 +20,17 @@ const breadcrumbs: BreadcrumbItem[] = [{ title: 'Dashboard', href: '/admin/dashb
 interface TrenItem {
     bulan: string;
     pelanggaran: number;
-    kebaikan: number;
+    prestasi?: number;
+    kebaikan?: number;
 }
 
 interface MuridSkor {
     nama: string;
     kelas: string;
-    skor_resmi: number;
+    poin_pelanggaran?: number;
+    poin_prestasi?: number;
+    tahap_pembinaan?: string;
+    skor_resmi?: number;
 }
 
 interface KelasSkor {
@@ -37,10 +41,12 @@ interface KelasSkor {
 
 interface Props {
     stats: {
-        pending: number;
+        menunggu_verifikasi?: number;
+        pending?: number;
         total_bulan_ini: number;
         pelanggaran_bulan_ini: number;
-        kebaikan_bulan_ini: number;
+        prestasi_bulan_ini?: number;
+        kebaikan_bulan_ini?: number;
     };
     tren_laporan: TrenItem[];
     top_murids: TopMuridItem[];
@@ -133,7 +139,7 @@ export default function AdminDashboard({
     const emptyTren =
         !tren_laporan ||
         tren_laporan.length === 0 ||
-        tren_laporan.every((t) => t.pelanggaran === 0 && t.kebaikan === 0);
+        tren_laporan.every((t) => t.pelanggaran === 0 && (t.prestasi ?? t.kebaikan ?? 0) === 0);
 
     // ── Chart data: Tren Laporan ───────────────────────────────────────────────
     const trenChartData = {
@@ -151,8 +157,8 @@ export default function AdminDashboard({
                 pointHoverRadius: 6,
             },
             {
-                label: 'Kebaikan',
-                data: tren_laporan.map((t) => t.kebaikan),
+                label: 'Prestasi',
+                data: tren_laporan.map((t) => t.prestasi ?? t.kebaikan ?? 0),
                 borderColor: '#2E8B57',
                 backgroundColor: 'rgba(46, 139, 87, 0.08)',
                 fill: true,
@@ -199,7 +205,7 @@ export default function AdminDashboard({
         labels: kelas_skor.map((k) => k.nama_kelas),
         datasets: [
             {
-                label: 'Rata-rata Skor',
+                label: 'Rata-rata Poin Prestasi',
                 data: kelas_skor.map((k) => k.rata_skor),
                 backgroundColor: kelas_skor.map((k) =>
                     k.rata_skor < 0 ? 'rgba(214,41,62,0.75)' : k.rata_skor > 0 ? 'rgba(30,95,168,0.75)' : 'rgba(100,116,139,0.5)',
@@ -223,7 +229,7 @@ export default function AdminDashboard({
                 callbacks: {
                     label: (ctx: { parsed: { x: number } }) => {
                         const val = ctx.parsed.x;
-                        return ` Rata-rata: ${val >= 0 ? '+' : ''}${val}`;
+                        return ` Rata-rata: +${val}`;
                     },
                 },
             },
@@ -243,6 +249,9 @@ export default function AdminDashboard({
     };
 
     const kelasChartHeight = Math.max(kelas_skor.length * 40 + 20, 160);
+
+    const pendingCount = stats.menunggu_verifikasi ?? stats.pending ?? 0;
+    const prestasiCount = stats.prestasi_bulan_ini ?? stats.kebaikan_bulan_ini ?? 0;
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -269,12 +278,12 @@ export default function AdminDashboard({
                 {/* Stat cards */}
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <StatCard
-                        label="Laporan Pending"
-                        value={stats?.pending ?? 0}
+                        label="Menunggu Verifikasi"
+                        value={pendingCount}
                         icon={Clock}
                         variant="warning"
-                        description="Menunggu tindak lanjut admin"
-                        href="/admin/laporan?status=pending"
+                        description="Laporan manual butuh verifikasi admin"
+                        href="/admin/laporan?status=menunggu+verifikasi"
                     />
                     <StatCard
                         label="Total Laporan Bulan Ini"
@@ -290,8 +299,8 @@ export default function AdminDashboard({
                         variant="destructive"
                     />
                     <StatCard
-                        label="Kebaikan Bulan Ini"
-                        value={stats?.kebaikan_bulan_ini ?? 0}
+                        label="Prestasi Bulan Ini"
+                        value={prestasiCount}
                         icon={HeartHandshake}
                         variant="success"
                     />
@@ -308,7 +317,7 @@ export default function AdminDashboard({
                     <div className="mb-5">
                         <h2 className="text-base font-bold text-foreground">Tren Laporan 6 Bulan Terakhir</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            Komparasi jumlah peristiwa pelanggaran dan apresiasi kebaikan
+                            Komparasi jumlah peristiwa pelanggaran dan apresiasi prestasi siswa
                         </p>
                     </div>
 
@@ -316,7 +325,7 @@ export default function AdminDashboard({
                         <EmptyState
                             icon={BarChart3}
                             title="Belum ada data laporan"
-                            description="Laporan pelanggaran atau kebaikan yang dibuat guru akan ditampilkan di grafik ini."
+                            description="Laporan pelanggaran atau prestasi yang dibuat guru akan ditampilkan di grafik ini."
                         />
                     ) : (
                         <div style={{ height: 260 }}>
@@ -327,12 +336,12 @@ export default function AdminDashboard({
 
                 {/* Bottom row */}
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                    {/* Murid skor terendah */}
+                    {/* Siswa Pelanggaran Tertinggi */}
                     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
                         <div className="mb-4">
                             <h2 className="text-base font-bold text-foreground">Siswa Butuh Pembinaan Khusus</h2>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                                Siswa dengan akumulasi skor terendah — tindak lanjut BK/konseling
+                                Siswa dengan akumulasi poin pelanggaran aktif tertinggi
                             </p>
                         </div>
 
@@ -340,7 +349,7 @@ export default function AdminDashboard({
                             <EmptyState
                                 icon={CheckCircle2}
                                 title="Kondisi Kedisiplinan Aman"
-                                description="Tidak ada siswa yang berada pada batas skor kritis."
+                                description="Tidak ada siswa dengan catatan pelanggaran aktif."
                             />
                         ) : (
                             <div className="overflow-x-auto">
@@ -349,27 +358,28 @@ export default function AdminDashboard({
                                         <tr className="border-b border-border text-left">
                                             <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Nama Siswa</th>
                                             <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Kelas</th>
-                                            <th className="pb-2.5 px-2 text-right font-semibold text-muted-foreground">Skor</th>
+                                            <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Tahap Pembinaan</th>
+                                            <th className="pb-2.5 px-2 text-right font-semibold text-muted-foreground">Poin Pelanggaran</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-border">
-                                        {murid_skor_rendah.map((m, i) => (
-                                            <tr key={i} className="hover:bg-muted/30 transition-colors">
-                                                <td className="py-2.5 px-2 font-semibold text-foreground">{m.nama}</td>
-                                                <td className="py-2.5 px-2 text-muted-foreground font-medium">{m.kelas}</td>
-                                                <td
-                                                    className={`py-2.5 px-2 text-right font-mono font-bold ${
-                                                        m.skor_resmi < 0
-                                                            ? 'text-destructive'
-                                                            : m.skor_resmi > 0
-                                                              ? 'text-success'
-                                                              : 'text-muted-foreground'
-                                                    }`}
-                                                >
-                                                    {m.skor_resmi >= 0 ? `+${m.skor_resmi}` : m.skor_resmi}
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {murid_skor_rendah.map((m, i) => {
+                                            const poinP = m.poin_pelanggaran ?? Math.abs(m.skor_resmi ?? 0);
+                                            return (
+                                                <tr key={i} className="hover:bg-muted/30 transition-colors">
+                                                    <td className="py-2.5 px-2 font-semibold text-foreground">{m.nama}</td>
+                                                    <td className="py-2.5 px-2 text-muted-foreground font-medium">{m.kelas}</td>
+                                                    <td className="py-2.5 px-2 text-muted-foreground font-medium">
+                                                        <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
+                                                            {m.tahap_pembinaan ?? 'Tahap I'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="py-2.5 px-2 text-right font-mono font-bold text-destructive">
+                                                        +{poinP}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>
@@ -379,8 +389,8 @@ export default function AdminDashboard({
                     {/* Rata-rata skor per kelas */}
                     <div className="rounded-2xl border border-border bg-card p-6 shadow-xs">
                         <div className="mb-4">
-                            <h2 className="text-base font-bold text-foreground">Distribusi Rata-rata Skor per Kelas</h2>
-                            <p className="text-xs text-muted-foreground mt-0.5">Sebaran nilai rata-rata kedisiplinan per rombel</p>
+                            <h2 className="text-base font-bold text-foreground">Distribusi Rata-rata Poin Prestasi per Kelas</h2>
+                            <p className="text-xs text-muted-foreground mt-0.5">Sebaran nilai rata-rata prestasi per rombel</p>
                         </div>
 
                         {kelas_skor.length === 0 ? (

@@ -6,7 +6,8 @@ export interface TopMuridItem {
     nama: string;
     nis?: string | null;
     kelas: string;
-    skor_resmi: number;
+    poin_prestasi?: number;
+    skor_resmi?: number;
 }
 
 export interface TopKelasItem {
@@ -15,6 +16,7 @@ export interface TopKelasItem {
     tingkat?: string;
     wali_kelas?: string;
     total_skor: number;
+    total_prestasi?: number;
     rata_skor: number;
     jumlah_murid: number;
 }
@@ -37,7 +39,7 @@ export function TopMuridLeaderboard({ topMurids = [] }: { topMurids: TopMuridIte
                             <h3 className="text-base font-bold text-slate-900 leading-tight">
                                 Top 10 Siswa Berprestasi
                             </h3>
-                            <p className="text-xs text-slate-500">Siswa dengan akumulasi poin kebaikan tertinggi</p>
+                            <p className="text-xs text-slate-500">Siswa dengan akumulasi poin prestasi tertinggi</p>
                         </div>
                     </div>
                     <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-bold text-amber-700 border border-amber-200/50">
@@ -49,8 +51,8 @@ export function TopMuridLeaderboard({ topMurids = [] }: { topMurids: TopMuridIte
                 {topMurids.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-8 text-center bg-slate-50/50 rounded-xl">
                         <GraduationCap className="size-7 text-slate-300 mb-1.5" />
-                        <p className="text-xs font-semibold text-slate-600">Belum ada data poin siswa</p>
-                        <p className="text-[11px] text-slate-400">Poin kebaikan akan muncul setelah disetujui admin.</p>
+                        <p className="text-xs font-semibold text-slate-600">Belum ada data prestasi siswa</p>
+                        <p className="text-[11px] text-slate-400">Poin prestasi yang dicatat guru akan muncul di sini.</p>
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
@@ -60,12 +62,13 @@ export function TopMuridLeaderboard({ topMurids = [] }: { topMurids: TopMuridIte
                                     <th className="pb-2.5 px-2 font-semibold w-12 text-center">Rank</th>
                                     <th className="pb-2.5 px-2 font-semibold">Nama Siswa</th>
                                     <th className="pb-2.5 px-2 font-semibold">Kelas</th>
-                                    <th className="pb-2.5 px-2 font-semibold text-right">Total Poin</th>
+                                    <th className="pb-2.5 px-2 font-semibold text-right">Poin Prestasi</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {topMurids.map((m, idx) => {
                                     const rank = idx + 1;
+                                    const poinValue = m.poin_prestasi ?? m.skor_resmi ?? 0;
                                     let rankBadge = (
                                         <span className="inline-flex size-6 items-center justify-center rounded-full bg-slate-100 text-slate-600 font-bold text-[11px]">
                                             {rank}
@@ -108,14 +111,8 @@ export function TopMuridLeaderboard({ topMurids = [] }: { topMurids: TopMuridIte
                                                 {m.kelas}
                                             </td>
                                             <td className="py-2 px-2 text-right">
-                                                <span className={`inline-flex items-center font-extrabold font-mono px-2 py-0.5 rounded-full text-[11px] ${
-                                                    m.skor_resmi > 0
-                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                                                        : m.skor_resmi < 0
-                                                          ? 'bg-rose-50 text-rose-700 border border-rose-200/60'
-                                                          : 'bg-slate-100 text-slate-600'
-                                                }`}>
-                                                    {m.skor_resmi > 0 ? `+${m.skor_resmi}` : m.skor_resmi}
+                                                <span className="inline-flex items-center font-extrabold font-mono px-2 py-0.5 rounded-full text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                                    +{poinValue}
                                                 </span>
                                             </td>
                                         </tr>
@@ -143,7 +140,7 @@ export function TopKelasLeaderboard({ topKelas = [] }: { topKelas: TopKelasItem[
                             <h3 className="text-base font-bold text-slate-900 leading-tight">
                                 Top 10 Kelas Berprestasi
                             </h3>
-                            <p className="text-xs text-slate-500">Rombel dengan total poin akumulasi tertinggi</p>
+                            <p className="text-xs text-slate-500">Rombel dengan total poin prestasi akumulasi tertinggi</p>
                         </div>
                     </div>
                     <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-[#1E5FA8] border border-blue-200/50">
@@ -203,6 +200,8 @@ export function TopKelasLeaderboard({ topKelas = [] }: { topKelas: TopKelasItem[
                                         rowHighlight = 'bg-cyan-50/20 hover:bg-cyan-50/40';
                                     }
 
+                                    const totalScore = k.total_prestasi ?? k.total_skor ?? 0;
+
                                     return (
                                         <tr key={k.id ?? idx} className={`transition-colors ${rowHighlight}`}>
                                             <td className="py-2 px-2 text-center">{rankBadge}</td>
@@ -219,14 +218,8 @@ export function TopKelasLeaderboard({ topKelas = [] }: { topKelas: TopKelasItem[
                                                 {k.rata_skor > 0 ? `+${k.rata_skor}` : k.rata_skor}
                                             </td>
                                             <td className="py-2 px-2 text-right">
-                                                <span className={`inline-flex items-center font-extrabold font-mono px-2 py-0.5 rounded-full text-[11px] ${
-                                                    k.total_skor > 0
-                                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
-                                                        : k.total_skor < 0
-                                                          ? 'bg-rose-50 text-rose-700 border border-rose-200/60'
-                                                          : 'bg-slate-100 text-slate-600'
-                                                }`}>
-                                                    {k.total_skor > 0 ? `+${k.total_skor}` : k.total_skor}
+                                                <span className="inline-flex items-center font-extrabold font-mono px-2 py-0.5 rounded-full text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                                    +{totalScore}
                                                 </span>
                                             </td>
                                         </tr>

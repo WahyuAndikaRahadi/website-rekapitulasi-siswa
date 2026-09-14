@@ -75,8 +75,10 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                             className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                             <option value="">Semua Status</option>
-                            <option value="pending">Pending</option>
-                            <option value="ditindaklanjuti">Ditindaklanjuti</option>
+                            <option value="menunggu verifikasi">Menunggu Verifikasi (Manual)</option>
+                            <option value="baru dilaporkan">Baru Dilaporkan</option>
+                            <option value="pembinaan tindak lanjut">Pembinaan Tindak Lanjut</option>
+                            <option value="selesai">Selesai</option>
                             <option value="ditolak">Ditolak</option>
                         </select>
                     </div>
@@ -89,7 +91,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                         >
                             <option value="">Semua Kategori</option>
                             <option value="pelanggaran">Pelanggaran</option>
-                            <option value="kebaikan">Kebaikan</option>
+                            <option value="prestasi">Prestasi</option>
                         </select>
                     </div>
                     <div className="space-y-1">

@@ -15,8 +15,10 @@ interface MuridItem {
     kelas_id: number;
     nama_kelas: string;
     tingkat: string;
-    skor_resmi: number;
-    skor_sementara: number;
+    poin_prestasi: number;
+    poin_pelanggaran: number;
+    kualifikasi?: string;
+    tahap_pembinaan?: string;
 }
 
 interface PaginationLink {
@@ -272,8 +274,8 @@ export default function BuatLaporan({
                                         <th className="py-3 px-4 font-semibold">Nama Murid</th>
                                         <th className="py-3 px-4 font-semibold">NIS / NISN</th>
                                         <th className="py-3 px-4 font-semibold">Kelas & Tingkat</th>
-                                        <th className="py-3 px-4 font-semibold text-center">Skor Resmi</th>
-                                        <th className="py-3 px-4 font-semibold text-center">Skor Sementara</th>
+                                        <th className="py-3 px-4 font-semibold text-center">Poin Prestasi</th>
+                                        <th className="py-3 px-4 font-semibold text-center">Poin Pelanggaran</th>
                                         <th className="py-3 px-4 font-semibold text-right">Aksi</th>
                                     </tr>
                                 </thead>
@@ -300,29 +302,19 @@ export default function BuatLaporan({
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
-                                                    <span
-                                                        className={`inline-flex items-center justify-center font-bold px-2 py-0.5 rounded-full text-xs font-mono ${
-                                                            m.skor_resmi < 0
-                                                                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                                                : m.skor_resmi > 0
-                                                                  ? 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300'
-                                                                  : 'bg-muted text-muted-foreground'
-                                                        }`}
-                                                    >
-                                                        {m.skor_resmi > 0 ? `+${m.skor_resmi}` : m.skor_resmi}
+                                                    <span className="inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300">
+                                                        +{m.poin_prestasi}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <span
-                                                        className={`inline-flex items-center justify-center font-medium px-2 py-0.5 rounded-full text-xs font-mono ${
-                                                            m.skor_sementara < 0
-                                                                ? 'text-red-600 dark:text-red-400'
-                                                                : m.skor_sementara > 0
-                                                                  ? 'text-green-600 dark:text-green-400'
-                                                                  : 'text-muted-foreground'
+                                                        className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono ${
+                                                            m.poin_pelanggaran > 0
+                                                                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
+                                                                : 'bg-muted text-muted-foreground'
                                                         }`}
                                                     >
-                                                        {m.skor_sementara > 0 ? `+${m.skor_sementara}` : m.skor_sementara}
+                                                        {m.poin_pelanggaran}
                                                     </span>
                                                 </td>
                                                 <td className="py-3 px-4 text-right">

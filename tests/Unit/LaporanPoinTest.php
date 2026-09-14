@@ -12,9 +12,10 @@ class LaporanPoinTest extends TestCase
         $ranges = Laporan::POIN_RANGES;
 
         $this->assertArrayHasKey('pelanggaran', $ranges);
+        $this->assertArrayHasKey('prestasi', $ranges);
         $this->assertArrayHasKey('kebaikan', $ranges);
 
-        foreach (['pelanggaran', 'kebaikan'] as $kat) {
+        foreach (['pelanggaran', 'prestasi', 'kebaikan'] as $kat) {
             foreach (['ringan', 'sedang', 'berat'] as $tingkat) {
                 $this->assertArrayHasKey($tingkat, $ranges[$kat], "Missing {$kat}/{$tingkat}");
                 $this->assertArrayHasKey('min', $ranges[$kat][$tingkat]);
@@ -31,11 +32,11 @@ class LaporanPoinTest extends TestCase
         }
     }
 
-    public function test_kebaikan_ranges_are_positive(): void
+    public function test_prestasi_ranges_are_positive(): void
     {
-        foreach (Laporan::POIN_RANGES['kebaikan'] as $tingkat => $range) {
-            $this->assertGreaterThan(0, $range['min'], "Kebaikan {$tingkat} min should be positive");
-            $this->assertGreaterThan(0, $range['max'], "Kebaikan {$tingkat} max should be positive");
+        foreach (Laporan::POIN_RANGES['prestasi'] as $tingkat => $range) {
+            $this->assertGreaterThan(0, $range['min'], "Prestasi {$tingkat} min should be positive");
+            $this->assertGreaterThan(0, $range['max'], "Prestasi {$tingkat} max should be positive");
         }
     }
 
@@ -44,9 +45,9 @@ class LaporanPoinTest extends TestCase
         $this->assertEquals('-5 s/d -10', Laporan::poinRangeHint('pelanggaran', 'ringan'));
         $this->assertEquals('-11 s/d -25', Laporan::poinRangeHint('pelanggaran', 'sedang'));
         $this->assertEquals('-26 s/d -50', Laporan::poinRangeHint('pelanggaran', 'berat'));
-        $this->assertEquals('5 s/d 10', Laporan::poinRangeHint('kebaikan', 'ringan'));
-        $this->assertEquals('11 s/d 25', Laporan::poinRangeHint('kebaikan', 'sedang'));
-        $this->assertEquals('26 s/d 50', Laporan::poinRangeHint('kebaikan', 'berat'));
+        $this->assertEquals('5 s/d 10', Laporan::poinRangeHint('prestasi', 'ringan'));
+        $this->assertEquals('11 s/d 25', Laporan::poinRangeHint('prestasi', 'sedang'));
+        $this->assertEquals('26 s/d 50', Laporan::poinRangeHint('prestasi', 'berat'));
     }
 
     public function test_poin_range_hint_returns_question_mark_for_invalid(): void
