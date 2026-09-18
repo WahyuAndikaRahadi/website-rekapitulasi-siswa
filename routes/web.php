@@ -54,8 +54,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/murid/naik-kelas', [AdminMuridController::class, 'naikKelas'])->name('murid.naik-kelas');
     Route::resource('/murid', AdminMuridController::class)->only(['index', 'store', 'update', 'destroy'])->names('murid');
     Route::get('/murid-import',  [AdminMuridController::class, 'importForm'])->name('murid.import.form');
+    Route::get('/murid-import/template', [AdminMuridController::class, 'downloadTemplate'])->name('murid.import.template');
     Route::post('/murid-import', [AdminMuridController::class, 'importProcess'])->name('murid.import.process');
     Route::post('/murid-import/confirm', [AdminMuridController::class, 'importConfirm'])->name('murid.import.confirm');
+    Route::post('/murid-import/cancel',  [AdminMuridController::class, 'importCancel'])->name('murid.import.cancel');
 
     // Guru
     Route::resource('/guru', AdminGuruController::class)->names('guru');

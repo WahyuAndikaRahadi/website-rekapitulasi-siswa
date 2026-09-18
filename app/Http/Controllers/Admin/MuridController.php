@@ -194,13 +194,31 @@ class MuridController extends Controller
         );
     }
 
-    public function importForm(): Response
+    public function downloadTemplate()
     {
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\MuridTemplateExport(),
+            'template-import-murid.xlsx'
+        );
+    }
+
+    public function importForm(Request $request): Response
+    {
+        if ($request->has('reset')) {
+            Session::forget(['import_preview', 'import_errors', 'import_kelas_id']);
+        }
+
         return Inertia::render('admin/murid/import', [
             'kelas_list'   => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas', 'tingkat']),
             'preview'      => Session::get('import_preview'),
             'errors_import'=> Session::get('import_errors'),
         ]);
+    }
+
+    public function importCancel(): RedirectResponse
+    {
+        Session::forget(['import_preview', 'import_errors', 'import_kelas_id']);
+        return redirect()->route('admin.murid.import.form');
     }
 
     public function importProcess(Request $request): RedirectResponse
@@ -258,7 +276,7 @@ class MuridController extends Controller
                 'nis'             => $row['nis'] ?? null,
                 'nisn'            => $row['nisn'] ?? null,
                 'no_telp'         => $row['no_telp'] ?? null,
-                'no_ortu'         => $row['no_ortu'] ?? '08123456789',
+                'no_ortu'         => !empty($row['no_ortu']) ? $row['no_ortu'] : null,
                 'status'          => 'aktif',
                 'kelas_id'        => $kelasId,
             ]);

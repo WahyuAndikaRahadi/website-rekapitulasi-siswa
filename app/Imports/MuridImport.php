@@ -40,25 +40,61 @@ class MuridImport implements ToCollection, WithHeadingRow
 
         \Maatwebsite\Excel\Facades\Excel::import($import, $file);
 
+        $cleanText = function ($val): string {
+            if ($val === null) return '';
+            $str = trim((string) $val);
+            // Hapus prefix petik satu (') atau petik dua (") dari Excel
+            return trim($str, " \t\n\r\0\x0B'\"");
+        };
+
+        $cleanPhone = function ($val) use ($cleanText): ?string {
+            $cleaned = $cleanText($val);
+            if (empty($cleaned)) return null;
+
+            // Hapus semua karakter selain angka
+            $digits = preg_replace('/[^0-9]/', '', $cleaned);
+            if (empty($digits)) return null;
+
+            // Jika diawali 628..., ubah menjadi 08...
+            if (str_starts_with($digits, '628')) {
+                $digits = '0' . substr($digits, 2);
+            } elseif (str_starts_with($digits, '8')) {
+                // Jika angka nol (0) depan hilang di Excel misal 81234567890 -> 081234567890
+                $digits = '0' . $digits;
+            }
+
+            return $digits;
+        };
+
         foreach ($import->rows as $i => $row) {
             $rowNum = $i + 2; // baris pertama = heading
             $errors = [];
 
-            $nama = trim($row['nama'] ?? $row['NAMA'] ?? '');
-            $nis  = trim($row['nis']  ?? $row['NIS']  ?? '');
-            $nisn = trim($row['nisn'] ?? $row['NISN'] ?? '');
+            $nama   = $cleanText($row['nama'] ?? $row['NAMA'] ?? '');
+            $nis    = $cleanText($row['nis']  ?? $row['NIS']  ?? '');
+            $nisn   = $cleanText($row['nisn'] ?? $row['NISN'] ?? '');
+            $noTelp = $cleanPhone($row['no_telp'] ?? $row['no_hp'] ?? $row['NO_TELP'] ?? $row['NO_HP'] ?? null);
+            $noOrtu = $cleanPhone($row['no_ortu'] ?? $row['no_hp_ortu'] ?? $row['no_wa'] ?? $row['NO_ORTU'] ?? null);
 
+            // Jika seluruh kolom pada baris ini kosong (baris template sisa/kosong), lewati secara aman
+            if (empty($nama) && empty($nis) && empty($nisn) && empty($noTelp) && empty($noOrtu)) {
+                continue;
+            }
+
+            // Validasi hanya jika baris memang memiliki data namun nama kosong
             if (empty($nama)) {
                 $errors[] = 'Kolom NAMA tidak boleh kosong.';
             }
 
             $this->previewData[] = [
-                'baris'  => $rowNum,
-                'nama'   => $nama,
-                'nis'    => $nis ?: null,
-                'nisn'   => $nisn ?: null,
-                'status' => empty($errors) ? 'valid' : 'error',
-                'errors' => $errors,
+                'baris'   => $rowNum,
+                'nama'    => $nama,
+                'nis'     => $nis ?: null,
+                'nisn'    => $nisn ?: null,
+                'no_telp' => $noTelp ?: null,
+                'no_ortu' => $noOrtu ?: null,
+                'status'  => empty($errors) ? 'valid' : 'error',
+                'errors'  => $errors,
             ];
 
             if (!empty($errors)) {
