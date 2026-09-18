@@ -6,24 +6,30 @@ use App\Http\Controllers\Controller;
 use App\Imports\MuridImport;
 use App\Models\Kelas;
 use App\Models\Murid;
-use App\Models\TahunAjaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Inertia\Inertia;
 use Inertia\Response;
-use Maatwebsite\Excel\Facades\Excel;
 
 class MuridController extends Controller
 {
     public function index(Request $request): Response
     {
-        $tahunAjaran = TahunAjaran::aktif();
+        $status = $request->get('status', 'aktif');
 
         $query = Murid::with('kelas')
-            ->where('tahun_ajaran_id', $request->get('tahun_ajaran_id', $tahunAjaran?->id))
             ->orderBy('kelas_id')
             ->orderBy('nama');
+
+        if ($status === 'alumni') {
+            $query->where('status', 'alumni');
+        } elseif ($status === 'semua') {
+            // Tampilkan semua
+        } else {
+            $query->where('status', 'aktif');
+        }
 
         if ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->kelas_id);
@@ -31,7 +37,8 @@ class MuridController extends Controller
         if ($request->filled('q')) {
             $query->where(function ($q) use ($request) {
                 $q->where('nama', 'like', '%' . $request->q . '%')
-                  ->orWhere('nis', 'like', '%' . $request->q . '%');
+                  ->orWhere('nis', 'like', '%' . $request->q . '%')
+                  ->orWhere('nisn', 'like', '%' . $request->q . '%');
             });
         }
 
@@ -44,36 +51,40 @@ class MuridController extends Controller
                 'nis'              => $m->nis,
                 'nisn'             => $m->nisn,
                 'no_telp'          => $m->no_telp,
-                'nama_kelas'       => $m->kelas->nama_kelas,
+                'no_ortu'          => $m->no_ortu,
+                'status'           => $m->status,
+                'nama_kelas'       => $m->kelas?->nama_kelas ?? ($m->status === 'alumni' ? 'Alumni' : '—'),
                 'kelas_id'         => $m->kelas_id,
                 'poin_pelanggaran' => $m->poinPelanggaran(),
                 'poin_prestasi'    => $m->poinPrestasi(),
             ]),
-            'filters'       => $request->only(['q', 'kelas_id', 'tahun_ajaran_id']),
-            'kelas_list'    => Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']),
-            'tahun_ajarans' => TahunAjaran::orderByDesc('label')->get(['id', 'label']),
-            'tahun_ajaran_aktif' => $tahunAjaran ? ['id' => $tahunAjaran->id, 'label' => $tahunAjaran->label] : null,
+            'filters'       => $request->only(['q', 'kelas_id', 'status']),
+            'kelas_list'    => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas', 'tingkat']),
+            'summary'       => [
+                'total_aktif'  => Murid::where('status', 'aktif')->count(),
+                'total_alumni' => Murid::where('status', 'alumni')->count(),
+            ],
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $tahunAjaran = TahunAjaran::aktif();
-
         $validated = $request->validate([
             'nama'     => ['required', 'string', 'max:100'],
             'nis'      => ['nullable', 'string', 'max:20'],
             'nisn'     => ['nullable', 'string', 'max:20'],
             'no_telp'  => ['nullable', 'string', 'max:20'],
+            'no_ortu'  => ['required', 'string', 'max:20'],
             'kelas_id' => ['required', 'exists:kelas,id'],
         ], [
             'nama.required'     => 'Nama murid harus diisi.',
+            'no_ortu.required'  => 'Nomor HP/WA Orang Tua/Wali harus diisi.',
             'kelas_id.required' => 'Kelas harus dipilih.',
         ]);
 
         Murid::create([
             ...$validated,
-            'tahun_ajaran_id' => $tahunAjaran->id,
+            'status' => 'aktif',
         ]);
 
         return back()->with('success', 'Murid berhasil ditambahkan.');
@@ -86,7 +97,12 @@ class MuridController extends Controller
             'nis'      => ['nullable', 'string', 'max:20'],
             'nisn'     => ['nullable', 'string', 'max:20'],
             'no_telp'  => ['nullable', 'string', 'max:20'],
-            'kelas_id' => ['required', 'exists:kelas,id'],
+            'no_ortu'  => ['required', 'string', 'max:20'],
+            'status'   => ['nullable', 'in:aktif,alumni'],
+            'kelas_id' => ['nullable', 'exists:kelas,id'],
+        ], [
+            'nama.required'     => 'Nama murid harus diisi.',
+            'no_ortu.required'  => 'Nomor HP/WA Orang Tua/Wali harus diisi.',
         ]);
 
         $murid->update($validated);
@@ -101,12 +117,87 @@ class MuridController extends Controller
         return back()->with('success', 'Murid berhasil dihapus.');
     }
 
+    /**
+     * Proses Kenaikan Kelas Massal & Kelulusan Alumni SMKN 69.
+     * Alur:
+     * 1. Siswa tingkat akhir (XIII SIJA, XII OTO, XII MEKA) -> Menjadi ALUMNI (kelas_id = null)
+     * 2. XII SIJA -> XIII SIJA
+     * 3. XI -> XII (SIJA, OTO, MEKA)
+     * 4. X -> XI (SIJA, OTO, MEKA)
+     * Hasil: Seluruh kelas X kosong dan siap diisi murid baru.
+     */
+    public function naikKelas(Request $request): RedirectResponse
+    {
+        $result = DB::transaction(function () {
+            $kelasMap = Kelas::pluck('id', 'nama_kelas')->all();
+
+            // 1. Siswa tingkat akhir (XIII SIJA 1/2, XII OTO 1/2, XII MEKA 1/2) -> Menjadi ALUMNI
+            $alumniClasses = [
+                'XIII SIJA 1', 'XIII SIJA 2',
+                'XII OTO 1', 'XII OTO 2',
+                'XII MEKA 1', 'XII MEKA 2'
+            ];
+            $alumniClassIds = array_filter(array_map(fn($nama) => $kelasMap[$nama] ?? null, $alumniClasses));
+
+            $graduatedCount = Murid::whereIn('kelas_id', $alumniClassIds)
+                ->where('status', 'aktif')
+                ->update([
+                    'status'   => 'alumni',
+                    'kelas_id' => null,
+                ]);
+
+            // 2. Kenaikan kelas berjenjang (dari jenjang tertinggi ke terendah)
+            $promotions = [
+                // XII -> XIII (SIJA 4 Tahun)
+                'XII SIJA 1' => 'XIII SIJA 1',
+                'XII SIJA 2' => 'XIII SIJA 2',
+
+                // XI -> XII
+                'XI SIJA 1'  => 'XII SIJA 1',
+                'XI SIJA 2'  => 'XII SIJA 2',
+                'XI OTO 1'   => 'XII OTO 1',
+                'XI OTO 2'   => 'XII OTO 2',
+                'XI MEKA 1'  => 'XII MEKA 1',
+                'XI MEKA 2'  => 'XII MEKA 2',
+
+                // X -> XI
+                'X SIJA 1'   => 'XI SIJA 1',
+                'X SIJA 2'   => 'XI SIJA 2',
+                'X OTO 1'    => 'XI OTO 1',
+                'X OTO 2'    => 'XI OTO 2',
+                'X MEKA 1'   => 'XI MEKA 1',
+                'X MEKA 2'   => 'XI MEKA 2',
+            ];
+
+            $promotedCount = 0;
+            foreach ($promotions as $fromName => $toName) {
+                $fromId = $kelasMap[$fromName] ?? null;
+                $toId   = $kelasMap[$toName] ?? null;
+
+                if ($fromId && $toId) {
+                    $count = Murid::where('kelas_id', $fromId)
+                        ->where('status', 'aktif')
+                        ->update(['kelas_id' => $toId]);
+                    $promotedCount += $count;
+                }
+            }
+
+            return [
+                'promoted'  => $promotedCount,
+                'graduated' => $graduatedCount,
+            ];
+        });
+
+        return back()->with(
+            'success',
+            "Proses Naik Kelas Massal Berhasil! {$result['promoted']} siswa berhasil naik kelas, dan {$result['graduated']} siswa tingkat akhir dinyatakan lulus menjadi ALUMNI. Seluruh kelas tingkat X sekarang kosong dan siap diisi murid baru."
+        );
+    }
+
     public function importForm(): Response
     {
-        $tahunAjaran = TahunAjaran::aktif();
         return Inertia::render('admin/murid/import', [
-            'kelas_list'   => Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']),
-            'tahun_ajaran' => $tahunAjaran ? ['id' => $tahunAjaran->id, 'label' => $tahunAjaran->label] : null,
+            'kelas_list'   => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas', 'tingkat']),
             'preview'      => Session::get('import_preview'),
             'errors_import'=> Session::get('import_errors'),
         ]);
@@ -122,16 +213,12 @@ class MuridController extends Controller
             'kelas_id.required' => 'Kelas tujuan harus dipilih.',
         ]);
 
-        $tahunAjaran = TahunAjaran::aktif();
-
-        // Baca preview dulu, jangan langsung insert
-        $import = new MuridImport($tahunAjaran->id, $request->kelas_id);
+        $import = new MuridImport(0, $request->kelas_id);
         $import->preview($request->file('file'));
 
         Session::put('import_preview', $import->getPreviewData());
         Session::put('import_errors', $import->getErrors());
         Session::put('import_kelas_id', $request->kelas_id);
-        Session::put('import_tahun_ajaran_id', $tahunAjaran->id);
 
         return redirect()->route('admin.murid.import.form');
     }
@@ -139,10 +226,9 @@ class MuridController extends Controller
     public function importConfirm(Request $request): RedirectResponse
     {
         $kelasId      = Session::get('import_kelas_id');
-        $tahunAjaranId= Session::get('import_tahun_ajaran_id');
         $previewData  = Session::get('import_preview', []);
 
-        if (empty($previewData) || ! $kelasId || ! $tahunAjaranId) {
+        if (empty($previewData) || ! $kelasId) {
             return redirect()->route('admin.murid.import.form')
                 ->with('error', 'Sesi import telah kedaluwarsa. Silakan upload ulang.');
         }
@@ -159,7 +245,6 @@ class MuridController extends Controller
             // Deteksi duplikat: nama + kelas + NISN
             $exists = Murid::where('nama', $row['nama'])
                 ->where('kelas_id', $kelasId)
-                ->where('tahun_ajaran_id', $tahunAjaranId)
                 ->when(!empty($row['nisn']), fn($q) => $q->where('nisn', $row['nisn']))
                 ->exists();
 
@@ -172,15 +257,17 @@ class MuridController extends Controller
                 'nama'            => $row['nama'],
                 'nis'             => $row['nis'] ?? null,
                 'nisn'            => $row['nisn'] ?? null,
+                'no_telp'         => $row['no_telp'] ?? null,
+                'no_ortu'         => $row['no_ortu'] ?? '08123456789',
+                'status'          => 'aktif',
                 'kelas_id'        => $kelasId,
-                'tahun_ajaran_id' => $tahunAjaranId,
             ]);
             $imported++;
         }
 
-        Session::forget(['import_preview', 'import_errors', 'import_kelas_id', 'import_tahun_ajaran_id']);
+        Session::forget(['import_preview', 'import_errors', 'import_kelas_id']);
 
         return redirect()->route('admin.murid.index')
-            ->with('success', "Import selesai: {$imported} murid ditambahkan, {$skipped} dilewati.");
+            ->with('success', "Import selesai: {$imported} murid ditambahkan ke kelas, {$skipped} dilewati.");
     }
 }

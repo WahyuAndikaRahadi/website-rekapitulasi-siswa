@@ -42,7 +42,6 @@ interface Props {
     laporan_terbaru: LaporanItem[];
     top_murids: TopMuridItem[];
     top_kelas: TopKelasItem[];
-    tahun_ajaran: { label: string } | null;
 }
 
 export default function GuruDashboard({
@@ -50,7 +49,6 @@ export default function GuruDashboard({
     laporan_terbaru = [],
     top_murids = [],
     top_kelas = [],
-    tahun_ajaran,
 }: Props) {
     const { auth } = usePage<SharedData>().props;
     const guru = auth.guru;
@@ -75,12 +73,6 @@ export default function GuruDashboard({
                                 : 'Guru Mata Pelajaran / Tenaga Pendidik'}
                         </p>
                     </div>
-                    {tahun_ajaran && (
-                        <div className="inline-flex items-center gap-2 self-start rounded-full border border-blue-200/60 bg-blue-50/70 px-3.5 py-1.5 text-xs font-semibold text-[#0B2559] shadow-2xs">
-                            <Calendar className="size-3.5 text-[#1E5FA8]" />
-                            <span>Tahun Ajaran {tahun_ajaran.label}</span>
-                        </div>
-                    )}
                 </div>
 
                 {/* Quick actions & stats */}

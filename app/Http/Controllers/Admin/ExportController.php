@@ -17,34 +17,27 @@ class ExportController extends Controller
 {
     public function index(): Response
     {
-        $tahunAjaran = TahunAjaran::aktif();
-
         return Inertia::render('admin/export/index', [
-            'kelas_list'    => Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']),
-            'tahun_ajarans' => TahunAjaran::orderByDesc('label')->get(['id', 'label']),
-            'tahun_ajaran_aktif' => $tahunAjaran ? ['id' => $tahunAjaran->id, 'label' => $tahunAjaran->label] : null,
+            'kelas_list' => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']),
         ]);
     }
 
     public function exportLaporan(Request $request)
     {
         $request->validate([
-            'tahun_ajaran_id' => ['nullable', 'exists:tahun_ajarans,id'],
-            'kelas_id'        => ['nullable', 'exists:kelas,id'],
-            'guru_id'         => ['nullable', 'exists:gurus,id'],
-            'status'          => ['nullable', 'string'],
-            'dari'            => ['nullable', 'date'],
-            'sampai'          => ['nullable', 'date'],
-            'kategori'        => ['nullable', 'in:pelanggaran,prestasi'],
+            'kelas_id' => ['nullable', 'exists:kelas,id'],
+            'guru_id'  => ['nullable', 'exists:gurus,id'],
+            'status'   => ['nullable', 'string'],
+            'dari'     => ['nullable', 'date'],
+            'sampai'   => ['nullable', 'date'],
+            'kategori' => ['nullable', 'in:pelanggaran,prestasi'],
         ]);
-
-        $tahunAjaranId = $request->tahun_ajaran_id ? (int) $request->tahun_ajaran_id : TahunAjaran::aktif()?->id;
 
         $kategoriLabel = $request->kategori ? '-' . $request->kategori : '';
         $filename = 'laporan' . $kategoriLabel . '-' . now()->format('Ymd-His') . '.xlsx';
 
         return Excel::download(new LaporanExport(
-            $tahunAjaranId,
+            null,
             $request->kelas_id ? (int) $request->kelas_id : null,
             $request->dari,
             $request->sampai,
@@ -57,30 +50,28 @@ class ExportController extends Controller
     public function exportMurid(Request $request)
     {
         $request->validate([
-            'tahun_ajaran_id' => ['required', 'exists:tahun_ajarans,id'],
-            'kelas_id'        => ['nullable', 'exists:kelas,id'],
+            'kelas_id' => ['nullable', 'exists:kelas,id'],
+            'status'   => ['nullable', 'in:aktif,alumni'],
         ]);
 
         $filename = 'murid-skor-' . now()->format('Ymd-His') . '.xlsx';
 
         return Excel::download(new MuridExport(
-            $request->tahun_ajaran_id,
-            $request->kelas_id,
+            $request->kelas_id ? (int) $request->kelas_id : null,
+            $request->status ?? 'aktif',
         ), $filename);
     }
 
     public function exportKelas(Request $request)
     {
         $request->validate([
-            'tahun_ajaran_id' => ['required', 'exists:tahun_ajarans,id'],
-            'kelas_id'        => ['nullable', 'exists:kelas,id'],
+            'kelas_id' => ['nullable', 'exists:kelas,id'],
         ]);
 
         $filename = 'kelas-akumulasi-skor-' . now()->format('Ymd-His') . '.xlsx';
 
         return Excel::download(new KelasExport(
-            $request->tahun_ajaran_id,
-            $request->kelas_id,
+            $request->kelas_id ? (int) $request->kelas_id : null,
         ), $filename);
     }
 }

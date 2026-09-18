@@ -10,6 +10,7 @@ export interface TargetMurid {
     nis?: string | null;
     nisn?: string | null;
     no_telp?: string | null;
+    no_ortu?: string | null;
     nama_kelas: string;
 }
 
@@ -212,7 +213,11 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
                                 Kelas: <span className="font-semibold text-foreground">{murid.nama_kelas}</span>
                                 {murid.nis && <span> · NIS: {murid.nis}</span>}
                                 {murid.nisn && <span> · NISN: {murid.nisn}</span>}
-                                {murid.no_telp && <span> · WA/Telp: <strong className="font-semibold text-foreground font-mono">{murid.no_telp}</strong></span>}
+                                {murid.no_ortu ? (
+                                    <span> · WA Ortu: <strong className="font-semibold text-green-600 dark:text-green-400 font-mono">{murid.no_ortu}</strong></span>
+                                ) : (
+                                    murid.no_telp && <span> · WA/Telp: <strong className="font-semibold text-foreground font-mono">{murid.no_telp}</strong></span>
+                                )}
                             </p>
                         </div>
                     </div>

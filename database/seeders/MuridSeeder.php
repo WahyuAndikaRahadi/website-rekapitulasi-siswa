@@ -12,19 +12,15 @@ class MuridSeeder extends Seeder
 {
     public function run(): void
     {
-        $tahunAjaran = TahunAjaran::where('is_active', true)->first() ?? TahunAjaran::first();
-
-        if (! $tahunAjaran) {
-            $this->command->warn('Tidak ada Tahun Ajaran aktif ditemukan. Harap jalankan TahunAjaranSeeder terlebih dahulu.');
-            return;
-        }
-
-        $kelasList = Kelas::where('tahun_ajaran_id', $tahunAjaran->id)->get();
+        $kelasList = Kelas::orderBy('nama_kelas')->get();
 
         if ($kelasList->isEmpty()) {
-            $this->command->warn('Tidak ada Kelas ditemukan untuk Tahun Ajaran aktif.');
+            $this->command->warn('Tidak ada Kelas ditemukan. Harap jalankan KelasSeeder terlebih dahulu.');
             return;
         }
+
+        $tahunAjaran = TahunAjaran::first();
+        $tahunAjaranId = $tahunAjaran?->id;
 
         $faker = Faker::create('id_ID');
 
@@ -32,16 +28,16 @@ class MuridSeeder extends Seeder
         $nisnCounter = 8123400000;
 
         foreach ($kelasList as $kelas) {
-            // 10 murid per kelas
-            $jumlahMurid = 10;
+            // 8 murid per kelas untuk data dummy pengujian
+            $jumlahMurid = 8;
 
             for ($i = 1; $i <= $jumlahMurid; $i++) {
                 $gender = $faker->randomElement(['male', 'female']);
-                // Menggunakan firstName + lastName agar tidak mengandung gelar akademik (S.Kom, Dr, dll)
                 $nama = $faker->firstName($gender) . ' ' . $faker->lastName($gender);
                 $nis = (string) $nisCounter++;
                 $nisn = '00' . ($nisnCounter++);
                 $noTelp = '08' . $faker->numerify('##########');
+                $noOrtu = '08' . $faker->numerify('##########');
 
                 Murid::firstOrCreate(
                     [
@@ -51,8 +47,10 @@ class MuridSeeder extends Seeder
                         'nama'            => $nama,
                         'nisn'            => $nisn,
                         'no_telp'         => $noTelp,
+                        'no_ortu'         => $noOrtu,
+                        'status'          => 'aktif',
                         'kelas_id'        => $kelas->id,
-                        'tahun_ajaran_id' => $tahunAjaran->id,
+                        'tahun_ajaran_id' => $tahunAjaranId,
                     ]
                 );
             }

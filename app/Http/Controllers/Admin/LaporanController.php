@@ -40,15 +40,6 @@ class LaporanController extends Controller
         if ($request->filled('sampai')) {
             $query->whereDate('tanggal_kejadian', '<=', $request->sampai);
         }
-        if ($request->filled('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
-        } else {
-            $aktif = TahunAjaran::aktif();
-            if ($aktif) {
-                $query->where('tahun_ajaran_id', $aktif->id);
-            }
-        }
-
         $laporans = $query->paginate(20)->withQueryString();
 
         return Inertia::render('admin/laporan/index', [
@@ -58,7 +49,7 @@ class LaporanController extends Controller
                 'murid_nama'         => $l->murid->nama,
                 'murid_nis'          => $l->murid->nis,
                 'murid_no_telp'      => $l->murid->no_telp,
-                'kelas_nama'         => $l->murid->kelas->nama_kelas,
+                'kelas_nama'         => $l->murid->kelas?->nama_kelas ?? 'Alumni',
                 'guru_nama'          => $l->guru->nama,
                 'guru_no_telp'       => $l->guru->no_telp,
                 'kategori'           => $l->kategori,
@@ -75,10 +66,9 @@ class LaporanController extends Controller
                     'nama_asli' => $b->nama_asli,
                 ])->values()->all(),
             ]),
-            'filters'       => $request->only(['status', 'kategori', 'kelas_id', 'guru_id', 'dari', 'sampai', 'tahun_ajaran_id']),
-            'kelas_list'    => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']),
+            'filters'       => $request->only(['status', 'kategori', 'kelas_id', 'guru_id', 'dari', 'sampai']),
+            'kelas_list'    => Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas', 'tingkat']),
             'guru_list'     => Guru::orderBy('nama')->get(['id', 'nama']),
-            'tahun_ajarans' => TahunAjaran::orderByDesc('label')->get(['id', 'label']),
             'summary'       => [
                 'menunggu_verifikasi' => Laporan::menungguVerifikasi()->count(),
                 'baru_dilaporkan'     => Laporan::baruDilaporkan()->count(),
@@ -91,7 +81,7 @@ class LaporanController extends Controller
 
     public function show(Laporan $laporan): Response
     {
-        $laporan->load(['murid.kelas', 'guru', 'bukti', 'ditindaklanjutiOleh', 'tahunAjaran']);
+        $laporan->load(['murid.kelas', 'guru', 'bukti', 'ditindaklanjutiOleh']);
 
         return Inertia::render('admin/laporan/show', [
             'laporan' => [
@@ -103,7 +93,7 @@ class LaporanController extends Controller
                     'nis'        => $laporan->murid->nis,
                     'nisn'       => $laporan->murid->nisn,
                     'no_telp'    => $laporan->murid->no_telp,
-                    'nama_kelas' => $laporan->murid->kelas->nama_kelas,
+                    'nama_kelas' => $laporan->murid->kelas?->nama_kelas ?? 'Alumni',
                 ],
                 'guru'                => ['id' => $laporan->guru->id, 'nama' => $laporan->guru->nama, 'no_telp' => $laporan->guru->no_telp],
                 'kategori'            => $laporan->kategori,
@@ -117,7 +107,6 @@ class LaporanController extends Controller
                 'tindak_lanjut'       => $laporan->tindak_lanjut,
                 'ditindaklanjuti_oleh'=> $laporan->ditindaklanjutiOleh?->name,
                 'ditindaklanjuti_at'  => $laporan->ditindaklanjuti_at?->format('d/m/Y H:i'),
-                'tahun_ajaran'        => $laporan->tahunAjaran->label,
                 'bukti'               => $laporan->bukti->map(fn($b) => [
                     'id'        => $b->id,
                     'nama_asli' => $b->nama_asli,
@@ -180,6 +169,9 @@ class LaporanController extends Controller
             ? null
             : (int) $request->poin_diberikan;
 
+        $murid = $laporan->murid;
+        $poinSebelumnya = $murid ? $murid->poinPelanggaran() : 0;
+
         $laporan->update([
             'status'               => $status,
             'tindak_lanjut'        => $request->tindak_lanjut,
@@ -188,7 +180,19 @@ class LaporanController extends Controller
             'ditindaklanjuti_at'   => now(),
         ]);
 
+        // Kirim notifikasi WhatsApp jika laporan pelanggaran disetujui
+        if ($laporan->kategori === 'pelanggaran' && $status !== 'ditolak' && $murid) {
+            $poinSekarang = $murid->fresh()->poinPelanggaran();
+            $targetPhone = $murid->no_ortu ?? $murid->no_telp;
+
+            if (!empty($targetPhone)) {
+                $whatsAppService = app(\App\Services\WhatsAppService::class);
+                $waMessage = $whatsAppService->formatPelanggaranMessage($murid, $laporan, $poinSebelumnya, $poinSekarang);
+                \App\Jobs\SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
+            }
+        }
+
         return redirect()->route('admin.laporan.show', $laporan)
-            ->with('success', 'Laporan berhasil diverifikasi.');
+            ->with('success', 'Laporan berhasil diverifikasi dan notifikasi WhatsApp diproses.');
     }
 }

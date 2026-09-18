@@ -17,7 +17,6 @@ interface KelasItem { id: number; nama_kelas: string; }
 
 interface Props {
     kelas_list: KelasItem[];
-    tahun_ajaran: { id: number; label: string } | null;
     preview: PreviewRow[] | null;
     errors_import: string[] | null;
 }
@@ -28,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Import Excel', href: '/admin/murid-import' },
 ];
 
-export default function MuridImport({ kelas_list, tahun_ajaran, preview, errors_import }: Props) {
+export default function MuridImport({ kelas_list, preview, errors_import }: Props) {
     const uploadForm = useForm({ file: null as File | null, kelas_id: kelas_list[0]?.id.toString() ?? '' });
 
     const handleUpload = (e: React.FormEvent) => {
@@ -49,7 +48,7 @@ export default function MuridImport({ kelas_list, tahun_ajaran, preview, errors_
             <div className="mx-auto max-w-3xl space-y-6 p-6">
                 <div>
                     <h1 className="text-xl font-semibold">Import Murid dari Excel</h1>
-                    {tahun_ajaran && <p className="text-muted-foreground mt-1 text-sm">Tahun Ajaran {tahun_ajaran.label}</p>}
+                    <p className="text-muted-foreground mt-1 text-sm">Unggah data murid baru ke dalam kelas yang dipilih.</p>
                 </div>
 
                 {/* Petunjuk format */}

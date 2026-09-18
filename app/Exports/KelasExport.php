@@ -13,14 +13,12 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class KelasExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
     public function __construct(
-        private int $tahunAjaranId,
         private ?int $kelasId = null,
     ) {}
 
     public function collection()
     {
         $kelases = Kelas::with(['murids.laporans', 'waliKelas'])
-            ->where('tahun_ajaran_id', $this->tahunAjaranId)
             ->when($this->kelasId, fn($q) => $q->where('id', $this->kelasId))
             ->get();
 

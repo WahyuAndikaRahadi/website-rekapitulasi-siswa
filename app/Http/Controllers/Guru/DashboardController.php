@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\Laporan;
 use App\Models\Murid;
-use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -16,7 +15,6 @@ class DashboardController extends Controller
     public function index(Request $request): Response
     {
         $guru = $request->user()->guru;
-        $tahunAjaran = TahunAjaran::aktif();
 
         $stats = [
             'total_laporan'       => Laporan::where('guru_id', $guru?->id)->count(),
@@ -36,7 +34,7 @@ class DashboardController extends Controller
                 'id'                 => $l->id,
                 'tanggal_kejadian'   => $l->tanggal_kejadian->format('d/m/Y'),
                 'murid_nama'         => $l->murid->nama,
-                'kelas_nama'         => $l->murid->kelas->nama_kelas,
+                'kelas_nama'         => $l->murid->kelas?->nama_kelas ?? 'Alumni',
                 'kategori'           => $l->kategori,
                 'tingkat_keparahan'  => $l->tingkat_keparahan,
                 'keterangan'         => $l->keterangan,
@@ -46,9 +44,9 @@ class DashboardController extends Controller
                 'bisa_diedit'        => $l->bisaDieditOlehGuru(),
             ]);
 
-        // ── Leaderboard Top 10 Siswa Berprestasi ───────────────────────────
+        // ── Leaderboard Top 10 Siswa Aktif Berprestasi ─────────────────────
         $topMurids = Murid::with(['kelas', 'laporans'])
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)
+            ->where('status', 'aktif')
             ->get()
             ->map(fn ($m) => [
                 'id'               => $m->id,
@@ -66,8 +64,7 @@ class DashboardController extends Controller
             ->values();
 
         // ── Leaderboard Top 10 Kelas Berprestasi ───────────────────────────
-        $topKelas = Kelas::with(['murids.laporans', 'waliKelas'])
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)
+        $topKelas = Kelas::with(['murids' => fn($q) => $q->where('status', 'aktif'), 'murids.laporans', 'waliKelas'])
             ->get()
             ->map(function ($k) {
                 $murids = $k->murids;
@@ -97,7 +94,6 @@ class DashboardController extends Controller
             'laporan_terbaru'  => $laporanTerbaru,
             'top_murids'       => $topMurids,
             'top_kelas'        => $topKelas,
-            'tahun_ajaran'     => $tahunAjaran ? ['label' => $tahunAjaran->label] : null,
         ]);
     }
 }

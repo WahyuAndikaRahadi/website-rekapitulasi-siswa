@@ -23,7 +23,6 @@ interface LaporanDetail {
     tindak_lanjut: string | null;
     ditindaklanjuti_oleh: string | null;
     ditindaklanjuti_at: string | null;
-    tahun_ajaran: string;
     bukti: { id: number; nama_asli: string; url: string }[];
 }
 
@@ -160,10 +159,6 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {}, poin_maste
                         <div>
                             <p className="text-xs text-muted-foreground">Tanggal Kejadian</p>
                             <p className="mt-0.5 font-medium font-mono text-sm">{laporan.tanggal_kejadian}</p>
-                        </div>
-                        <div>
-                            <p className="text-xs text-muted-foreground">Tahun Ajaran</p>
-                            <p className="mt-0.5 font-medium">{laporan.tahun_ajaran}</p>
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Kategori Tindakan</p>

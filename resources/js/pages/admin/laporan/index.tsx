@@ -29,7 +29,7 @@ interface LaporanItem {
     bukti_urls: { url: string; nama_asli: string }[];
 }
 
-interface FilterOption { id: number; nama_kelas?: string; nama?: string; label?: string; }
+interface FilterOption { id: number; nama_kelas?: string; nama?: string; }
 
 interface Props {
     laporans: {
@@ -40,7 +40,6 @@ interface Props {
     filters: Record<string, string>;
     kelas_list: FilterOption[];
     guru_list: FilterOption[];
-    tahun_ajarans: FilterOption[];
     summary: {
         menunggu_verifikasi: number;
         baru_dilaporkan: number;
@@ -55,7 +54,7 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Laporan Masuk', href: '/admin/laporan' },
 ];
 
-export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_list, tahun_ajarans, summary }: Props) {
+export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_list, summary }: Props) {
     const activeTab = filters.kategori === 'prestasi' ? 'prestasi' : 'pelanggaran';
 
     const [f, setF] = useState({
@@ -65,7 +64,6 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
         guru_id: filters.guru_id ?? '',
         dari: filters.dari ?? '',
         sampai: filters.sampai ?? '',
-        tahun_ajaran_id: filters.tahun_ajaran_id ?? '',
     });
 
     const [updatingId, setUpdatingId] = useState<number | null>(null);
@@ -82,7 +80,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
     };
 
     const reset = () => {
-        const empty = { status: '', kategori: activeTab, kelas_id: '', guru_id: '', dari: '', sampai: '', tahun_ajaran_id: '' };
+        const empty = { status: '', kategori: activeTab, kelas_id: '', guru_id: '', dari: '', sampai: '' };
         setF(empty);
         router.get('/admin/laporan', { kategori: activeTab }, { replace: true });
     };
@@ -204,13 +202,6 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                 {/* Filter */}
                 <div className="rounded-lg border bg-white p-4">
                     <div className="flex flex-wrap items-end gap-3">
-                        <div className="space-y-1">
-                            <label className="text-xs font-medium text-muted-foreground">Tahun Ajaran</label>
-                            <select value={f.tahun_ajaran_id} onChange={upd('tahun_ajaran_id')} className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                                <option value="">Semua</option>
-                                {tahun_ajarans.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
-                            </select>
-                        </div>
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Status</label>
                             <select value={f.status} onChange={upd('status')} className="h-9 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">

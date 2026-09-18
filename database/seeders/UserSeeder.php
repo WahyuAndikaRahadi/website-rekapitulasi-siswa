@@ -23,7 +23,7 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // ── Guru 1 — Wali Kelas X TO 1 ───────────────────────────────────
+        // ── Guru 1 — Wali Kelas X SIJA 1 ───────────────────────────────────
         $userGuru1 = User::firstOrCreate(
             ['email' => 'budi.santoso@sekolah.test'],
             [
@@ -33,7 +33,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-        $kelasX = Kelas::where('nama_kelas', 'X TO 1')->first();
+        $kelasX = Kelas::where('nama_kelas', 'X SIJA 1')->first();
         $guru1 = Guru::firstOrCreate(
             ['user_id' => $userGuru1->id],
             [
@@ -46,17 +46,17 @@ class UserSeeder extends Seeder
         // Assign mengajar di beberapa kelas
         if ($kelasX) {
             $guru1->kelas()->syncWithoutDetaching([
-                $kelasX->id => ['mapel' => 'Teknik Otomasi'],
+                $kelasX->id => ['mapel' => 'Sistem Komputer & Jaringan'],
             ]);
         }
-        $kelasXI = Kelas::where('nama_kelas', 'XI TO 1')->first();
+        $kelasXI = Kelas::where('nama_kelas', 'XI SIJA 1')->first();
         if ($kelasXI) {
             $guru1->kelas()->syncWithoutDetaching([
-                $kelasXI->id => ['mapel' => 'Teknik Otomasi'],
+                $kelasXI->id => ['mapel' => 'Sistem Komputer & Jaringan'],
             ]);
         }
 
-        // ── Guru 2 — Wali Kelas XI TO 1 ──────────────────────────────────
+        // ── Guru 2 — Wali Kelas XI SIJA 1 ──────────────────────────────────
         $userGuru2 = User::firstOrCreate(
             ['email' => 'siti.rahayu@sekolah.test'],
             [
@@ -66,7 +66,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
-        $kelasXI1 = Kelas::where('nama_kelas', 'XI TO 1')->first();
+        $kelasXI1 = Kelas::where('nama_kelas', 'XI SIJA 1')->first();
         Guru::firstOrCreate(
             ['user_id' => $userGuru2->id],
             [
@@ -87,6 +87,7 @@ class UserSeeder extends Seeder
                 'email_verified_at' => now(),
             ]
         );
+
         Guru::firstOrCreate(
             ['user_id' => $userGuru3->id],
             [

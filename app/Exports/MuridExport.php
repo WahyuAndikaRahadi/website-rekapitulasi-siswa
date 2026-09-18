@@ -13,14 +13,14 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 class MuridExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
     public function __construct(
-        private int $tahunAjaranId,
         private ?int $kelasId = null,
+        private ?string $status = 'aktif',
     ) {}
 
     public function collection()
     {
         $murids = Murid::with(['kelas', 'laporans'])
-            ->where('tahun_ajaran_id', $this->tahunAjaranId)
+            ->when($this->status, fn($q) => $q->where('status', $this->status))
             ->when($this->kelasId, fn($q) => $q->where('kelas_id', $this->kelasId))
             ->get();
 

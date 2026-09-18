@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Kelas;
 use App\Models\Laporan;
 use App\Models\Murid;
-use App\Models\TahunAjaran;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,22 +13,16 @@ class DashboardController extends Controller
 {
     public function index(): Response
     {
-        $tahunAjaran = TahunAjaran::aktif();
-
         // ── Stat cards ───────────────────────────────────────────────────
-        $menungguVerifikasi  = Laporan::menungguVerifikasi()
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
+        $menungguVerifikasi  = Laporan::menungguVerifikasi()->count();
         $totalBulanIni       = Laporan::whereMonth('tanggal_kejadian', now()->month)
-            ->whereYear('tanggal_kejadian', now()->year)
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
+            ->whereYear('tanggal_kejadian', now()->year)->count();
         $pelanggaranBulanIni = Laporan::pelanggaran()
             ->whereMonth('tanggal_kejadian', now()->month)
-            ->whereYear('tanggal_kejadian', now()->year)
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
+            ->whereYear('tanggal_kejadian', now()->year)->count();
         $prestasiBulanIni    = Laporan::prestasi()
             ->whereMonth('tanggal_kejadian', now()->month)
-            ->whereYear('tanggal_kejadian', now()->year)
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)->count();
+            ->whereYear('tanggal_kejadian', now()->year)->count();
 
         // ── Tren 6 bulan terakhir ─────────────────────────────────────────
         $tren = [];
@@ -40,13 +33,11 @@ class DashboardController extends Controller
             $pelanggaran = Laporan::pelanggaran()
                 ->whereMonth('tanggal_kejadian', $bulan->month)
                 ->whereYear('tanggal_kejadian', $bulan->year)
-                ->where('tahun_ajaran_id', $tahunAjaran?->id)
                 ->count();
 
             $prestasi = Laporan::prestasi()
                 ->whereMonth('tanggal_kejadian', $bulan->month)
                 ->whereYear('tanggal_kejadian', $bulan->year)
-                ->where('tahun_ajaran_id', $tahunAjaran?->id)
                 ->count();
 
             $tren[] = [
@@ -57,9 +48,9 @@ class DashboardController extends Controller
             ];
         }
 
-        // ── Semua murid tahun ajaran ini ───────────────────────────────────
+        // ── Semua murid aktif ─────────────────────────────────────────────
         $allMurids = Murid::with(['kelas', 'laporans'])
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)
+            ->where('status', 'aktif')
             ->get()
             ->map(fn ($m) => [
                 'id'               => $m->id,
@@ -88,8 +79,7 @@ class DashboardController extends Controller
             ->values();
 
         // ── Data Semua Kelas ──────────────────────────────────────────────
-        $allKelas = Kelas::with(['murids.laporans', 'waliKelas'])
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)
+        $allKelas = Kelas::with(['murids' => fn($q) => $q->where('status', 'aktif'), 'murids.laporans', 'waliKelas'])
             ->get()
             ->map(function ($k) {
                 $murids = $k->murids;
@@ -136,7 +126,6 @@ class DashboardController extends Controller
             'top_kelas'         => $topKelas,
             'murid_skor_rendah' => $muridSkorRendah,
             'kelas_skor'        => $kelasSkor,
-            'tahun_ajaran'      => $tahunAjaran ? ['label' => $tahunAjaran->label] : null,
         ]);
     }
 }

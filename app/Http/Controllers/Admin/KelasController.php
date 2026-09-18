@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
-use App\Models\TahunAjaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,33 +13,30 @@ class KelasController extends Controller
 {
     public function index(): Response
     {
-        $kelas = Kelas::with(['tahunAjaran', 'waliKelas'])
-            ->orderBy('tahun_ajaran_id', 'desc')
+        $kelas = Kelas::with(['waliKelas'])
             ->orderBy('tingkat')
             ->orderBy('nama_kelas')
             ->get();
 
         return Inertia::render('admin/kelas/index', [
-            'kelas_list'    => $kelas->map(fn($k) => [
-                'id'           => $k->id,
-                'nama_kelas'   => $k->nama_kelas,
-                'tingkat'      => $k->tingkat,
-                'tahun_ajaran' => $k->tahunAjaran->label,
-                'wali_kelas'   => $k->waliKelas?->nama,
+            'kelas_list' => $kelas->map(fn($k) => [
+                'id'         => $k->id,
+                'nama_kelas' => $k->nama_kelas,
+                'tingkat'    => $k->tingkat,
+                'wali_kelas' => $k->waliKelas?->nama,
             ]),
-            'tahun_ajarans' => TahunAjaran::orderByDesc('label')->get(['id', 'label']),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'nama_kelas'      => ['required', 'string', 'max:50'],
-            'tingkat'         => ['required', 'string', 'max:5'],
-            'tahun_ajaran_id' => ['required', 'exists:tahun_ajarans,id'],
+            'nama_kelas' => ['required', 'string', 'max:50', 'unique:kelas,nama_kelas'],
+            'tingkat'    => ['required', 'string', 'max:5'],
         ], [
-            'nama_kelas.required'      => 'Nama kelas harus diisi.',
-            'tahun_ajaran_id.required' => 'Tahun ajaran harus dipilih.',
+            'nama_kelas.required' => 'Nama kelas harus diisi.',
+            'nama_kelas.unique'   => 'Nama kelas sudah ada.',
+            'tingkat.required'    => 'Tingkat harus dipilih.',
         ]);
 
         Kelas::create($validated);
@@ -51,8 +47,11 @@ class KelasController extends Controller
     public function update(Request $request, Kelas $kelas): RedirectResponse
     {
         $validated = $request->validate([
-            'nama_kelas' => ['required', 'string', 'max:50'],
+            'nama_kelas' => ['required', 'string', 'max:50', 'unique:kelas,nama_kelas,' . $kelas->id],
             'tingkat'    => ['required', 'string', 'max:5'],
+        ], [
+            'nama_kelas.required' => 'Nama kelas harus diisi.',
+            'nama_kelas.unique'   => 'Nama kelas sudah ada.',
         ]);
 
         $kelas->update($validated);
@@ -62,8 +61,8 @@ class KelasController extends Controller
 
     public function destroy(Kelas $kelas): RedirectResponse
     {
-        if ($kelas->murids()->exists()) {
-            return back()->with('error', 'Tidak dapat menghapus kelas yang masih memiliki murid.');
+        if ($kelas->murids()->where('status', 'aktif')->exists()) {
+            return back()->with('error', 'Tidak dapat menghapus kelas yang masih memiliki murid aktif.');
         }
 
         $kelas->delete();

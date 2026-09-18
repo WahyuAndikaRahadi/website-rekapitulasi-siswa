@@ -10,30 +10,44 @@ class KelasSeeder extends Seeder
 {
     public function run(): void
     {
-        $tahunAjaran = TahunAjaran::where('is_active', true)->firstOrFail();
+        $tahunAjaran = TahunAjaran::first();
+        $tahunAjaranId = $tahunAjaran?->id;
 
-        $kelas = [
-            // Tingkat X
-            ['nama_kelas' => 'X TO 1',  'tingkat' => 'X'],
-            ['nama_kelas' => 'X TO 2',  'tingkat' => 'X'],
-            ['nama_kelas' => 'X TM 1',  'tingkat' => 'X'],
-            ['nama_kelas' => 'X TM 2',  'tingkat' => 'X'],
-            ['nama_kelas' => 'X AK 1',  'tingkat' => 'X'],
-            // Tingkat XI
-            ['nama_kelas' => 'XI TO 1', 'tingkat' => 'XI'],
-            ['nama_kelas' => 'XI TO 2', 'tingkat' => 'XI'],
-            ['nama_kelas' => 'XI TM 1', 'tingkat' => 'XI'],
-            ['nama_kelas' => 'XI AK 1', 'tingkat' => 'XI'],
-            // Tingkat XII
-            ['nama_kelas' => 'XII TO 1', 'tingkat' => 'XII'],
-            ['nama_kelas' => 'XII TM 1', 'tingkat' => 'XII'],
-            ['nama_kelas' => 'XII AK 1', 'tingkat' => 'XII'],
+        $kelasList = [
+            // SIJA (Sistem Informatika, Jaringan, dan Aplikasi - 4 Tahun)
+            ['nama_kelas' => 'X SIJA 1',   'tingkat' => 'X'],
+            ['nama_kelas' => 'X SIJA 2',   'tingkat' => 'X'],
+            ['nama_kelas' => 'XI SIJA 1',  'tingkat' => 'XI'],
+            ['nama_kelas' => 'XI SIJA 2',  'tingkat' => 'XI'],
+            ['nama_kelas' => 'XII SIJA 1', 'tingkat' => 'XII'],
+            ['nama_kelas' => 'XII SIJA 2', 'tingkat' => 'XII'],
+            ['nama_kelas' => 'XIII SIJA 1','tingkat' => 'XIII'],
+            ['nama_kelas' => 'XIII SIJA 2','tingkat' => 'XIII'],
+
+            // OTO (Teknik Otomotif - 3 Tahun)
+            ['nama_kelas' => 'X OTO 1',    'tingkat' => 'X'],
+            ['nama_kelas' => 'X OTO 2',    'tingkat' => 'X'],
+            ['nama_kelas' => 'XI OTO 1',   'tingkat' => 'XI'],
+            ['nama_kelas' => 'XI OTO 2',   'tingkat' => 'XI'],
+            ['nama_kelas' => 'XII OTO 1',  'tingkat' => 'XII'],
+            ['nama_kelas' => 'XII OTO 2',  'tingkat' => 'XII'],
+
+            // MEKA (Teknik Mekatronika - 3 Tahun)
+            ['nama_kelas' => 'X MEKA 1',   'tingkat' => 'X'],
+            ['nama_kelas' => 'X MEKA 2',   'tingkat' => 'X'],
+            ['nama_kelas' => 'XI MEKA 1',  'tingkat' => 'XI'],
+            ['nama_kelas' => 'XI MEKA 2',  'tingkat' => 'XI'],
+            ['nama_kelas' => 'XII MEKA 1', 'tingkat' => 'XII'],
+            ['nama_kelas' => 'XII MEKA 2', 'tingkat' => 'XII'],
         ];
 
-        foreach ($kelas as $data) {
-            Kelas::firstOrCreate(
-                ['nama_kelas' => $data['nama_kelas'], 'tahun_ajaran_id' => $tahunAjaran->id],
-                array_merge($data, ['tahun_ajaran_id' => $tahunAjaran->id])
+        foreach ($kelasList as $data) {
+            Kelas::updateOrCreate(
+                ['nama_kelas' => $data['nama_kelas']],
+                [
+                    'tingkat'         => $data['tingkat'],
+                    'tahun_ajaran_id' => $tahunAjaranId,
+                ]
             );
         }
     }

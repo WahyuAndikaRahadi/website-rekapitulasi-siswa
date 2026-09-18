@@ -1,16 +1,13 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Download, FileSpreadsheet, GraduationCap, School, TrendingUp } from 'lucide-react';
+import { Download, FileSpreadsheet, GraduationCap, School } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface KelasItem { id: number; nama_kelas: string; }
-interface TahunAjaranItem { id: number; label: string; }
 
 interface Props {
     kelas_list: KelasItem[];
-    tahun_ajarans: TahunAjaranItem[];
-    tahun_ajaran_aktif: { id: number; label: string } | null;
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -18,9 +15,8 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Ekspor Data', href: '/admin/export' },
 ];
 
-export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun_ajaran_aktif }: Props) {
+export default function ExportIndex({ kelas_list = [] }: Props) {
     const [laporanForm, setLaporanForm] = useState({
-        tahun_ajaran_id: tahun_ajaran_aktif?.id.toString() ?? '',
         kelas_id: '',
         dari: '',
         sampai: '',
@@ -28,12 +24,11 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
     });
 
     const [muridForm, setMuridForm] = useState({
-        tahun_ajaran_id: tahun_ajaran_aktif?.id.toString() ?? '',
         kelas_id: '',
+        status: 'aktif',
     });
 
     const [kelasForm, setKelasForm] = useState({
-        tahun_ajaran_id: tahun_ajaran_aktif?.id.toString() ?? '',
         kelas_id: '',
     });
 
@@ -89,7 +84,7 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                 {/* Header Title */}
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                        Pusat Unduhan & Ekspor Data
+                        Pusat Unduhan &amp; Ekspor Data
                     </h1>
                     <p className="text-sm text-muted-foreground mt-0.5">
                         Unduh rekapitulasi data kedisiplinan siswa, data murid, dan akumulasi nilai kelas dalam format spreadsheet Excel (.xlsx).
@@ -106,28 +101,11 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                                 </div>
                                 <div>
                                     <h2 className="text-base font-bold text-slate-900">Rekap Laporan Peristiwa</h2>
-                                    <p className="text-xs text-slate-500">Pelanggaran & Kebaikan Siswa</p>
+                                    <p className="text-xs text-slate-500">Pelanggaran &amp; Kebaikan Siswa</p>
                                 </div>
                             </div>
 
                             <form id="form-export-laporan" onSubmit={handleExportLaporan} className="space-y-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-slate-700">
-                                        Tahun Ajaran <span className="text-rose-500">*</span>
-                                    </label>
-                                    <select
-                                        value={laporanForm.tahun_ajaran_id}
-                                        onChange={(e) => setLaporanForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
-                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
-                                        required
-                                    >
-                                        <option value="">Pilih tahun ajaran</option>
-                                        {tahun_ajarans.map((t) => (
-                                            <option key={t.id} value={t.id}>{t.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-slate-700">
                                         Jenis Laporan <span className="text-slate-400 font-normal">(opsional)</span>
@@ -154,7 +132,7 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                                     >
                                         <option value="">Semua Kelas</option>
                                         {kelas_list.map((k) => (
-                                            <option key={k.id} value={k.id}>{k.nama_kelas}</option>
+                                             <option key={k.id} value={k.id}>{k.nama_kelas}</option>
                                         ))}
                                     </select>
                                 </div>
@@ -186,8 +164,7 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                             <button
                                 type="submit"
                                 form="form-export-laporan"
-                                disabled={!laporanForm.tahun_ajaran_id}
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
                             >
                                 <Download className="size-4" />
                                 <span>Unduh Laporan (.xlsx)</span>
@@ -204,25 +181,22 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                                 </div>
                                 <div>
                                     <h2 className="text-base font-bold text-slate-900">Data Siswa + Peringkat Skor</h2>
-                                    <p className="text-xs text-slate-500">Urut Poin Terbanyak ke Terkecil</p>
+                                    <p className="text-xs text-slate-500">Urut Poin Prestasi &amp; Pelanggaran</p>
                                 </div>
                             </div>
 
                             <form id="form-export-murid" onSubmit={handleExportMurid} className="space-y-4">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-slate-700">
-                                        Tahun Ajaran <span className="text-rose-500">*</span>
+                                        Status Siswa
                                     </label>
                                     <select
-                                        value={muridForm.tahun_ajaran_id}
-                                        onChange={(e) => setMuridForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
+                                        value={muridForm.status}
+                                        onChange={(e) => setMuridForm((p) => ({ ...p, status: e.target.value }))}
                                         className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
-                                        required
                                     >
-                                        <option value="">Pilih tahun ajaran</option>
-                                        {tahun_ajarans.map((t) => (
-                                            <option key={t.id} value={t.id}>{t.label}</option>
-                                        ))}
+                                        <option value="aktif">Siswa Aktif</option>
+                                        <option value="alumni">Alumni</option>
                                     </select>
                                 </div>
 
@@ -245,7 +219,7 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                                 <div className="rounded-xl bg-slate-50 border border-slate-200/60 p-3 text-xs text-slate-600 space-y-1">
                                     <span className="font-semibold text-slate-800">Kolom Data Excel:</span>
                                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                                        Peringkat, Nama Siswa, NIS, NISN, Kelas, Skor Resmi, Skor Sementara.
+                                        Peringkat, Nama Siswa, NIS, NISN, Kelas, Poin Prestasi, Poin Pelanggaran, Kualifikasi, Tahap Pembinaan.
                                     </p>
                                 </div>
                             </form>
@@ -255,8 +229,7 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                             <button
                                 type="submit"
                                 form="form-export-murid"
-                                disabled={!muridForm.tahun_ajaran_id}
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
                             >
                                 <Download className="size-4" />
                                 <span>Unduh Data Siswa (.xlsx)</span>
@@ -273,28 +246,11 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                                 </div>
                                 <div>
                                     <h2 className="text-base font-bold text-slate-900">Data Kelas + Akumulasi Skor</h2>
-                                    <p className="text-xs text-slate-500">Peringkat & Rata-rata Skor Kelas</p>
+                                    <p className="text-xs text-slate-500">Peringkat &amp; Rata-rata Skor Kelas</p>
                                 </div>
                             </div>
 
                             <form id="form-export-kelas" onSubmit={handleExportKelas} className="space-y-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-slate-700">
-                                        Tahun Ajaran <span className="text-rose-500">*</span>
-                                    </label>
-                                    <select
-                                        value={kelasForm.tahun_ajaran_id}
-                                        onChange={(e) => setKelasForm((p) => ({ ...p, tahun_ajaran_id: e.target.value }))}
-                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
-                                        required
-                                    >
-                                        <option value="">Pilih tahun ajaran</option>
-                                        {tahun_ajarans.map((t) => (
-                                            <option key={t.id} value={t.id}>{t.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-slate-700">
                                         Pilih Kelas Spesifik <span className="text-slate-400 font-normal">(opsional)</span>
@@ -324,8 +280,7 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                             <button
                                 type="submit"
                                 form="form-export-kelas"
-                                disabled={!kelasForm.tahun_ajaran_id}
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
+                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
                             >
                                 <Download className="size-4" />
                                 <span>Unduh Data Kelas (.xlsx)</span>

@@ -16,9 +16,28 @@ class Murid extends Model
         'nis',
         'nisn',
         'no_telp',
+        'no_ortu',
+        'status',
         'kelas_id',
         'tahun_ajaran_id',
     ];
+
+    // --- Scopes ---
+
+    public function scopeAktif($query)
+    {
+        return $query->where('status', 'aktif');
+    }
+
+    public function scopeAlumni($query)
+    {
+        return $query->where('status', 'alumni');
+    }
+
+    public function isAlumni(): bool
+    {
+        return $this->status === 'alumni';
+    }
 
     // --- Relasi ---
 

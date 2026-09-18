@@ -47,14 +47,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/laporan/{laporan}/tindaklanjut', [AdminLaporanController::class, 'tindakLanjut'])->name('laporan.tindaklanjut');
 
 
-    // Kelas & TahunAjaran tidak punya halaman show/create terpisah — gunakan only() agar route tidak dibuat
+    // Kelas tidak punya halaman show/create terpisah — gunakan only() agar route tidak dibuat
     Route::resource('/kelas', AdminKelasController::class)->only(['index', 'store', 'update', 'destroy'])->names('kelas');
 
-    // Tahun ajaran
-    Route::resource('/tahun-ajaran', AdminTahunAjaranController::class)->only(['index', 'store', 'destroy'])->names('tahun-ajaran');
-    Route::patch('/tahun-ajaran/{tahunAjaran}/aktifkan', [AdminTahunAjaranController::class, 'aktifkan'])->name('tahun-ajaran.aktifkan');
-
     // Murid
+    Route::post('/murid/naik-kelas', [AdminMuridController::class, 'naikKelas'])->name('murid.naik-kelas');
     Route::resource('/murid', AdminMuridController::class)->only(['index', 'store', 'update', 'destroy'])->names('murid');
     Route::get('/murid-import',  [AdminMuridController::class, 'importForm'])->name('murid.import.form');
     Route::post('/murid-import', [AdminMuridController::class, 'importProcess'])->name('murid.import.process');

@@ -11,6 +11,8 @@ use App\Models\Laporan;
 use App\Models\Murid;
 use App\Models\PoinMaster;
 use App\Models\TahunAjaran;
+use App\Jobs\SendWhatsAppRekapJob;
+use App\Services\WhatsAppService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,20 +29,17 @@ class LaporanController extends Controller
      */
     public function create(Request $request): Response
     {
-        $tahunAjaran = TahunAjaran::aktif();
-
-        $kelasList = Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)
-            ->orderBy('nama_kelas')
+        $kelasList = Kelas::orderBy('nama_kelas')
             ->get(['id', 'nama_kelas', 'tingkat']);
 
-        // Ekstrak daftar jurusan unik dari nama_kelas (misal: "X TO 1" -> "TO")
+        // Ekstrak daftar jurusan unik dari nama_kelas (misal: "X SIJA 1" -> "SIJA")
         $jurusanList = $kelasList->map(function ($k) {
             $parts = explode(' ', trim($k->nama_kelas));
             return count($parts) >= 2 ? $parts[1] : null;
         })->filter()->unique()->values()->sort()->values();
 
         $query = Murid::with('kelas')
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)
+            ->where('status', 'aktif')
             ->orderBy('kelas_id')
             ->orderBy('nama');
 
@@ -79,9 +78,10 @@ class LaporanController extends Controller
                 'nis'              => $m->nis,
                 'nisn'             => $m->nisn,
                 'no_telp'          => $m->no_telp,
+                'no_ortu'          => $m->no_ortu,
                 'kelas_id'         => $m->kelas_id,
-                'nama_kelas'       => $m->kelas->nama_kelas,
-                'tingkat'          => $m->kelas->tingkat,
+                'nama_kelas'       => $m->kelas?->nama_kelas ?? '—',
+                'tingkat'          => $m->kelas?->tingkat ?? '',
                 'poin_pelanggaran' => $m->poinPelanggaran(),
                 'poin_prestasi'    => $m->poinPrestasi(),
                 'kualifikasi'      => $m->kualifikasiPoin(),
@@ -91,27 +91,29 @@ class LaporanController extends Controller
                 'skor_sementara'   => $m->skorResmi(),
             ]),
             'filters'      => $request->only(['q', 'tingkat', 'jurusan', 'kelas_id']),
-            'tingkat_list' => ['X', 'XI', 'XII'],
+            'tingkat_list' => ['X', 'XI', 'XII', 'XIII'],
             'jurusan_list' => $jurusanList,
             'kelas_list'   => $kelasList,
             'poin_ranges'  => Laporan::POIN_RANGES,
             'poin_masters' => PoinMaster::active()->get(['id', 'kategori', 'nama', 'poin']),
-            'tahun_ajaran' => $tahunAjaran ? ['id' => $tahunAjaran->id, 'label' => $tahunAjaran->label] : null,
         ]);
     }
 
     /**
      * Simpan laporan baru.
      */
-    public function store(StoreLaporanRequest $request): RedirectResponse
+    public function store(StoreLaporanRequest $request, WhatsAppService $whatsAppService): RedirectResponse
     {
         $guru        = $request->user()->guru;
-        $tahunAjaran = TahunAjaran::aktif();
         $isManual    = (bool) $request->input('is_manual', false);
         $status      = $isManual ? 'menunggu verifikasi' : 'baru dilaporkan';
 
-        DB::transaction(function () use ($request, $guru, $tahunAjaran, $isManual, $status) {
-            $laporan = Laporan::create([
+        $murid = Murid::findOrFail($request->murid_id);
+        $poinSebelumnya = $murid->poinPelanggaran();
+        $createdLaporan = null;
+
+        DB::transaction(function () use ($request, $guru, $isManual, $status, &$createdLaporan) {
+            $createdLaporan = Laporan::create([
                 'guru_id'             => $guru->id,
                 'murid_id'            => $request->murid_id,
                 'kategori'            => $request->kategori,
@@ -122,7 +124,6 @@ class LaporanController extends Controller
                 'is_manual'           => $isManual,
                 'poin_diberikan'      => $request->poin_diberikan,
                 'status'              => $status,
-                'tahun_ajaran_id'     => $tahunAjaran->id,
             ]);
 
             // Upload bukti foto
@@ -130,13 +131,13 @@ class LaporanController extends Controller
                 foreach ($request->file('bukti') as $file) {
                     $namaAsli = $file->getClientOriginalName();
                     $path = $file->storeAs(
-                        'bukti/' . $laporan->id,
+                        'bukti/' . $createdLaporan->id,
                         Str::uuid() . '.' . $file->getClientOriginalExtension(),
                         'public'
                     );
 
                     BuktiLaporan::create([
-                        'laporan_id'  => $laporan->id,
+                        'laporan_id'  => $createdLaporan->id,
                         'path_file'   => $path,
                         'nama_asli'   => $namaAsli,
                         'uploaded_at' => now(),
@@ -145,9 +146,20 @@ class LaporanController extends Controller
             }
         });
 
+        // Kirim WhatsApp ke Orang Tua jika kategori pelanggaran & otomatis aktif
+        if ($request->kategori === 'pelanggaran' && !$isManual && $createdLaporan) {
+            $poinSekarang = $murid->fresh()->poinPelanggaran();
+            $targetPhone = $murid->no_ortu ?? $murid->no_telp;
+
+            if (!empty($targetPhone)) {
+                $waMessage = $whatsAppService->formatPelanggaranMessage($murid, $createdLaporan, $poinSebelumnya, $poinSekarang);
+                SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
+            }
+        }
+
         $message = $isManual
             ? 'Catatan laporan manual berhasil disimpan dan menunggu verifikasi admin.'
-            : 'Catatan laporan berhasil disimpan dan poin otomatis diterapkan.';
+            : 'Catatan laporan berhasil disimpan dan notifikasi WhatsApp diproses ke orang tua murid.';
 
         return back()->with('success', $message);
     }
@@ -303,10 +315,8 @@ class LaporanController extends Controller
     {
         $request->validate(['q' => 'required|string|min:2|max:100']);
 
-        $tahunAjaran = TahunAjaran::aktif();
-
         $murids = Murid::with('kelas')
-            ->where('tahun_ajaran_id', $tahunAjaran?->id)
+            ->where('status', 'aktif')
             ->where(function ($query) use ($request) {
                 $q = '%' . $request->q . '%';
                 $query->where('nama', 'like', $q)
@@ -314,13 +324,14 @@ class LaporanController extends Controller
                       ->orWhere('nisn', 'like', $q);
             })
             ->limit(20)
-            ->get(['id', 'nama', 'nis', 'nisn', 'no_telp', 'kelas_id'])
+            ->get(['id', 'nama', 'nis', 'nisn', 'no_telp', 'no_ortu', 'kelas_id'])
             ->map(fn($m) => [
                 'id'         => $m->id,
                 'nama'       => $m->nama,
                 'nis'        => $m->nis,
                 'nisn'       => $m->nisn,
                 'no_telp'    => $m->no_telp,
+                'no_ortu'    => $m->no_ortu,
                 'nama_kelas' => $m->kelas->nama_kelas ?? '—',
                 'tingkat'    => $m->kelas->tingkat ?? '',
             ]);

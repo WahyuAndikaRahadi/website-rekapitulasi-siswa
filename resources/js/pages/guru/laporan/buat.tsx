@@ -14,6 +14,7 @@ interface MuridItem {
     nis: string | null;
     nisn: string | null;
     no_telp?: string | null;
+    no_ortu?: string | null;
     kelas_id: number;
     nama_kelas: string;
     tingkat: string;
@@ -50,7 +51,6 @@ interface Props {
     kelas_list: { id: number; nama_kelas: string; tingkat: string }[];
     poin_ranges: Record<string, Record<string, { min: number; max: number }>>;
     poin_masters?: PoinMasterItem[];
-    tahun_ajaran: { id: number; label: string } | null;
     flash?: { success?: string; error?: string };
 }
 
@@ -67,7 +67,6 @@ export default function BuatLaporan({
     kelas_list,
     poin_ranges,
     poin_masters = [],
-    tahun_ajaran,
     flash,
 }: Props) {
     const [searchQuery, setSearchQuery] = useState(filters.q ?? '');
@@ -123,6 +122,8 @@ export default function BuatLaporan({
             nama: murid.nama,
             nis: murid.nis,
             nisn: murid.nisn,
+            no_telp: murid.no_telp,
+            no_ortu: murid.no_ortu,
             nama_kelas: murid.nama_kelas,
         });
         setIsModalOpen(true);
@@ -133,7 +134,7 @@ export default function BuatLaporan({
             <Head title="Buat Laporan & Catat Siswa" />
 
             <div className="space-y-6 p-6">
-                {/* Header & Academic Year badge */}
+                {/* Header */}
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">Buat Laporan & Catat Siswa</h1>
@@ -141,12 +142,6 @@ export default function BuatLaporan({
                             Cari siswa berdasarkan nama, NIS, NISN, atau filter berdasarkan tingkat dan jurusan untuk menambahkan catatan pelanggaran atau kebaikan.
                         </p>
                     </div>
-                    {tahun_ajaran && (
-                        <div className="inline-flex items-center gap-2 rounded-full border bg-muted/60 px-3 py-1 text-xs font-medium text-foreground">
-                            <span className="size-2 rounded-full bg-emerald-500"></span>
-                            Tahun Ajaran: {tahun_ajaran.label}
-                        </div>
-                    )}
                 </div>
 
                 {/* Flash Message */}
