@@ -15,6 +15,7 @@ class Murid extends Model
         'nama',
         'nis',
         'nisn',
+        'no_telp',
         'kelas_id',
         'tahun_ajaran_id',
     ];

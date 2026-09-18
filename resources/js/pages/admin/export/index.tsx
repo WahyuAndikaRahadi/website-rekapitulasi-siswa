@@ -24,6 +24,7 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
         kelas_id: '',
         dari: '',
         sampai: '',
+        kategori: '',
     });
 
     const [muridForm, setMuridForm] = useState({
@@ -124,6 +125,21 @@ export default function ExportIndex({ kelas_list = [], tahun_ajarans = [], tahun
                                         {tahun_ajarans.map((t) => (
                                             <option key={t.id} value={t.id}>{t.label}</option>
                                         ))}
+                                    </select>
+                                </div>
+
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-semibold text-slate-700">
+                                        Jenis Laporan <span className="text-slate-400 font-normal">(opsional)</span>
+                                    </label>
+                                    <select
+                                        value={laporanForm.kategori}
+                                        onChange={(e) => setLaporanForm((p) => ({ ...p, kategori: e.target.value }))}
+                                        className="h-10 w-full rounded-lg border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                    >
+                                        <option value="">Semua (Pelanggaran &amp; Prestasi)</option>
+                                        <option value="pelanggaran">Pelanggaran</option>
+                                        <option value="prestasi">Prestasi</option>
                                     </select>
                                 </div>
 

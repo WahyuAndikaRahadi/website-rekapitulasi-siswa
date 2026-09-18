@@ -2,6 +2,7 @@ import { EmptyState } from '@/components/empty-state';
 import { StatusBadge } from '@/components/status-badge';
 import { TambahCatatanModal, type TargetMurid } from '@/components/tambah-catatan-modal';
 import AppLayout from '@/layouts/app-layout';
+import { getViolationPointBadgeInfo } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { CheckCircle2, ChevronDown, ChevronRight, Filter, GraduationCap, PlusCircle, RotateCcw, ShieldCheck, Sparkles, Users } from 'lucide-react';
@@ -22,6 +23,7 @@ interface MuridRekap {
     nama: string;
     nis: string | null;
     nisn: string | null;
+    no_telp?: string | null;
     nama_kelas: string;
     kelas_id: number;
     poin_prestasi: number;
@@ -216,6 +218,7 @@ export default function RekapKelas({
                                     <tr className="border-b border-slate-200 bg-slate-50/80 text-left">
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 w-10"></th>
                                         <th className="px-4 py-3.5 font-semibold text-slate-700">Nama Murid</th>
+                                        <th className="px-4 py-3.5 font-semibold text-slate-700">No. Telepon</th>
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Poin Prestasi</th>
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Poin Pelanggaran</th>
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 text-center">Catatan</th>
@@ -226,11 +229,17 @@ export default function RekapKelas({
                                     {sorted.map((m) => {
                                         const isExp = expanded.has(m.id);
                                         const laporans = m.laporans || [];
+                                        const badgeInfo = getViolationPointBadgeInfo(m.poin_pelanggaran ?? 0);
                                         return (
                                             <React.Fragment key={m.id}>
                                                 <tr
+                                                    style={badgeInfo.hasViolation ? badgeInfo.rowStyle : undefined}
                                                     className={`cursor-pointer transition-colors ${
-                                                        isExp ? 'bg-blue-50/40' : 'hover:bg-slate-50/70'
+                                                        badgeInfo.hasViolation
+                                                            ? badgeInfo.rowClassName
+                                                            : isExp
+                                                            ? 'bg-blue-50/40'
+                                                            : 'hover:bg-slate-50/70'
                                                     }`}
                                                     onClick={() => toggle(m.id)}
                                                 >
@@ -247,6 +256,9 @@ export default function RekapKelas({
                                                             NIS: {m.nis ?? '-'} {m.nisn ? `· NISN: ${m.nisn}` : ''}
                                                         </p>
                                                     </td>
+                                                    <td className="px-4 py-3.5 font-mono text-xs font-semibold text-slate-700">
+                                                        {m.no_telp ?? '—'}
+                                                    </td>
                                                     <td className="px-4 py-3.5 text-center">
                                                         <span className="inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono shadow-2xs bg-emerald-100 text-emerald-800 border border-emerald-200">
                                                             +{m.poin_prestasi ?? 0}
@@ -254,11 +266,8 @@ export default function RekapKelas({
                                                     </td>
                                                     <td className="px-4 py-3.5 text-center">
                                                         <span
-                                                            className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono shadow-2xs ${
-                                                                (m.poin_pelanggaran ?? 0) > 0
-                                                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                                                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                                            }`}
+                                                            style={badgeInfo.style}
+                                                            className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono shadow-2xs border ${badgeInfo.classNames}`}
                                                         >
                                                             {m.poin_pelanggaran ?? 0}
                                                         </span>
@@ -283,7 +292,7 @@ export default function RekapKelas({
                                                 {/* Accordion Detail Laporan */}
                                                 {isExp && (
                                                     <tr key={`${m.id}-detail`}>
-                                                        <td colSpan={6} className="bg-slate-50/60 px-6 py-4 border-t border-b border-slate-200/70">
+                                                        <td colSpan={7} className="bg-slate-50/60 px-6 py-4 border-t border-b border-slate-200/70">
                                                             <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
                                                                 <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
                                                                     <span className="text-xs font-bold text-[#0B2559] uppercase tracking-wider">

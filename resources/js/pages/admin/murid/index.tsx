@@ -2,12 +2,13 @@ import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
+import { getViolationPointBadgeInfo } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { GraduationCap, Pencil, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
-interface MuridItem { id: number; nama: string; nis: string | null; nisn: string | null; nama_kelas: string; kelas_id: number; }
+interface MuridItem { id: number; nama: string; nis: string | null; nisn: string | null; no_telp: string | null; nama_kelas: string; kelas_id: number; poin_pelanggaran?: number; poin_prestasi?: number; }
 interface KelasItem { id: number; nama_kelas: string; }
 interface TahunAjaranItem { id: number; label: string; }
 
@@ -37,12 +38,12 @@ export default function MuridIndex({ murids, filters, kelas_list, tahun_ajarans,
     const applyFilter = () => router.get('/admin/murid', { q, kelas_id: kelasId }, { preserveState: true, replace: true });
     const resetFilter = () => { setQ(''); setKelasId(''); router.get('/admin/murid', {}, { replace: true }); };
 
-    const createForm = useForm({ nama: '', nis: '', nisn: '', kelas_id: kelas_list[0]?.id.toString() ?? '' });
-    const editForm   = useForm({ nama: '', nis: '', nisn: '', kelas_id: '' });
+    const createForm = useForm({ nama: '', nis: '', nisn: '', no_telp: '', kelas_id: kelas_list[0]?.id.toString() ?? '' });
+    const editForm   = useForm({ nama: '', nis: '', nisn: '', no_telp: '', kelas_id: '' });
 
     const openEdit = (m: MuridItem) => {
         setEditItem(m);
-        editForm.setData({ nama: m.nama, nis: m.nis ?? '', nisn: m.nisn ?? '', kelas_id: m.kelas_id.toString() });
+        editForm.setData({ nama: m.nama, nis: m.nis ?? '', nisn: m.nisn ?? '', no_telp: m.no_telp ?? '', kelas_id: m.kelas_id.toString() });
     };
 
     const handleCreate = (e: React.FormEvent) => {
@@ -72,6 +73,7 @@ export default function MuridIndex({ murids, filters, kelas_list, tahun_ajarans,
                         { key: 'nama', label: 'Nama Lengkap', required: true, placeholder: 'Nama murid' },
                         { key: 'nis', label: 'NIS', required: false, placeholder: 'Opsional' },
                         { key: 'nisn', label: 'NISN', required: false, placeholder: 'Opsional' },
+                        { key: 'no_telp', label: 'No. Telepon / WA', required: false, placeholder: 'Misal: 08123456789' },
                     ].map((f) => (
                         <div key={f.key} className="space-y-1.5">
                             <label className="text-sm font-medium">{f.label} {f.required && <span className="text-red-500">*</span>}</label>
@@ -168,27 +170,47 @@ export default function MuridIndex({ murids, filters, kelas_list, tahun_ajarans,
                                         <tr className="border-b bg-muted/40 text-left">
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Nama</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">NIS / NISN</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">No. Telepon</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Kelas</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground text-center">Poin Pelanggaran</th>
                                             <th className="px-4 py-3"></th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y">
-                                        {murids.data.map((m) => (
-                                            <tr key={m.id} className="hover:bg-muted/20">
-                                                <td className="px-4 py-3 font-medium">{m.nama}</td>
-                                                <td className="px-4 py-3 text-muted-foreground">
-                                                    {m.nis ? <span>{m.nis}</span> : <span className="italic">—</span>}
-                                                    {m.nisn && <span className="ml-2 text-xs">/ {m.nisn}</span>}
-                                                </td>
-                                                <td className="px-4 py-3 text-muted-foreground">{m.nama_kelas}</td>
-                                                <td className="px-4 py-3">
-                                                    <div className="flex gap-1">
-                                                        <button onClick={() => openEdit(m)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Pencil className="size-3.5" /></button>
-                                                        <button onClick={() => handleDelete(m.id, m.nama)} className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"><Trash2 className="size-3.5" /></button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        ))}
+                                        {murids.data.map((m) => {
+                                            const badgeInfo = getViolationPointBadgeInfo(m.poin_pelanggaran ?? 0);
+                                            return (
+                                                <tr
+                                                    key={m.id}
+                                                    style={badgeInfo.hasViolation ? badgeInfo.rowStyle : undefined}
+                                                    className={`transition-colors ${
+                                                        badgeInfo.hasViolation ? badgeInfo.rowClassName : 'hover:bg-muted/20'
+                                                    }`}
+                                                >
+                                                    <td className="px-4 py-3 font-medium">{m.nama}</td>
+                                                    <td className="px-4 py-3 text-muted-foreground">
+                                                        {m.nis ? <span>{m.nis}</span> : <span className="italic">—</span>}
+                                                        {m.nisn && <span className="ml-2 text-xs">/ {m.nisn}</span>}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-mono text-xs text-foreground font-semibold">{m.no_telp ?? '—'}</td>
+                                                    <td className="px-4 py-3 text-muted-foreground">{m.nama_kelas}</td>
+                                                    <td className="px-4 py-3 text-center">
+                                                        <span
+                                                            style={badgeInfo.style}
+                                                            className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono border shadow-2xs ${badgeInfo.classNames}`}
+                                                        >
+                                                            {m.poin_pelanggaran ?? 0}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-3">
+                                                        <div className="flex gap-1">
+                                                            <button onClick={() => openEdit(m)} className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"><Pencil className="size-3.5" /></button>
+                                                            <button onClick={() => handleDelete(m.id, m.nama)} className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"><Trash2 className="size-3.5" /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
                                     </tbody>
                                 </table>
                             </div>

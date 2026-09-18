@@ -51,6 +51,7 @@ class RekapKelasController extends Controller
                 'nama'             => $murid->nama,
                 'nis'              => $murid->nis,
                 'nisn'             => $murid->nisn,
+                'no_telp'          => $murid->no_telp,
                 'nama_kelas'       => $kelas->nama_kelas,
                 'kelas_id'         => $kelas->id,
                 'poin_pelanggaran' => $murid->poinPelanggaran(),

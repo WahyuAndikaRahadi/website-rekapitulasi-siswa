@@ -29,19 +29,28 @@ class ExportController extends Controller
     public function exportLaporan(Request $request)
     {
         $request->validate([
-            'tahun_ajaran_id' => ['required', 'exists:tahun_ajarans,id'],
+            'tahun_ajaran_id' => ['nullable', 'exists:tahun_ajarans,id'],
             'kelas_id'        => ['nullable', 'exists:kelas,id'],
+            'guru_id'         => ['nullable', 'exists:gurus,id'],
+            'status'          => ['nullable', 'string'],
             'dari'            => ['nullable', 'date'],
             'sampai'          => ['nullable', 'date'],
+            'kategori'        => ['nullable', 'in:pelanggaran,prestasi'],
         ]);
 
-        $filename = 'laporan-' . now()->format('Ymd-His') . '.xlsx';
+        $tahunAjaranId = $request->tahun_ajaran_id ? (int) $request->tahun_ajaran_id : TahunAjaran::aktif()?->id;
+
+        $kategoriLabel = $request->kategori ? '-' . $request->kategori : '';
+        $filename = 'laporan' . $kategoriLabel . '-' . now()->format('Ymd-His') . '.xlsx';
 
         return Excel::download(new LaporanExport(
-            $request->tahun_ajaran_id,
-            $request->kelas_id,
+            $tahunAjaranId,
+            $request->kelas_id ? (int) $request->kelas_id : null,
             $request->dari,
             $request->sampai,
+            $request->kategori,
+            $request->guru_id ? (int) $request->guru_id : null,
+            $request->status,
         ), $filename);
     }
 

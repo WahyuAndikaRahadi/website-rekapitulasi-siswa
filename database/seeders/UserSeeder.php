@@ -39,6 +39,7 @@ class UserSeeder extends Seeder
             [
                 'nip'          => '196501011990031001',
                 'nama'         => 'Budi Santoso',
+                'no_telp'      => '081234567890',
                 'wali_kelas_id' => $kelasX?->id,
             ]
         );
@@ -71,6 +72,7 @@ class UserSeeder extends Seeder
             [
                 'nip'          => '197203152000032002',
                 'nama'         => 'Siti Rahayu',
+                'no_telp'      => '081398765432',
                 'wali_kelas_id' => $kelasXI1?->id,
             ]
         );
@@ -90,6 +92,7 @@ class UserSeeder extends Seeder
             [
                 'nip'          => null,
                 'nama'         => 'Ahmad Fauzi',
+                'no_telp'      => '085712345678',
                 'wali_kelas_id' => null, // tidak punya wali kelas
             ]
         );

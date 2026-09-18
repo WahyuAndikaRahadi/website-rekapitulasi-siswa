@@ -78,6 +78,7 @@ class LaporanController extends Controller
                 'nama'             => $m->nama,
                 'nis'              => $m->nis,
                 'nisn'             => $m->nisn,
+                'no_telp'          => $m->no_telp,
                 'kelas_id'         => $m->kelas_id,
                 'nama_kelas'       => $m->kelas->nama_kelas,
                 'tingkat'          => $m->kelas->tingkat,
@@ -171,6 +172,7 @@ class LaporanController extends Controller
                     'id'         => $laporan->murid->id,
                     'nama'       => $laporan->murid->nama,
                     'nis'        => $laporan->murid->nis,
+                    'no_telp'    => $laporan->murid->no_telp,
                     'nama_kelas' => $laporan->murid->kelas->nama_kelas,
                 ],
                 'kategori'            => $laporan->kategori,
@@ -280,6 +282,7 @@ class LaporanController extends Controller
                 'id'                 => $l->id,
                 'tanggal_kejadian'   => $l->tanggal_kejadian->format('d/m/Y'),
                 'murid_nama'         => $l->murid->nama,
+                'murid_no_telp'      => $l->murid->no_telp,
                 'kelas_nama'         => $l->murid->kelas->nama_kelas,
                 'kategori'           => $l->kategori,
                 'tingkat_keparahan'  => $l->tingkat_keparahan,
@@ -311,12 +314,13 @@ class LaporanController extends Controller
                       ->orWhere('nisn', 'like', $q);
             })
             ->limit(20)
-            ->get(['id', 'nama', 'nis', 'nisn', 'kelas_id'])
+            ->get(['id', 'nama', 'nis', 'nisn', 'no_telp', 'kelas_id'])
             ->map(fn($m) => [
                 'id'         => $m->id,
                 'nama'       => $m->nama,
                 'nis'        => $m->nis,
                 'nisn'       => $m->nisn,
+                'no_telp'    => $m->no_telp,
                 'nama_kelas' => $m->kelas->nama_kelas ?? '—',
                 'tingkat'    => $m->kelas->tingkat ?? '',
             ]);

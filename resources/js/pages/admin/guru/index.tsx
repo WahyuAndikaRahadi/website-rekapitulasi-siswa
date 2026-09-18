@@ -9,6 +9,7 @@ interface GuruItem {
     id: number;
     nama: string;
     nip: string | null;
+    no_telp: string | null;
     email: string;
     wali_kelas: string | null;
 }
@@ -58,6 +59,7 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
                                 <tr>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Nama Guru</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">NIP</th>
+                                    <th className="px-4 py-3 font-medium text-muted-foreground">No. Telepon</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Email</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Wali Kelas</th>
                                     <th className="px-4 py-3"></th>
@@ -73,6 +75,7 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
                                             </div>
                                         </td>
                                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{g.nip ?? '—'}</td>
+                                        <td className="px-4 py-3 font-mono text-xs text-foreground font-semibold">{g.no_telp ?? '—'}</td>
                                         <td className="px-4 py-3 text-muted-foreground">{g.email}</td>
                                         <td className="px-4 py-3">
                                             {g.wali_kelas ? (

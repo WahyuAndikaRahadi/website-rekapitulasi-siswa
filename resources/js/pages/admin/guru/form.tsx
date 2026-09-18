@@ -7,6 +7,7 @@ interface GuruData {
     id?: number;
     nama: string;
     nip: string | null;
+    no_telp?: string | null;
     email: string;
     wali_kelas_id: number | null;
 }
@@ -26,6 +27,7 @@ export default function GuruForm({ guru, kelas_list }: Props) {
     const { data, setData, post, put, processing, errors } = useForm({
         nama:           guru?.nama           ?? '',
         nip:            guru?.nip            ?? '',
+        no_telp:        guru?.no_telp        ?? '',
         email:          guru?.email          ?? '',
         password:       '',
         wali_kelas_id:  guru?.wali_kelas_id?.toString() ?? '',
@@ -59,6 +61,14 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                         <input type="text" value={data.nip} onChange={(e) => setData('nip', e.target.value)} placeholder="Nomor Induk Pegawai"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         {errors.nip && <p className="text-xs text-red-600">{errors.nip}</p>}
+                    </div>
+
+                    {/* No Telepon */}
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium">No. Telepon / WhatsApp <span className="text-muted-foreground font-normal">(opsional)</span></label>
+                        <input type="text" value={data.no_telp} onChange={(e) => setData('no_telp', e.target.value)} placeholder="Misal: 08123456789"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
+                        {errors.no_telp && <p className="text-xs text-red-600">{errors.no_telp}</p>}
                     </div>
 
                     {/* Email */}

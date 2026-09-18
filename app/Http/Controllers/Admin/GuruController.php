@@ -25,6 +25,7 @@ class GuruController extends Controller
                 'id'         => $g->id,
                 'nama'       => $g->nama,
                 'nip'        => $g->nip,
+                'no_telp'    => $g->no_telp,
                 'email'      => $g->user->email,
                 'wali_kelas' => $g->waliKelasKelas?->nama_kelas,
             ]),
@@ -46,6 +47,7 @@ class GuruController extends Controller
         $validated = $request->validate([
             'nama'           => ['required', 'string', 'max:100'],
             'nip'            => ['nullable', 'string', 'max:30'],
+            'no_telp'        => ['nullable', 'string', 'max:20'],
             'email'          => ['required', 'email', 'unique:users,email'],
             'password'       => ['required', 'string', 'min:8'],
             'wali_kelas_id'  => ['nullable', 'exists:kelas,id'],
@@ -70,6 +72,7 @@ class GuruController extends Controller
                 'user_id'        => $user->id,
                 'nama'           => $validated['nama'],
                 'nip'            => $validated['nip'] ?? null,
+                'no_telp'        => $validated['no_telp'] ?? null,
                 'wali_kelas_id'  => $validated['wali_kelas_id'] ?? null,
             ]);
         });
@@ -88,6 +91,7 @@ class GuruController extends Controller
                 'id'            => $guru->id,
                 'nama'          => $guru->nama,
                 'nip'           => $guru->nip,
+                'no_telp'       => $guru->no_telp,
                 'email'         => $guru->user->email,
                 'wali_kelas_id' => $guru->wali_kelas_id,
             ],
@@ -100,6 +104,7 @@ class GuruController extends Controller
         $validated = $request->validate([
             'nama'          => ['required', 'string', 'max:100'],
             'nip'           => ['nullable', 'string', 'max:30'],
+            'no_telp'       => ['nullable', 'string', 'max:20'],
             'email'         => ['required', 'email', 'unique:users,email,' . $guru->user_id],
             'password'      => ['nullable', 'string', 'min:8'],
             'wali_kelas_id' => ['nullable', 'exists:kelas,id'],
@@ -118,6 +123,7 @@ class GuruController extends Controller
             $guru->update([
                 'nama'          => $validated['nama'],
                 'nip'           => $validated['nip'] ?? null,
+                'no_telp'       => $validated['no_telp'] ?? null,
                 'wali_kelas_id' => $validated['wali_kelas_id'] ?? null,
             ]);
         });

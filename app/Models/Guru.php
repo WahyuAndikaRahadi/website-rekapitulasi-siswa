@@ -13,6 +13,7 @@ class Guru extends Model
         'user_id',
         'nip',
         'nama',
+        'no_telp',
         'wali_kelas_id',
     ];
 

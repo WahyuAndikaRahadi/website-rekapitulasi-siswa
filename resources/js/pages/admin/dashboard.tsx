@@ -1,5 +1,6 @@
 import { TopKelasItem, TopKelasLeaderboard, TopMuridItem, TopMuridLeaderboard } from '@/components/leaderboard-tables';
 import AppLayout from '@/layouts/app-layout';
+import { getViolationPointBadgeInfo } from '@/lib/utils';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
@@ -357,6 +358,7 @@ export default function AdminDashboard({
                                     <thead>
                                         <tr className="border-b border-border text-left">
                                             <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Nama Siswa</th>
+                                            <th className="pb-2.5 px-2 font-semibold text-muted-foreground">No. Telepon</th>
                                             <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Kelas</th>
                                             <th className="pb-2.5 px-2 font-semibold text-muted-foreground">Tahap Pembinaan</th>
                                             <th className="pb-2.5 px-2 text-right font-semibold text-muted-foreground">Poin Pelanggaran</th>
@@ -365,17 +367,33 @@ export default function AdminDashboard({
                                     <tbody className="divide-y divide-border">
                                         {murid_skor_rendah.map((m, i) => {
                                             const poinP = m.poin_pelanggaran ?? Math.abs(m.skor_resmi ?? 0);
+                                            const badgeInfo = getViolationPointBadgeInfo(poinP);
                                             return (
-                                                <tr key={i} className="hover:bg-muted/30 transition-colors">
+                                                <tr
+                                                    key={i}
+                                                    style={badgeInfo.hasViolation ? badgeInfo.rowStyle : undefined}
+                                                    className={`transition-colors ${
+                                                        badgeInfo.hasViolation ? badgeInfo.rowClassName : 'hover:bg-muted/30'
+                                                    }`}
+                                                >
                                                     <td className="py-2.5 px-2 font-semibold text-foreground">{m.nama}</td>
+                                                    <td className="py-2.5 px-2 font-mono text-foreground font-semibold">{m.no_telp ?? '—'}</td>
                                                     <td className="py-2.5 px-2 text-muted-foreground font-medium">{m.kelas}</td>
                                                     <td className="py-2.5 px-2 text-muted-foreground font-medium">
-                                                        <span className="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 border border-amber-200">
-                                                            {m.tahap_pembinaan ?? 'Tahap I'}
+                                                        <span
+                                                            style={badgeInfo.style}
+                                                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold border shadow-2xs ${badgeInfo.classNames}`}
+                                                        >
+                                                            {m.tahap_pembinaan ?? badgeInfo.label}
                                                         </span>
                                                     </td>
-                                                    <td className="py-2.5 px-2 text-right font-mono font-bold text-destructive">
-                                                        +{poinP}
+                                                    <td className="py-2.5 px-2 text-right font-mono font-bold">
+                                                        <span
+                                                            style={badgeInfo.style}
+                                                            className={`inline-flex items-center justify-center font-bold px-2 py-0.5 rounded-full text-xs font-mono border shadow-2xs ${badgeInfo.classNames}`}
+                                                        >
+                                                            {poinP}
+                                                        </span>
                                                     </td>
                                                 </tr>
                                             );

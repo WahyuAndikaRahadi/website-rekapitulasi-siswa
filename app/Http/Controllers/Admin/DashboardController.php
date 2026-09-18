@@ -65,6 +65,7 @@ class DashboardController extends Controller
                 'id'               => $m->id,
                 'nama'             => $m->nama,
                 'nis'              => $m->nis,
+                'no_telp'          => $m->no_telp,
                 'kelas'            => $m->kelas?->nama_kelas ?? '-',
                 'poin_prestasi'    => $m->poinPrestasi(),
                 'poin_pelanggaran' => $m->poinPelanggaran(),

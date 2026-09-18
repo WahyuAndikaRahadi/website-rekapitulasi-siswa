@@ -39,12 +39,15 @@ class MuridController extends Controller
 
         return Inertia::render('admin/murid/index', [
             'murids' => $murids->through(fn($m) => [
-                'id'         => $m->id,
-                'nama'       => $m->nama,
-                'nis'        => $m->nis,
-                'nisn'       => $m->nisn,
-                'nama_kelas' => $m->kelas->nama_kelas,
-                'kelas_id'   => $m->kelas_id,
+                'id'               => $m->id,
+                'nama'             => $m->nama,
+                'nis'              => $m->nis,
+                'nisn'             => $m->nisn,
+                'no_telp'          => $m->no_telp,
+                'nama_kelas'       => $m->kelas->nama_kelas,
+                'kelas_id'         => $m->kelas_id,
+                'poin_pelanggaran' => $m->poinPelanggaran(),
+                'poin_prestasi'    => $m->poinPrestasi(),
             ]),
             'filters'       => $request->only(['q', 'kelas_id', 'tahun_ajaran_id']),
             'kelas_list'    => Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']),
@@ -61,6 +64,7 @@ class MuridController extends Controller
             'nama'     => ['required', 'string', 'max:100'],
             'nis'      => ['nullable', 'string', 'max:20'],
             'nisn'     => ['nullable', 'string', 'max:20'],
+            'no_telp'  => ['nullable', 'string', 'max:20'],
             'kelas_id' => ['required', 'exists:kelas,id'],
         ], [
             'nama.required'     => 'Nama murid harus diisi.',
@@ -81,6 +85,7 @@ class MuridController extends Controller
             'nama'     => ['required', 'string', 'max:100'],
             'nis'      => ['nullable', 'string', 'max:20'],
             'nisn'     => ['nullable', 'string', 'max:20'],
+            'no_telp'  => ['nullable', 'string', 'max:20'],
             'kelas_id' => ['required', 'exists:kelas,id'],
         ]);
 

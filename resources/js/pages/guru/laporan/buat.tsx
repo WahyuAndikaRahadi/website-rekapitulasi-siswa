@@ -2,6 +2,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { TambahCatatanModal, type TargetMurid, type PoinMasterItem } from '@/components/tambah-catatan-modal';
 import AppLayout from '@/layouts/app-layout';
+import { getViolationPointBadgeInfo } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, Filter, GraduationCap, PlusCircle, RotateCcw, Search } from 'lucide-react';
@@ -12,6 +13,7 @@ interface MuridItem {
     nama: string;
     nis: string | null;
     nisn: string | null;
+    no_telp?: string | null;
     kelas_id: number;
     nama_kelas: string;
     tingkat: string;
@@ -273,6 +275,7 @@ export default function BuatLaporan({
                                         <th className="py-3 px-4 font-semibold w-12 text-center">No</th>
                                         <th className="py-3 px-4 font-semibold">Nama Murid</th>
                                         <th className="py-3 px-4 font-semibold">NIS / NISN</th>
+                                        <th className="py-3 px-4 font-semibold">No. Telepon</th>
                                         <th className="py-3 px-4 font-semibold">Kelas & Tingkat</th>
                                         <th className="py-3 px-4 font-semibold text-center">Poin Prestasi</th>
                                         <th className="py-3 px-4 font-semibold text-center">Poin Pelanggaran</th>
@@ -282,8 +285,15 @@ export default function BuatLaporan({
                                 <tbody className="divide-y divide-border">
                                     {murids.data.map((m, idx) => {
                                         const rowNumber = (murids.current_page - 1) * 15 + idx + 1;
+                                        const badgeInfo = getViolationPointBadgeInfo(m.poin_pelanggaran ?? 0);
                                         return (
-                                            <tr key={m.id} className="hover:bg-muted/30 transition-colors group">
+                                            <tr
+                                                key={m.id}
+                                                style={badgeInfo.hasViolation ? badgeInfo.rowStyle : undefined}
+                                                className={`transition-colors group ${
+                                                    badgeInfo.hasViolation ? badgeInfo.rowClassName : 'hover:bg-muted/30'
+                                                }`}
+                                            >
                                                 <td className="py-3 px-4 text-center text-xs text-muted-foreground font-mono">
                                                     {rowNumber}
                                                 </td>
@@ -295,6 +305,9 @@ export default function BuatLaporan({
                                                 <td className="py-3 px-4 text-xs font-mono text-muted-foreground">
                                                     <div>NIS: <span className="font-semibold text-foreground">{m.nis ?? '-'}</span></div>
                                                     {m.nisn && <div className="text-[11px] opacity-80">NISN: {m.nisn}</div>}
+                                                </td>
+                                                <td className="py-3 px-4 text-xs font-mono text-foreground font-semibold">
+                                                    {m.no_telp ?? '—'}
                                                 </td>
                                                 <td className="py-3 px-4 text-xs">
                                                     <span className="inline-flex items-center rounded-md bg-secondary/80 px-2 py-0.5 font-medium text-secondary-foreground">
@@ -308,11 +321,8 @@ export default function BuatLaporan({
                                                 </td>
                                                 <td className="py-3 px-4 text-center">
                                                     <span
-                                                        className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono ${
-                                                            m.poin_pelanggaran > 0
-                                                                ? 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300'
-                                                                : 'bg-muted text-muted-foreground'
-                                                        }`}
+                                                        style={badgeInfo.style}
+                                                        className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono border shadow-2xs ${badgeInfo.classNames}`}
                                                     >
                                                         {m.poin_pelanggaran}
                                                     </span>

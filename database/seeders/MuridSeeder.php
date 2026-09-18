@@ -41,6 +41,7 @@ class MuridSeeder extends Seeder
                 $nama = $faker->firstName($gender) . ' ' . $faker->lastName($gender);
                 $nis = (string) $nisCounter++;
                 $nisn = '00' . ($nisnCounter++);
+                $noTelp = '08' . $faker->numerify('##########');
 
                 Murid::firstOrCreate(
                     [
@@ -49,6 +50,7 @@ class MuridSeeder extends Seeder
                     [
                         'nama'            => $nama,
                         'nisn'            => $nisn,
+                        'no_telp'         => $noTelp,
                         'kelas_id'        => $kelas->id,
                         'tahun_ajaran_id' => $tahunAjaran->id,
                     ]

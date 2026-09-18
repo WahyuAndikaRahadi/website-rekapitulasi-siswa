@@ -10,8 +10,8 @@ import { type PoinMasterItem } from '@/components/tambah-catatan-modal';
 interface LaporanDetail {
     id: number;
     tanggal_kejadian: string;
-    murid: { id: number; nama: string; nis: string | null; nisn?: string | null; nama_kelas: string };
-    guru: { id: number; nama: string };
+    murid: { id: number; nama: string; nis: string | null; nisn?: string | null; no_telp?: string | null; nama_kelas: string };
+    guru: { id: number; nama: string; no_telp?: string | null };
     kategori: string;
     tingkat_keparahan: string;
     keterangan: string;
@@ -147,11 +147,15 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {}, poin_maste
                                 {laporan.murid.nama_kelas}
                                 {laporan.murid.nis ? ` · NIS: ${laporan.murid.nis}` : ''}
                                 {laporan.murid.nisn ? ` · NISN: ${laporan.murid.nisn}` : ''}
+                                {laporan.murid.no_telp ? ` · Telp: ${laporan.murid.no_telp}` : ''}
                             </p>
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Dilaporkan oleh</p>
                             <p className="mt-0.5 font-medium">{laporan.guru.nama}</p>
+                            {laporan.guru.no_telp && (
+                                <p className="text-xs font-mono text-muted-foreground">Telp: {laporan.guru.no_telp}</p>
+                            )}
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Tanggal Kejadian</p>

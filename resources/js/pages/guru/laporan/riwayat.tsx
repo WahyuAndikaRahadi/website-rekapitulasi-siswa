@@ -11,6 +11,7 @@ interface LaporanItem {
     id: number;
     tanggal_kejadian: string;
     murid_nama: string;
+    murid_no_telp?: string | null;
     kelas_nama: string;
     keterangan: string;
     kategori: string;
@@ -128,6 +129,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                                         <tr className="border-b bg-muted/40 text-left">
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Murid</th>
+                                            <th className="px-4 py-3 font-medium text-muted-foreground">No. Telepon Murid</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Kategori & Tingkat</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Keterangan</th>
                                             <th className="px-4 py-3 font-medium text-muted-foreground text-center">Poin</th>
@@ -142,6 +144,9 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                                                 <td className="px-4 py-3">
                                                     <p className="font-medium text-foreground">{l.murid_nama}</p>
                                                     <p className="text-xs text-muted-foreground">{l.kelas_nama}</p>
+                                                </td>
+                                                <td className="px-4 py-3 font-mono text-xs font-semibold text-foreground">
+                                                    {l.murid_no_telp ?? '—'}
                                                 </td>
                                                 <td className="px-4 py-3">
                                                     <div className="flex items-center gap-1.5">
