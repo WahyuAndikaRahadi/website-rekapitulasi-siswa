@@ -2,6 +2,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { StatusBadge } from '@/components/status-badge';
 import AppLayout from '@/layouts/app-layout';
+import { formatIndonesianDate } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { ClipboardList, Pencil } from 'lucide-react';
@@ -55,7 +56,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Riwayat Laporan" />
-            <div className="space-y-5 p-6">
+            <div className="space-y-5 p-4 md:p-6 w-full max-w-full min-w-0">
                 <div className="flex items-center justify-between">
                     <h1 className="text-xl font-semibold">Riwayat Laporan</h1>
                     <Link
@@ -114,7 +115,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                 </div>
 
                 {/* Tabel */}
-                <div className="rounded-lg border bg-white shadow-xs overflow-hidden">
+                <div className="rounded-lg border bg-white shadow-xs overflow-hidden w-full max-w-full">
                     {laporans.data.length === 0 ? (
                         <EmptyState
                             icon={ClipboardList}
@@ -123,8 +124,8 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                         />
                     ) : (
                         <>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                                <table className="w-full min-w-[850px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-muted/40 text-left">
                                             <th className="px-4 py-3 font-medium text-muted-foreground">Tanggal</th>
@@ -140,7 +141,7 @@ export default function RiwayatLaporan({ laporans, filters }: Props) {
                                     <tbody className="divide-y">
                                         {laporans.data.map((l) => (
                                             <tr key={l.id} className="hover:bg-muted/20">
-                                                <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{l.tanggal_kejadian}</td>
+                                                <td className="px-4 py-3 text-muted-foreground text-xs">{formatIndonesianDate(l.tanggal_kejadian)}</td>
                                                 <td className="px-4 py-3">
                                                     <p className="font-medium text-foreground">{l.murid_nama}</p>
                                                     <p className="text-xs text-muted-foreground">{l.kelas_nama}</p>

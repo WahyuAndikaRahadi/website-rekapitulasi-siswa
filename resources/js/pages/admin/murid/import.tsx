@@ -200,14 +200,14 @@ export default function MuridImport({ kelas_list, preview, errors_import }: Prop
                         )}
 
                         {/* Tabel Preview */}
-                        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
+                        <div className="rounded-2xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden w-full max-w-full">
                             <div className="border-b px-5 py-3.5 bg-slate-50/75">
                                 <h2 className="text-sm font-bold text-slate-800">
                                     Pratinjau Data Siswa ({preview.length} Baris Terdeteksi)
                                 </h2>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                                <table className="w-full min-w-[750px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-slate-50/50 text-left text-xs font-semibold text-slate-700">
                                             <th className="px-4 py-3 w-16">Baris</th>

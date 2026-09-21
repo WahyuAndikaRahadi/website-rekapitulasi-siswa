@@ -1,5 +1,6 @@
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
+import { formatIndonesianDate } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
@@ -158,7 +159,7 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {}, poin_maste
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Tanggal Kejadian</p>
-                            <p className="mt-0.5 font-medium font-mono text-sm">{laporan.tanggal_kejadian}</p>
+                            <p className="mt-0.5 font-medium text-sm">{formatIndonesianDate(laporan.tanggal_kejadian, true)}</p>
                         </div>
                         <div>
                             <p className="text-xs text-muted-foreground">Kategori Tindakan</p>

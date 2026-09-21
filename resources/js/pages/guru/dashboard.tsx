@@ -1,5 +1,6 @@
 import { TopKelasItem, TopKelasLeaderboard, TopMuridItem, TopMuridLeaderboard } from '@/components/leaderboard-tables';
 import { StatusBadge } from '@/components/status-badge';
+import { formatIndonesianDate } from '@/lib/utils';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type SharedData } from '@/types';
 import { Head, Link, usePage } from '@inertiajs/react';
@@ -174,8 +175,8 @@ export default function GuruDashboard({
                             </p>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-xs">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <table className="w-full min-w-[650px] text-left text-xs whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b border-slate-100 text-slate-400">
                                         <th className="pb-3 px-2 font-semibold">Tanggal</th>
@@ -190,8 +191,8 @@ export default function GuruDashboard({
                                 <tbody className="divide-y divide-slate-100">
                                     {laporan_terbaru.map((l) => (
                                         <tr key={l.id} className="hover:bg-slate-50/50">
-                                            <td className="py-3 px-2 text-slate-500 font-mono whitespace-nowrap">
-                                                {l.tanggal_kejadian}
+                                            <td className="py-3 px-2 text-slate-500 whitespace-nowrap">
+                                                {formatIndonesianDate(l.tanggal_kejadian)}
                                             </td>
                                             <td className="py-3 px-2 font-semibold text-slate-900">
                                                 {l.murid_nama}

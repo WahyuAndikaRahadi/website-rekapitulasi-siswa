@@ -52,8 +52,8 @@ class Laporan extends Model
     protected function casts(): array
     {
         return [
-            'tanggal_kejadian'   => 'date',
-            'ditindaklanjuti_at' => 'datetime',
+            'tanggal_kejadian'   => 'date:Y-m-d',
+            'ditindaklanjuti_at' => 'datetime:Y-m-d H:i',
             'poin_diberikan'     => 'integer',
             'is_manual'          => 'boolean',
         ];

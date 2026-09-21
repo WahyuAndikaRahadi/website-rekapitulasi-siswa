@@ -100,27 +100,59 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
 
         // Calculate position relative to trigger
         React.useEffect(() => {
-            if (open && triggerRef.current) {
-                const rect = triggerRef.current.getBoundingClientRect();
-                const left =
-                    align === 'end'
-                        ? rect.right - (contentRef.current?.offsetWidth ?? rect.width)
-                        : align === 'center'
-                          ? rect.left + rect.width / 2 - (contentRef.current?.offsetWidth ?? rect.width) / 2
-                          : rect.left;
-                const top =
-                    side === 'top'
-                        ? rect.top - (contentRef.current?.offsetHeight ?? 0) - sideOffset + window.scrollY
-                        : rect.bottom + sideOffset + window.scrollY;
+            if (!open || !triggerRef.current) return;
 
-                setPosition({ top, left: left + window.scrollX, width: rect.width });
-            }
+            const updatePos = () => {
+                if (!triggerRef.current) return;
+                const rect = triggerRef.current.getBoundingClientRect();
+                const contentEl = contentRef.current;
+                const menuWidth = contentEl ? contentEl.offsetWidth : 240;
+                const menuHeight = contentEl ? contentEl.offsetHeight : 180;
+
+                let left =
+                    align === 'end'
+                        ? rect.right - menuWidth
+                        : align === 'center'
+                          ? rect.left + rect.width / 2 - menuWidth / 2
+                          : rect.left;
+
+                // Ensure it doesn't overflow screen horizontally
+                left = Math.max(8, Math.min(window.innerWidth - menuWidth - 8, left));
+
+                let actualSide = side;
+                if (actualSide === 'bottom' && rect.bottom + menuHeight + sideOffset > window.innerHeight) {
+                    actualSide = 'top';
+                } else if (actualSide === 'top' && rect.top - menuHeight - sideOffset < 0) {
+                    actualSide = 'bottom';
+                }
+
+                let top =
+                    actualSide === 'top'
+                        ? rect.top - menuHeight - sideOffset
+                        : rect.bottom + sideOffset;
+
+                // Ensure it doesn't overflow screen vertically
+                top = Math.max(8, Math.min(window.innerHeight - menuHeight - 8, top));
+
+                setPosition({ top, left, width: rect.width });
+            };
+
+            updatePos();
+            const rafId = requestAnimationFrame(updatePos);
+            window.addEventListener('resize', updatePos);
+            window.addEventListener('scroll', updatePos, true);
+
+            return () => {
+                cancelAnimationFrame(rafId);
+                window.removeEventListener('resize', updatePos);
+                window.removeEventListener('scroll', updatePos, true);
+            };
         }, [open, align, side, sideOffset, triggerRef]);
 
         // Close on outside click
         React.useEffect(() => {
             if (!open) return;
-            const handler = (e: MouseEvent) => {
+            const handler = (e: MouseEvent | TouchEvent) => {
                 if (
                     contentRef.current &&
                     !contentRef.current.contains(e.target as Node) &&
@@ -134,9 +166,11 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
                 if (e.key === 'Escape') setOpen(false);
             };
             document.addEventListener('mousedown', handler);
+            document.addEventListener('touchstart', handler);
             document.addEventListener('keydown', keyHandler);
             return () => {
                 document.removeEventListener('mousedown', handler);
+                document.removeEventListener('touchstart', handler);
                 document.removeEventListener('keydown', keyHandler);
             };
         }, [open, setOpen, triggerRef]);
@@ -151,7 +185,7 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
                         role="menu"
                         aria-orientation="vertical"
                         className={cn(
-                            'fixed z-50 min-w-[8rem] overflow-hidden rounded-lg border border-border bg-card p-1 text-foreground shadow-lg',
+                            'fixed z-[100] min-w-[8rem] overflow-hidden rounded-lg border border-border bg-card p-1 text-foreground shadow-2xl',
                             className,
                         )}
                         style={{
@@ -160,9 +194,9 @@ const DropdownMenuContent = React.forwardRef<HTMLDivElement, DropdownMenuContent
                             minWidth: props['style']?.minWidth ?? `${position.width}px`,
                             ...props.style,
                         }}
-                        initial={{ opacity: 0, scale: 0.97, y: -4 }}
+                        initial={{ opacity: 0, scale: 0.97, y: side === 'top' ? 4 : -4 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.97, y: -4 }}
+                        exit={{ opacity: 0, scale: 0.97, y: side === 'top' ? 4 : -4 }}
                         transition={{ duration: 0.12, ease: 'easeOut' }}
                         {...(props as React.HTMLAttributes<HTMLDivElement>)}
                     >

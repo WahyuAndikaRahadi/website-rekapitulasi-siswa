@@ -2,6 +2,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { StatusBadge } from '@/components/status-badge';
 import AppLayout from '@/layouts/app-layout';
+import { formatIndonesianDate } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import { AlertCircle, CheckCircle2, ClipboardList, Clock, FileSpreadsheet, X, ZoomIn } from 'lucide-react';
@@ -134,7 +135,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
         <>
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Laporan Masuk" />
-            <div className="space-y-5 p-6">
+            <div className="space-y-5 p-4 md:p-6 w-full max-w-full min-w-0">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight">Laporan Masuk & Manajemen Kasus</h1>
@@ -244,13 +245,13 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                 </div>
 
                 {/* Tabel Sesuai Format Template */}
-                <div className="rounded-lg border bg-white shadow-xs overflow-hidden">
+                <div className="rounded-lg border bg-white shadow-xs overflow-hidden w-full max-w-full">
                     {laporans.data.length === 0 ? (
                         <EmptyState icon={ClipboardList} title={`Tidak ada laporan ${activeTab}`} description="Coba ubah filter atau tunggu laporan masuk dari guru." />
                     ) : (
                         <>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-max w-full text-sm">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                                <table className="w-full min-w-[1400px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-muted/50 text-left text-xs uppercase font-extrabold tracking-wider">
                                             <th className="px-3 py-3 w-10 text-center text-muted-foreground">No</th>
@@ -276,7 +277,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                                             return (
                                                 <tr key={l.id} className="hover:bg-muted/20 transition-colors">
                                                     <td className="px-3 py-3 text-center text-xs font-mono text-muted-foreground font-bold">{rowNo}</td>
-                                                    <td className="px-3 py-3 text-muted-foreground font-mono text-xs">{l.tanggal_kejadian}</td>
+                                                    <td className="px-3 py-3 text-muted-foreground text-xs">{formatIndonesianDate(l.tanggal_kejadian)}</td>
                                                     <td className="px-3 py-3 text-xs">
                                                         <p className="font-semibold text-foreground">{l.guru_nama}</p>
                                                     </td>

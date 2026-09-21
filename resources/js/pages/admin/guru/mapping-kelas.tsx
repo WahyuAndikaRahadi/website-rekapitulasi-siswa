@@ -67,13 +67,14 @@ export default function MappingKelas({ guru, kelas_list, kelas_diampu }: Props) 
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
-                    <div className="rounded-lg border bg-white">
+                    <div className="rounded-lg border bg-white overflow-hidden w-full max-w-full">
                         {rows.length === 0 ? (
                             <div className="p-8 text-center text-sm text-muted-foreground">
                                 Belum ada kelas yang di-assign. Klik tombol di bawah untuk menambah.
                             </div>
                         ) : (
-                            <table className="w-full text-sm">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                                <table className="w-full min-w-[500px] text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b bg-muted/30 text-left">
                                         <th className="px-4 py-2.5 font-medium text-muted-foreground">Kelas</th>
@@ -117,6 +118,7 @@ export default function MappingKelas({ guru, kelas_list, kelas_diampu }: Props) 
                                     ))}
                                 </tbody>
                             </table>
+                            </div>
                         )}
                     </div>
 

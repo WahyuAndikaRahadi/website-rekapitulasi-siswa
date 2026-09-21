@@ -65,7 +65,7 @@ export default function KelasIndex({ kelas_list }: Props) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Kelola Kelas - SMKN 69 Jakarta" />
-            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full max-w-full min-w-0">
                 {/* Header */}
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-foreground">
@@ -175,7 +175,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                 )}
 
                 {/* Tabel Kelas */}
-                <div className="rounded-xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
+                <div className="rounded-xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden w-full max-w-full">
                     <div className="flex items-center justify-between border-b px-5 py-3.5 bg-slate-50/75">
                         <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
                             <School className="size-4 text-primary" />
@@ -189,8 +189,8 @@ export default function KelasIndex({ kelas_list }: Props) {
                             description="Tambahkan kelas menggunakan form di atas."
                         />
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <table className="w-full min-w-[550px] text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b bg-slate-50/50 text-left">
                                         <th className="px-5 py-3 font-semibold text-slate-700">Nama Kelas</th>

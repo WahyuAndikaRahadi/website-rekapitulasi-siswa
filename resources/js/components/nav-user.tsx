@@ -28,9 +28,9 @@ export function NavUser() {
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent
-                        className="w-60 p-1.5 shadow-xl border-border/80"
+                        className="w-60 p-1.5 shadow-xl border-border/80 z-[100]"
                         align="start"
-                        side={isMobile ? 'bottom' : 'top'}
+                        side="top"
                         sideOffset={8}
                     >
                         <UserMenuContent user={auth.user} />

@@ -59,7 +59,7 @@ export default function AppSidebarLayout({
                         initial="initial"
                         animate="animate"
                         exit="exit"
-                        className="flex flex-1 flex-col min-w-0"
+                        className="flex flex-1 flex-col min-w-0 w-full max-w-full"
                     >
                         {children}
                     </motion.div>

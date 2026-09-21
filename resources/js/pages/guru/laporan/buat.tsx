@@ -253,7 +253,7 @@ export default function BuatLaporan({
                 </div>
 
                 {/* Student Table */}
-                <div className="rounded-xl border bg-card shadow-xs overflow-hidden">
+                <div className="rounded-xl border bg-card shadow-xs overflow-hidden w-full max-w-full">
                     {murids.data.length === 0 ? (
                         <div className="p-8">
                             <EmptyState
@@ -263,8 +263,8 @@ export default function BuatLaporan({
                             />
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left text-sm">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <table className="w-full min-w-[850px] text-left text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b bg-muted/50 text-muted-foreground">
                                         <th className="py-3 px-4 font-semibold w-12 text-center">No</th>

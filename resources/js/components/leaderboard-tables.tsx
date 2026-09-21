@@ -55,8 +55,8 @@ export function TopMuridLeaderboard({ topMurids = [] }: { topMurids: TopMuridIte
                         <p className="text-[11px] text-slate-400">Poin prestasi yang dicatat guru akan muncul di sini.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
+                    <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <table className="w-full min-w-[340px] text-xs whitespace-nowrap">
                             <thead>
                                 <tr className="border-b border-slate-100 text-slate-400 text-left">
                                     <th className="pb-2.5 px-2 font-semibold w-12 text-center">Rank</th>
@@ -156,8 +156,8 @@ export function TopKelasLeaderboard({ topKelas = [] }: { topKelas: TopKelasItem[
                         <p className="text-[11px] text-slate-400">Data poin kelas akan terhitung otomatis.</p>
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-xs">
+                    <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <table className="w-full min-w-[420px] text-xs whitespace-nowrap">
                             <thead>
                                 <tr className="border-b border-slate-100 text-slate-400 text-left">
                                     <th className="pb-2.5 px-2 font-semibold w-12 text-center">Rank</th>

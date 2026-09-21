@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/empty-state';
 import { StatusBadge } from '@/components/status-badge';
 import { TambahCatatanModal, type TargetMurid } from '@/components/tambah-catatan-modal';
 import AppLayout from '@/layouts/app-layout';
-import { getViolationPointBadgeInfo } from '@/lib/utils';
+import { formatIndonesianDate, getViolationPointBadgeInfo } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import { CheckCircle2, ChevronDown, ChevronRight, Filter, GraduationCap, PlusCircle, RotateCcw, ShieldCheck, Sparkles, Users } from 'lucide-react';
@@ -101,7 +101,7 @@ export default function RekapKelas({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Rekap Kelas ${kelas.nama_kelas}`} />
 
-            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full min-w-0 max-w-full">
                 {/* Header Banner */}
                 <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#071739] via-[#0B2559] to-[#1E5FA8] p-6 text-white shadow-md">
                     <div className="pointer-events-none absolute -top-12 -right-12 size-48 rounded-full bg-blue-400/20 blur-2xl" />
@@ -211,9 +211,9 @@ export default function RekapKelas({
                         <EmptyState icon={GraduationCap} title="Tidak ada murid di kelas ini" />
                     </div>
                 ) : (
-                    <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-xs">
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-sm">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white overflow-hidden shadow-xs w-full max-w-full">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <table className="w-full min-w-[750px] text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b border-slate-200 bg-slate-50/80 text-left">
                                         <th className="px-4 py-3.5 font-semibold text-slate-700 w-10"></th>
@@ -308,8 +308,8 @@ export default function RekapKelas({
                                                                         Belum ada catatan laporan yang sesuai dengan filter yang dipilih.
                                                                     </p>
                                                                 ) : (
-                                                                    <div className="overflow-x-auto">
-                                                                        <table className="w-full text-xs">
+                                                                    <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                                                                        <table className="w-full min-w-[600px] text-xs whitespace-nowrap">
                                                                             <thead>
                                                                                 <tr className="text-left text-slate-500 border-b border-slate-200 bg-slate-50/50">
                                                                                     <th className="py-2 px-3 font-semibold">Tanggal</th>
@@ -322,8 +322,8 @@ export default function RekapKelas({
                                                                             <tbody className="divide-y divide-slate-100">
                                                                                 {laporans.map((l) => (
                                                                                     <tr key={l.id} className="hover:bg-slate-50/50">
-                                                                                        <td className="py-2.5 px-3 text-slate-600 font-mono">
-                                                                                            {l.tanggal_kejadian}
+                                                                                        <td className="py-2.5 px-3 text-slate-600">
+                                                                                            {formatIndonesianDate(l.tanggal_kejadian)}
                                                                                         </td>
                                                                                         <td className="py-2.5 px-3">
                                                                                             <div className="flex items-center gap-1.5 flex-wrap">

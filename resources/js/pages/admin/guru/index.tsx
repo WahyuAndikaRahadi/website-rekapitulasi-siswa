@@ -29,7 +29,7 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Kelola Guru" />
-            <div className="flex flex-1 flex-col gap-6 p-6">
+            <div className="flex flex-1 flex-col gap-6 p-4 md:p-6 w-full max-w-full min-w-0">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold tracking-tight text-foreground">Kelola Guru</h1>
@@ -44,7 +44,7 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
                     </Link>
                 </div>
 
-                <div className="overflow-hidden rounded-xl border bg-card shadow-xs">
+                <div className="overflow-hidden rounded-xl border bg-card shadow-xs w-full max-w-full">
                     {gurus.length === 0 ? (
                         <EmptyState
                             icon={Users}
@@ -54,8 +54,9 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
                             onAction={() => router.visit('/admin/guru/create')}
                         />
                     ) : (
-                        <table className="w-full text-left text-sm">
-                            <thead className="border-b bg-muted/40 text-xs">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <table className="w-full min-w-[650px] text-left text-sm whitespace-nowrap">
+                                <thead className="border-b bg-muted/40 text-xs">
                                 <tr>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">Nama Guru</th>
                                     <th className="px-4 py-3 font-medium text-muted-foreground">NIP</th>
@@ -106,6 +107,7 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
                                 ))}
                             </tbody>
                         </table>
+                        </div>
                     )}
                 </div>
             </div>

@@ -71,3 +71,33 @@ export function getViolationPointBadgeInfo(poin: number) {
     };
 }
 
+/**
+ * Format string tanggal (ISO atau Y-m-d) menjadi format Indonesia (cth: 21 September 2026)
+ */
+export function formatIndonesianDate(dateStr: string | null | undefined, includeDay: boolean = false): string {
+    if (!dateStr) return '—';
+    try {
+        // Jika format Y-m-d murni (cth: "2026-09-20"), parsing tanpa timezone offset shift
+        let date: Date;
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+            const [year, month, day] = dateStr.split('-').map(Number);
+            date = new Date(year, month - 1, day);
+        } else {
+            date = new Date(dateStr);
+        }
+
+        if (isNaN(date.getTime())) return dateStr;
+
+        return new Intl.DateTimeFormat('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            ...(includeDay ? { weekday: 'long' } : {}),
+            timeZone: 'Asia/Jakarta',
+        }).format(date);
+    } catch {
+        return dateStr;
+    }
+}
+
+

@@ -1,4 +1,5 @@
 import AppLayout from '@/layouts/app-layout';
+import { formatIndonesianDate } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import {
@@ -243,7 +244,7 @@ export default function SuratPanggilanIndex({
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Surat Pemanggilan Orang Tua - SMKN 69 Jakarta" />
 
-            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full min-w-0 max-w-full">
                 {/* Header */}
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
@@ -297,7 +298,7 @@ export default function SuratPanggilanIndex({
                 </div>
 
                 {/* Table Container */}
-                <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden">
+                <div className="rounded-2xl border border-slate-200/80 bg-white shadow-xs overflow-hidden w-full max-w-full min-w-0">
                     {/* Search bar */}
                     <div className="border-b border-slate-100 p-4">
                         <form onSubmit={handleSearchSubmit} className="flex gap-2 max-w-md">
@@ -321,8 +322,8 @@ export default function SuratPanggilanIndex({
                     </div>
 
                     {/* Table */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-slate-700">
+                    <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <table className="w-full min-w-[850px] text-left text-sm text-slate-700 whitespace-nowrap">
                             <thead className="bg-slate-50/75 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100">
                                 <tr>
                                     <th className="px-5 py-3.5">Nomor &amp; Tanggal Surat</th>
@@ -348,8 +349,8 @@ export default function SuratPanggilanIndex({
                                             <td className="px-5 py-4">
                                                 <div className="font-bold text-slate-900">{surat.nomor_surat}</div>
                                                 <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                                                    <Calendar className="size-3" />
-                                                    {surat.tanggal_surat}
+                                                    <Calendar className="size-3 text-slate-400" />
+                                                    {formatIndonesianDate(surat.tanggal_surat)}
                                                 </div>
                                             </td>
                                             <td className="px-5 py-4">
@@ -376,7 +377,7 @@ export default function SuratPanggilanIndex({
                                             <td className="px-5 py-4">
                                                 <div className="font-medium text-slate-800 flex items-center gap-1.5">
                                                     <Calendar className="size-3.5 text-slate-400" />
-                                                    {surat.tanggal_panggilan}
+                                                    {formatIndonesianDate(surat.tanggal_panggilan)}
                                                 </div>
                                                 <div className="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
                                                     <Clock className="size-3 text-slate-400" />

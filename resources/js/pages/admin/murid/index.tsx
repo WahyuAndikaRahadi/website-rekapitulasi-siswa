@@ -231,7 +231,7 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Kelola Murid - SMKN 69 Jakarta" />
-            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
+            <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto w-full max-w-full min-w-0">
                 {/* Header Title & Actions */}
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -348,7 +348,7 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
                 </div>
 
                 {/* Tabel Data */}
-                <div className="rounded-xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden">
+                <div className="rounded-xl border border-slate-200/80 bg-white shadow-2xs overflow-hidden w-full max-w-full">
                     {murids.data.length === 0 ? (
                         <EmptyState
                             icon={GraduationCap}
@@ -357,8 +357,8 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
                         />
                     ) : (
                         <>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                                <table className="w-full min-w-[900px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-slate-50/75 text-left">
                                             <th className="px-4 py-3 font-semibold text-slate-700">Nama Lengkap</th>

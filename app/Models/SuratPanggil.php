@@ -27,8 +27,8 @@ class SuratPanggil extends Model
     ];
 
     protected $casts = [
-        'tanggal_panggilan' => 'date',
-        'tanggal_surat'     => 'date',
+        'tanggal_panggilan' => 'date:Y-m-d',
+        'tanggal_surat'     => 'date:Y-m-d',
         'panggilan_ke'      => 'integer',
         'nomor_urut'        => 'integer',
         'tahun'             => 'integer',
