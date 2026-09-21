@@ -92,13 +92,17 @@ class WhatsAppService
      */
     public function formatPelanggaranMessage(Murid $murid, Laporan $laporan, int $poinSebelumnya, int $poinSekarang): string
     {
-        $namaMurid  = $murid->nama;
-        $kelasMurid = $murid->kelas->nama_kelas ?? '-';
-        $nisMurid   = $murid->nis ?? '-';
-        $tanggal    = $laporan->tanggal_kejadian ? $laporan->tanggal_kejadian->format('d-m-Y') : date('d-m-Y');
-        $keterangan = $laporan->keterangan ?? '-';
-        $poinMasuk  = abs((int) $laporan->poin_diberikan);
-        $kualifikasi= $murid->kualifikasiPoin();
+        $namaMurid      = $murid->nama;
+        $kelasMurid     = $murid->kelas->nama_kelas ?? '-';
+        $nisMurid       = $murid->nis ?? '-';
+        $tanggal        = $laporan->tanggal_kejadian ? $laporan->tanggal_kejadian->format('d-m-Y') : date('d-m-Y');
+        $keterangan     = $laporan->keterangan ?? '-';
+        $poinMasuk      = abs((int) $laporan->poin_diberikan);
+        $kualifikasi    = $poinSekarang <= 25 ? 'Baik' : ($poinSekarang <= 74 ? 'Cukup' : 'Kurang');
+        $tahapPembinaan = $poinSekarang >= 100 ? 'Tahap IV (Penanganan Khusus)'
+            : ($poinSekarang >= 75 ? 'Tahap III (Peringatan III / K-3)'
+            : ($poinSekarang >= 50 ? 'Tahap II (Peringatan II / K-2)'
+            : ($poinSekarang >= 25 ? 'Tahap I (Peringatan I / K-1)' : 'Normal')));
 
         // 1. Deteksi Melewati Threshold Tahap IV (>= 100 Poin)
         if ($poinSekarang >= 100 && $poinSebelumnya < 100) {
@@ -181,7 +185,7 @@ class WhatsAppService
                 . "_— Sistem Rekapitulasi & Pembinaan Siswa SMKN 69 Jakarta_";
         }
 
-        // 5. Template Standar Notifikasi Catatan Pelanggaran Biasa
+        // 5. Template Standar Notifikasi Catatan Pelanggaran Biasa (Kecil/Besar)
         return "📋 *PEMBERITAHUAN CATATAN KEDISIPLINAN SISWA*\n"
             . "SMKN 69 JAKARTA\n\n"
             . "Kepada Yth. Bapak/Ibu Orang Tua/Wali dari:\n"
@@ -193,9 +197,59 @@ class WhatsAppService
             . "📝 *Keterangan*: {$keterangan}\n"
             . "⚠️ *Poin Pelanggaran*: +{$poinMasuk} Poin\n"
             . "📊 *Total Akumulasi Poin*: {$poinSekarang} Poin (Kategori: {$kualifikasi})\n"
-            . "🛡️ *Status Pembinaan*: " . $murid->tahapPembinaan() . "\n\n"
+            . "🛡️ *Status Pembinaan*: {$tahapPembinaan}\n\n"
             . "Catatan ini dikirimkan secara otomatis sebagai bentuk transparansi dan sinergi pembinaan karakter antara pihak sekolah dan orang tua murid.\n\n"
             . "Terima kasih atas perhatian dan kerjasamanya.\n"
             . "_— Sistem Rekapitulasi Siswa SMKN 69 Jakarta_";
+    }
+
+    /**
+     * Buat format template pesan WhatsApp apresiasi prestasi / kebaikan siswa.
+     */
+    public function formatPrestasiMessage(Murid $murid, Laporan $laporan, int $poinSebelumnya, int $poinSekarang): string
+    {
+        $namaMurid  = $murid->nama;
+        $kelasMurid = $murid->kelas->nama_kelas ?? '-';
+        $nisMurid   = $murid->nis ?? '-';
+        $tanggal    = $laporan->tanggal_kejadian ? $laporan->tanggal_kejadian->format('d-m-Y') : date('d-m-Y');
+        $keterangan = $laporan->keterangan ?? '-';
+        $poinMasuk  = abs((int) $laporan->poin_diberikan);
+
+        return "🌟 *APRESIASI PRESTASI & PERILAKU POSITIF SISWA* 🌟\n"
+            . "SMKN 69 JAKARTA\n\n"
+            . "Kepada Yth. Bapak/Ibu Orang Tua/Wali dari:\n"
+            . "👤 *Nama Siswa*: {$namaMurid}\n"
+            . "🏫 *Kelas*: {$kelasMurid}\n"
+            . "🔢 *NIS*: {$nisMurid}\n\n"
+            . "Dengan bangga kami informasikan bahwa ananda telah mencatatkan apresiasi perilaku positif / prestasi di sekolah:\n"
+            . "📅 *Tanggal*: {$tanggal}\n"
+            . "🏆 *Keterangan*: {$keterangan}\n"
+            . "✨ *Poin Apresiasi*: +{$poinMasuk} Poin\n"
+            . "📊 *Total Akumulasi Poin Prestasi*: {$poinSekarang} Poin\n\n"
+            . "Terima kasih atas bimbingan dan dukungan Bapak/Ibu di rumah. Semoga ananda terus berprestasi dan menjadi teladan bagi siswa lainnya.\n\n"
+            . "_— Sistem Rekapitulasi Siswa SMKN 69 Jakarta_";
+    }
+
+    /**
+     * Dispatch WhatsApp notification ke orang tua/wali murid untuk setiap laporan (kecil/besar/prestasi).
+     */
+    public function sendLaporanNotification(Murid $murid, Laporan $laporan, int $poinSebelumnya): void
+    {
+        $targetPhone = $murid->no_ortu ?? $murid->no_telp;
+        if (empty($targetPhone)) {
+            Log::info("[WhatsAppService] Tidak ada nomor telepon orang tua/murid untuk murid ID {$murid->id} ({$murid->nama})");
+            return;
+        }
+
+        $freshMurid = $murid->fresh();
+        if ($laporan->kategori === 'prestasi') {
+            $poinSekarang = $freshMurid->poinPrestasi();
+            $waMessage = $this->formatPrestasiMessage($freshMurid, $laporan, $poinSebelumnya, $poinSekarang);
+        } else {
+            $poinSekarang = $freshMurid->poinPelanggaran();
+            $waMessage = $this->formatPelanggaranMessage($freshMurid, $laporan, $poinSebelumnya, $poinSekarang);
+        }
+
+        \App\Jobs\SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
     }
 }

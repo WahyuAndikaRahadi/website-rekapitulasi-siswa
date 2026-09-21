@@ -180,19 +180,13 @@ class LaporanController extends Controller
             'ditindaklanjuti_at'   => now(),
         ]);
 
-        // Kirim notifikasi WhatsApp jika laporan pelanggaran disetujui
-        if ($laporan->kategori === 'pelanggaran' && $status !== 'ditolak' && $murid) {
-            $poinSekarang = $murid->fresh()->poinPelanggaran();
-            $targetPhone = $murid->no_ortu ?? $murid->no_telp;
-
-            if (!empty($targetPhone)) {
-                $whatsAppService = app(\App\Services\WhatsAppService::class);
-                $waMessage = $whatsAppService->formatPelanggaranMessage($murid, $laporan, $poinSebelumnya, $poinSekarang);
-                \App\Jobs\SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
-            }
+        // Kirim notifikasi WhatsApp ke Orang Tua saat laporan manual diverifikasi dan disetujui
+        if ($status !== 'ditolak' && $murid) {
+            $whatsAppService = app(\App\Services\WhatsAppService::class);
+            $whatsAppService->sendLaporanNotification($murid, $laporan, $poinSebelumnya);
         }
 
         return redirect()->route('admin.laporan.show', $laporan)
-            ->with('success', 'Laporan berhasil diverifikasi dan notifikasi WhatsApp diproses.');
+            ->with('success', 'Laporan berhasil diverifikasi dan notifikasi WhatsApp otomatis dikirimkan ke orang tua murid.');
     }
 }

@@ -146,20 +146,14 @@ class LaporanController extends Controller
             }
         });
 
-        // Kirim WhatsApp ke Orang Tua jika kategori pelanggaran & otomatis aktif
-        if ($request->kategori === 'pelanggaran' && !$isManual && $createdLaporan) {
-            $poinSekarang = $murid->fresh()->poinPelanggaran();
-            $targetPhone = $murid->no_ortu ?? $murid->no_telp;
-
-            if (!empty($targetPhone)) {
-                $waMessage = $whatsAppService->formatPelanggaranMessage($murid, $createdLaporan, $poinSebelumnya, $poinSekarang);
-                SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
-            }
+        // Kirim notifikasi WhatsApp ke Orang Tua setiap kali laporan dibuat (pelanggaran kecil/besar maupun prestasi)
+        if (!$isManual && $createdLaporan) {
+            $whatsAppService->sendLaporanNotification($murid, $createdLaporan, $poinSebelumnya);
         }
 
         $message = $isManual
             ? 'Catatan laporan manual berhasil disimpan dan menunggu verifikasi admin.'
-            : 'Catatan laporan berhasil disimpan dan notifikasi WhatsApp diproses ke orang tua murid.';
+            : 'Catatan laporan berhasil disimpan dan notifikasi WhatsApp otomatis dikirimkan ke orang tua murid.';
 
         return back()->with('success', $message);
     }

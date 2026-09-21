@@ -6,7 +6,7 @@ use App\Models\Kelas;
 use App\Models\Laporan;
 use App\Models\Murid;
 use App\Services\WhatsAppService;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
 class WhatsAppServiceTest extends TestCase
 {
@@ -18,5 +18,57 @@ class WhatsAppServiceTest extends TestCase
         $this->assertEquals('6281234567890', WhatsAppService::formatPhoneNumber('6281234567890'));
         $this->assertEquals('', WhatsAppService::formatPhoneNumber(null));
         $this->assertEquals('', WhatsAppService::formatPhoneNumber(''));
+    }
+
+    public function test_it_formats_pelanggaran_message_correctly(): void
+    {
+        $service = new WhatsAppService();
+
+        $murid = new Murid([
+            'nama' => 'Budi Santoso',
+            'nis'  => '20241001',
+        ]);
+        $murid->setRelation('kelas', new Kelas(['nama_kelas' => 'X SIJA 1']));
+
+        $laporan = new Laporan([
+            'keterangan'       => 'Terlambat masuk sekolah',
+            'poin_diberikan'   => -5,
+            'tanggal_kejadian' => now(),
+            'kategori'         => 'pelanggaran',
+        ]);
+
+        $message = $service->formatPelanggaranMessage($murid, $laporan, 0, 5);
+
+        $this->assertStringContainsString('PEMBERITAHUAN CATATAN KEDISIPLINAN SISWA', $message);
+        $this->assertStringContainsString('Budi Santoso', $message);
+        $this->assertStringContainsString('X SIJA 1', $message);
+        $this->assertStringContainsString('Terlambat masuk sekolah', $message);
+        $this->assertStringContainsString('+5 Poin', $message);
+    }
+
+    public function test_it_formats_prestasi_message_correctly(): void
+    {
+        $service = new WhatsAppService();
+
+        $murid = new Murid([
+            'nama' => 'Siti Nurhaliza',
+            'nis'  => '20241002',
+        ]);
+        $murid->setRelation('kelas', new Kelas(['nama_kelas' => 'XI SIJA 1']));
+
+        $laporan = new Laporan([
+            'keterangan'       => 'Juara 1 Lomba Web Design',
+            'poin_diberikan'   => 20,
+            'tanggal_kejadian' => now(),
+            'kategori'         => 'prestasi',
+        ]);
+
+        $message = $service->formatPrestasiMessage($murid, $laporan, 0, 20);
+
+        $this->assertStringContainsString('APRESIASI PRESTASI & PERILAKU POSITIF SISWA', $message);
+        $this->assertStringContainsString('Siti Nurhaliza', $message);
+        $this->assertStringContainsString('XI SIJA 1', $message);
+        $this->assertStringContainsString('Juara 1 Lomba Web Design', $message);
+        $this->assertStringContainsString('+20 Poin', $message);
     }
 }
