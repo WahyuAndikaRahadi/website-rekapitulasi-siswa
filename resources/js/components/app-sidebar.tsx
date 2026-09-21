@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, ClipboardList, File, GraduationCap, LayoutDashboard, Settings, Users } from 'lucide-react';
+import { BookOpen, ClipboardList, File, FileText, GraduationCap, LayoutDashboard, Mail, Settings, Users } from 'lucide-react';
 
 // Nav items untuk role Admin
 const adminNavItems: NavItem[] = [
@@ -17,7 +17,12 @@ const adminNavItems: NavItem[] = [
         url: '/admin/laporan',
         icon: ClipboardList,
     },
-        {
+    {
+        title: 'Surat Panggilan',
+        url: '/admin/surat-panggilan',
+        icon: Mail,
+    },
+    {
         title: 'Ekspor Data',
         url: '/admin/export',
         icon: File,

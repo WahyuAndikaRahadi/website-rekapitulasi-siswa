@@ -56,6 +56,11 @@ class Murid extends Model
         return $this->hasMany(Laporan::class);
     }
 
+    public function suratPanggils(): HasMany
+    {
+        return $this->hasMany(SuratPanggil::class);
+    }
+
     // --- Kalkulasi Poin Mandiri & Terintegrasi ---
 
     /**

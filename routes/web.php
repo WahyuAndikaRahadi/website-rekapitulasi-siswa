@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\LaporanController as AdminLaporanController;
 use App\Http\Controllers\Admin\MuridController as AdminMuridController;
 use App\Http\Controllers\Admin\TahunAjaranController as AdminTahunAjaranController;
 use App\Http\Controllers\Admin\ExportController as AdminExportController;
+use App\Http\Controllers\Admin\SuratPanggilanController as AdminSuratPanggilanController;
 use App\Http\Controllers\Guru\DashboardController as GuruDashboardController;
 use App\Http\Controllers\Guru\LaporanController as GuruLaporanController;
 use App\Http\Controllers\Guru\RekapKelasController as GuruRekapKelasController;
@@ -69,6 +70,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/export/laporan', [AdminExportController::class, 'exportLaporan'])->name('export.laporan');
     Route::post('/export/murid',   [AdminExportController::class, 'exportMurid'])->name('export.murid');
     Route::post('/export/kelas',   [AdminExportController::class, 'exportKelas'])->name('export.kelas');
+
+    // Surat Pemanggilan Orang Tua
+    Route::get('/surat-panggilan', [AdminSuratPanggilanController::class, 'index'])->name('surat-panggilan.index');
+    Route::post('/surat-panggilan', [AdminSuratPanggilanController::class, 'store'])->name('surat-panggilan.store');
+    Route::get('/surat-panggilan/info-murid/{murid}', [AdminSuratPanggilanController::class, 'infoMurid'])->name('surat-panggilan.info-murid');
+    Route::get('/surat-panggilan/{suratPanggil}/pdf', [AdminSuratPanggilanController::class, 'previewPdf'])->name('surat-panggilan.pdf');
+    Route::get('/surat-panggilan/{suratPanggil}/download', [AdminSuratPanggilanController::class, 'downloadPdf'])->name('surat-panggilan.download');
+    Route::delete('/surat-panggilan/{suratPanggil}', [AdminSuratPanggilanController::class, 'destroy'])->name('surat-panggilan.destroy');
 });
 
 require __DIR__.'/settings.php';

@@ -88,6 +88,56 @@ class WhatsAppService
     }
 
     /**
+     * Kirim file/dokumen/PDF ke WhatsApp Gateway Node.js
+     */
+    public function sendFile(string $number, string $file, string $fileName, string $mimeType = 'application/pdf', string $caption = ''): array
+    {
+        $formattedNumber = self::formatPhoneNumber($number);
+
+        if (empty($formattedNumber)) {
+            Log::warning('[WhatsAppService] Gagal mengirim file: nomor tujuan kosong.');
+            return [
+                'status'  => 'error',
+                'message' => 'Nomor telepon tujuan tidak valid atau kosong.',
+            ];
+        }
+
+        try {
+            $url = "{$this->gatewayUrl}/send-file";
+
+            $response = Http::timeout(25)->post($url, [
+                'number'   => $formattedNumber,
+                'file'     => $file,
+                'filename' => $fileName,
+                'mimetype' => $mimeType,
+                'caption'  => $caption,
+            ]);
+
+            if ($response->successful()) {
+                Log::info("[WhatsAppService] File {$fileName} berhasil dikirim ke {$formattedNumber}");
+                return [
+                    'status'  => 'success',
+                    'message' => 'File berhasil dikirim via WhatsApp Gateway.',
+                    'data'    => $response->json(),
+                ];
+            }
+
+            Log::error("[WhatsAppService] Gateway file merespon error: HTTP {$response->status()} - {$response->body()}");
+            return [
+                'status'  => 'error',
+                'message' => 'Gateway WhatsApp gagal memproses pengiriman file: ' . ($response->json('message') ?? $response->body()),
+                'code'    => $response->status(),
+            ];
+        } catch (\Throwable $e) {
+            Log::error("[WhatsAppService] Exception saat menghubungi WA Gateway untuk kirim file: " . $e->getMessage());
+            return [
+                'status'  => 'error',
+                'message' => 'Tidak dapat terhubung ke WhatsApp Gateway Server: ' . $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Buat format template pesan WhatsApp berdasarkan akumulasi poin & 4 Tahapan Pembinaan SMKN 69 Jakarta.
      */
     public function formatPelanggaranMessage(Murid $murid, Laporan $laporan, int $poinSebelumnya, int $poinSekarang): string
@@ -252,4 +302,80 @@ class WhatsAppService
 
         \App\Jobs\SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
     }
+
+    /**
+     * Buat format template pesan WhatsApp resmi untuk Surat Pemanggilan Orang Tua (SP).
+     */
+    public function formatSuratPanggilanMessage(\App\Models\SuratPanggil $surat): string
+    {
+        $murid       = $surat->murid;
+        $namaMurid   = $murid->nama ?? '-';
+        $kelasMurid  = $murid->kelas->nama_kelas ?? '-';
+        $nisMurid    = $murid->nis ?? '-';
+        
+        $tglPanggilan = $surat->tanggal_panggilan ? \Carbon\Carbon::parse($surat->tanggal_panggilan)->locale('id') : \Carbon\Carbon::now()->locale('id');
+        $hariTanggal  = $tglPanggilan->translatedFormat('l, d F Y');
+
+        return "✉️ *SURAT PEMANGGILAN ORANG TUA / WALI SISWA* ✉️\n"
+            . "SMKN 69 JAKARTA\n\n"
+            . "📄 *Nomor Surat*: {$surat->nomor_surat}\n"
+            . "📌 *Perihal*: *{$surat->perihal}*\n\n"
+            . "Kepada Yth. Bapak/Ibu Orang Tua/Wali dari:\n"
+            . "👤 *Nama Siswa*: {$namaMurid}\n"
+            . "🏫 *Kelas*: {$kelasMurid}\n"
+            . "🔢 *NIS*: {$nisMurid}\n\n"
+            . "Dengan hormat, sehubungan dengan penanganan tata tertib dan pembinaan kedisiplinan ananda, kami memohon kehadiran Bapak/Ibu pada:\n\n"
+            . "📅 *Hari, Tanggal*: {$hariTanggal}\n"
+            . "⏰ *Waktu*: {$surat->waktu}\n"
+            . "📍 *Tempat*: {$surat->tempat}\n"
+            . "👥 *Menemui*: *{$surat->nama_guru_menemui}*\n\n"
+            . "Kami sangat mengharapkan kehadiran Bapak/Ibu tepat waktu demi kebaikan dan kelanjutan proses pembinaan ananda di sekolah.\n\n"
+            . "Atas perhatian dan kerja sama yang baik, kami ucapkan terima kasih.\n"
+            . "_— Sistem Rekapitulasi & Kesiswaan SMKN 69 Jakarta_";
+    }
+
+    /**
+     * Dispatch WhatsApp notification Surat Pemanggilan Orang Tua (Dokumen PDF + Pesan) ke kontak orang tua/wali murid.
+     */
+    public function sendSuratPanggilanNotification(\App\Models\SuratPanggil $surat): void
+    {
+        $murid = $surat->murid;
+        if (! $murid) {
+            return;
+        }
+
+        $targetPhone = $murid->no_ortu ?? $murid->no_telp;
+        if (empty($targetPhone)) {
+            Log::info("[WhatsAppService] Tidak ada nomor telepon orang tua/murid untuk murid ID {$murid->id} ({$murid->nama})");
+            return;
+        }
+
+        $waMessage = $this->formatSuratPanggilanMessage($surat);
+
+        try {
+            // Render PDF Surat Pemanggilan Orang Tua
+            $surat->loadMissing(['murid.kelas', 'guru']);
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('surat.panggilan', [
+                'surat' => $surat,
+            ])->setPaper('a4', 'portrait');
+
+            $pdfContent = $pdf->output();
+            $base64Pdf = base64_encode($pdfContent);
+            $safeNomor = preg_replace('/[^a-zA-Z0-9_-]/', '-', $surat->nomor_surat);
+            $fileName = "Surat_Pemanggilan_{$safeNomor}.pdf";
+
+            // Kirim Dokumen PDF via WhatsApp Gateway dengan caption pesan resmi
+            \App\Jobs\SendWhatsAppFileJob::dispatch(
+                $targetPhone,
+                $base64Pdf,
+                $fileName,
+                'application/pdf',
+                $waMessage
+            );
+        } catch (\Throwable $e) {
+            Log::error("[WhatsAppService] Gagal generate PDF untuk dikirim WA: " . $e->getMessage() . ". Mengirim pesan teks fallback.");
+            \App\Jobs\SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
+        }
+    }
 }
+
