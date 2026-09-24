@@ -1,15 +1,15 @@
+import { Pagination } from '@/components/pagination';
 import AppLayout from '@/layouts/app-layout';
 import { formatIndonesianDate } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import {
-    AlertCircle,
     Calendar,
-    CheckCircle2,
+    ChevronDown,
     Clock,
     Download,
-    Eye,
     FileText,
+    LoaderCircle,
     MapPin,
     Plus,
     Printer,
@@ -17,9 +17,10 @@ import {
     Send,
     Trash2,
     UserCheck,
+    Users,
     X,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Kelas {
     id: number;
@@ -66,6 +67,7 @@ interface SuratItem {
             id: number;
             nama_kelas: string;
         };
+        no_ortu?: string;
     };
     guru?: {
         id: number;
@@ -109,7 +111,12 @@ export default function SuratPanggilanIndex({
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isLoadingMuridInfo, setIsLoadingMuridInfo] = useState(false);
+    const [resendingWaId, setResendingWaId] = useState<number | null>(null);
+
+    // Searchable student state in modal
     const [muridSearchText, setMuridSearchText] = useState('');
+    const [isMuridDropdownOpen, setIsMuridDropdownOpen] = useState(false);
+    const muridDropdownRef = useRef<HTMLDivElement>(null);
 
     const [form, setForm] = useState({
         murid_id: '',
@@ -134,6 +141,17 @@ export default function SuratPanggilanIndex({
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Close student dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            if (muridDropdownRef.current && !muridDropdownRef.current.contains(e.target as Node)) {
+                setIsMuridDropdownOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     // Search filter execution
     const handleSearchSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -148,6 +166,7 @@ export default function SuratPanggilanIndex({
     const handleMuridSelect = async (muridIdStr: string) => {
         const mId = Number(muridIdStr);
         setForm((prev) => ({ ...prev, murid_id: muridIdStr }));
+        setIsMuridDropdownOpen(false);
 
         if (!mId) {
             setSelectedMuridInfo(null);
@@ -189,6 +208,11 @@ export default function SuratPanggilanIndex({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (!form.murid_id) {
+            setErrors({ murid_id: 'Pilih siswa terlebih dahulu.' });
+            return;
+        }
+
         setIsSubmitting(true);
         setErrors({});
 
@@ -209,6 +233,7 @@ export default function SuratPanggilanIndex({
                     kirim_wa: true,
                 });
                 setSelectedMuridInfo(null);
+                setMuridSearchText('');
             },
             onError: (errs) => {
                 setErrors(errs);
@@ -225,7 +250,17 @@ export default function SuratPanggilanIndex({
         }
     };
 
-    // Filter murid in select
+    const handleResendWa = (surat: SuratItem) => {
+        if (confirm(`Kirim ulang notifikasi WhatsApp surat ${surat.nomor_surat} ke nomor WhatsApp orang tua siswa ${surat.murid?.nama}?`)) {
+            setResendingWaId(surat.id);
+            router.post(`/admin/surat-panggilan/${surat.id}/kirim-wa`, {}, {
+                preserveScroll: true,
+                onFinish: () => setResendingWaId(null),
+            });
+        }
+    };
+
+    // Filter murid by typed query
     const filteredMurids = muridList.filter((m) => {
         const q = muridSearchText.toLowerCase();
         return (
@@ -234,6 +269,8 @@ export default function SuratPanggilanIndex({
             (m.kelas && m.kelas.nama_kelas.toLowerCase().includes(q))
         );
     });
+
+    const selectedMurid = muridList.find((m) => m.id.toString() === form.murid_id);
 
     const totalSurat = suratList.total || 0;
     const countSp1 = suratList.data.filter((s) => s.panggilan_ke === 1).length;
@@ -257,7 +294,10 @@ export default function SuratPanggilanIndex({
                     </div>
 
                     <button
-                        onClick={() => setIsModalOpen(true)}
+                        onClick={() => {
+                            setIsModalOpen(true);
+                            setMuridSearchText('');
+                        }}
                         className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] px-4 py-2.5 text-sm font-semibold text-white shadow-xs hover:from-[#081B42] hover:to-[#174D88] transition-all cursor-pointer"
                     >
                         <Plus className="size-4" />
@@ -396,6 +436,23 @@ export default function SuratPanggilanIndex({
                                             </td>
                                             <td className="px-5 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-1.5">
+                                                    {/* Tombol Kirim Ulang WA ke Orang Tua */}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleResendWa(surat)}
+                                                        disabled={resendingWaId === surat.id}
+                                                        title="Kirim Ulang Notifikasi WhatsApp ke Orang Tua"
+                                                        className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-semibold transition-colors cursor-pointer disabled:opacity-50"
+                                                    >
+                                                        {resendingWaId === surat.id ? (
+                                                            <LoaderCircle className="size-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Send className="size-3.5 text-emerald-600" />
+                                                        )}
+                                                        <span>Kirim WA</span>
+                                                    </button>
+
+                                                    {/* Tombol Cetak PDF */}
                                                     <a
                                                         href={`/admin/surat-panggilan/${surat.id}/pdf`}
                                                         target="_blank"
@@ -406,6 +463,8 @@ export default function SuratPanggilanIndex({
                                                         <Printer className="size-3.5" />
                                                         <span>Cetak</span>
                                                     </a>
+
+                                                    {/* Tombol Download PDF */}
                                                     <a
                                                         href={`/admin/surat-panggilan/${surat.id}/download`}
                                                         title="Unduh PDF"
@@ -413,6 +472,8 @@ export default function SuratPanggilanIndex({
                                                     >
                                                         <Download className="size-3.5" />
                                                     </a>
+
+                                                    {/* Tombol Hapus */}
                                                     <button
                                                         onClick={() => handleDelete(surat)}
                                                         title="Hapus Arsip"
@@ -430,30 +491,12 @@ export default function SuratPanggilanIndex({
                     </div>
 
                     {/* Pagination */}
-                    {suratList.last_page > 1 && (
-                        <div className="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
-                            <div>
-                                Menampilkan halaman {suratList.current_page} dari {suratList.last_page}
-                            </div>
-                            <div className="flex gap-1">
-                                {suratList.links.map((link, idx) => (
-                                    <button
-                                        key={idx}
-                                        disabled={!link.url}
-                                        onClick={() => link.url && router.get(link.url)}
-                                        dangerouslySetInnerHTML={{ __html: link.label }}
-                                        className={`h-8 px-3 rounded-lg font-medium transition-colors ${
-                                            link.active
-                                                ? 'bg-[#1E5FA8] text-white'
-                                                : link.url
-                                                ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                                                : 'text-slate-300 cursor-not-allowed'
-                                        }`}
-                                    />
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    <Pagination
+                        links={suratList.links}
+                        total={suratList.total}
+                        currentPage={suratList.current_page}
+                        lastPage={suratList.last_page}
+                    />
                 </div>
             </div>
 
@@ -479,8 +522,8 @@ export default function SuratPanggilanIndex({
                         </div>
 
                         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
-                            {/* Pilih Siswa */}
-                            <div className="space-y-1.5">
+                            {/* Pilih Siswa (Searchable Combobox) */}
+                            <div className="space-y-1.5 relative" ref={muridDropdownRef}>
                                 <label className="text-xs font-semibold text-slate-700 flex justify-between items-center">
                                     <span>Pilih Siswa / Murid <span className="text-rose-500">*</span></span>
                                     {isLoadingMuridInfo && (
@@ -489,19 +532,91 @@ export default function SuratPanggilanIndex({
                                         </span>
                                     )}
                                 </label>
-                                <select
-                                    value={form.murid_id}
-                                    onChange={(e) => handleMuridSelect(e.target.value)}
-                                    className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
-                                >
-                                    <option value="">-- Pilih Siswa --</option>
-                                    {muridList.map((m) => (
-                                        <option key={m.id} value={m.id}>
-                                            {m.nama} ({m.kelas?.nama_kelas ?? '-'} • NIS: {m.nis})
-                                        </option>
-                                    ))}
-                                </select>
-                                {errors.murid_id && <p className="text-xs text-rose-500">{errors.murid_id}</p>}
+
+                                {selectedMurid ? (
+                                    /* Tampilan Siswa yang Terpilih */
+                                    <div className="flex items-center justify-between rounded-xl border border-blue-200 bg-blue-50/60 p-3 shadow-2xs">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs">
+                                                <Users className="size-4" />
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-blue-950">{selectedMurid.nama}</p>
+                                                <p className="text-xs text-blue-700">
+                                                    Kelas: <strong>{selectedMurid.kelas?.nama_kelas ?? '-'}</strong> • NIS: {selectedMurid.nis || '-'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setForm((prev) => ({ ...prev, murid_id: '' }));
+                                                setSelectedMuridInfo(null);
+                                                setMuridSearchText('');
+                                                setIsMuridDropdownOpen(true);
+                                            }}
+                                            className="rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors cursor-pointer"
+                                        >
+                                            Ganti Siswa
+                                        </button>
+                                    </div>
+                                ) : (
+                                    /* Search Input Siswa */
+                                    <div className="relative">
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                required={!form.murid_id}
+                                                value={muridSearchText}
+                                                onFocus={() => setIsMuridDropdownOpen(true)}
+                                                onChange={(e) => {
+                                                    setMuridSearchText(e.target.value);
+                                                    setIsMuridDropdownOpen(true);
+                                                }}
+                                                placeholder="Ketik nama siswa, NIS, atau kelas (misal: Budi / SIJA)..."
+                                                className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 pl-9 pr-9 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
+                                            />
+                                            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsMuridDropdownOpen(!isMuridDropdownOpen)}
+                                                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                            >
+                                                <ChevronDown className="size-4" />
+                                            </button>
+                                        </div>
+
+                                        {/* Dropdown Menu Hasil Pencarian Siswa */}
+                                        {isMuridDropdownOpen && (
+                                            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1.5 shadow-xl">
+                                                {filteredMurids.length > 0 ? (
+                                                    filteredMurids.slice(0, 50).map((m) => (
+                                                        <div
+                                                            key={m.id}
+                                                            onClick={() => handleMuridSelect(m.id.toString())}
+                                                            className="cursor-pointer px-3.5 py-2.5 text-sm hover:bg-blue-50 transition-colors flex items-center justify-between border-b border-slate-50 last:border-0"
+                                                        >
+                                                            <div>
+                                                                <span className="font-semibold text-slate-900">{m.nama}</span>
+                                                                <div className="text-xs text-slate-500">
+                                                                    NIS: {m.nis || '-'} • WA Ortu: <span className="font-mono">{m.no_ortu || '-'}</span>
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                                                                {m.kelas?.nama_kelas ?? '-'}
+                                                            </span>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="px-3.5 py-3 text-xs text-slate-500 text-center italic">
+                                                        Tidak ada siswa ditemukan dengan kata kunci "{muridSearchText}"
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                                {errors.murid_id && <p className="text-xs text-rose-500 font-semibold">{errors.murid_id}</p>}
 
                                 {/* Selected Student Info Card */}
                                 {selectedMuridInfo && (
@@ -513,7 +628,7 @@ export default function SuratPanggilanIndex({
                                             <span className="text-slate-600">Status: {selectedMuridInfo.tahap}</span>
                                         </div>
                                         <div className="text-blue-800 font-medium">
-                                            No. HP: {selectedMuridInfo.no_hp || '(Belum ada nomor HP)'}
+                                            No. HP Ortu: <span className="font-mono font-bold">{selectedMuridInfo.no_hp || '(Belum ada nomor HP)'}</span>
                                         </div>
                                     </div>
                                 )}
@@ -527,6 +642,7 @@ export default function SuratPanggilanIndex({
                                     </label>
                                     <input
                                         type="number"
+                                        required
                                         min="1"
                                         max="10"
                                         value={form.panggilan_ke}
@@ -581,6 +697,7 @@ export default function SuratPanggilanIndex({
                                     </label>
                                     <input
                                         type="text"
+                                        required
                                         placeholder="Contoh: Drs. Kiagus Abdurachman"
                                         value={form.nama_guru_menemui}
                                         onChange={(e) => setForm((prev) => ({ ...prev, nama_guru_menemui: e.target.value }))}
@@ -598,6 +715,7 @@ export default function SuratPanggilanIndex({
                                     </label>
                                     <input
                                         type="date"
+                                        required
                                         value={form.tanggal_panggilan}
                                         onChange={(e) => setForm((prev) => ({ ...prev, tanggal_panggilan: e.target.value }))}
                                         className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
@@ -611,6 +729,7 @@ export default function SuratPanggilanIndex({
                                     </label>
                                     <input
                                         type="text"
+                                        required
                                         placeholder="Contoh: Pukul 09.00 WIB"
                                         value={form.waktu}
                                         onChange={(e) => setForm((prev) => ({ ...prev, waktu: e.target.value }))}
@@ -628,6 +747,7 @@ export default function SuratPanggilanIndex({
                                     </label>
                                     <input
                                         type="text"
+                                        required
                                         value={form.tempat}
                                         onChange={(e) => setForm((prev) => ({ ...prev, tempat: e.target.value }))}
                                         className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
@@ -641,6 +761,7 @@ export default function SuratPanggilanIndex({
                                     </label>
                                     <input
                                         type="date"
+                                        required
                                         value={form.tanggal_surat}
                                         onChange={(e) => setForm((prev) => ({ ...prev, tanggal_surat: e.target.value }))}
                                         className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"

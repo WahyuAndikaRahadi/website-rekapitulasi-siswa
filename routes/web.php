@@ -74,6 +74,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Surat Pemanggilan Orang Tua
     Route::get('/surat-panggilan', [AdminSuratPanggilanController::class, 'index'])->name('surat-panggilan.index');
     Route::post('/surat-panggilan', [AdminSuratPanggilanController::class, 'store'])->name('surat-panggilan.store');
+    Route::post('/surat-panggilan/{suratPanggil}/kirim-wa', [AdminSuratPanggilanController::class, 'kirimWa'])->name('surat-panggilan.kirim-wa');
     Route::get('/surat-panggilan/info-murid/{murid}', [AdminSuratPanggilanController::class, 'infoMurid'])->name('surat-panggilan.info-murid');
     Route::get('/surat-panggilan/{suratPanggil}/pdf', [AdminSuratPanggilanController::class, 'previewPdf'])->name('surat-panggilan.pdf');
     Route::get('/surat-panggilan/{suratPanggil}/download', [AdminSuratPanggilanController::class, 'downloadPdf'])->name('surat-panggilan.download');

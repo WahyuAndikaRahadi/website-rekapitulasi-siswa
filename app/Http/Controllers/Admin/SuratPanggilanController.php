@@ -161,6 +161,26 @@ class SuratPanggilanController extends Controller
     }
 
     /**
+     * Kirim ulang notifikasi WhatsApp surat pemanggilan ke orang tua.
+     */
+    public function kirimWa(SuratPanggil $suratPanggil, WhatsAppService $whatsAppService)
+    {
+        $suratPanggil->load(['murid.kelas', 'guru']);
+
+        if (empty($suratPanggil->murid?->no_ortu)) {
+            return back()->with('error', "Gagal: Nomor WhatsApp orang tua belum terdaftar pada data siswa {$suratPanggil->murid->nama}.");
+        }
+
+        $success = $whatsAppService->sendSuratPanggilanNotification($suratPanggil);
+
+        if ($success) {
+            return back()->with('success', "Notifikasi WhatsApp untuk surat {$suratPanggil->nomor_surat} berhasil dikirim ulang ke orang tua ({$suratPanggil->murid->no_ortu}).");
+        }
+
+        return back()->with('error', "Gagal mengirim notifikasi WhatsApp. Silakan periksa status koneksi gateway WhatsApp.");
+    }
+
+    /**
      * Hapus arsip surat panggilan.
      */
     public function destroy(SuratPanggil $suratPanggil)
