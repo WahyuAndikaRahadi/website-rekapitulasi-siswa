@@ -88,7 +88,8 @@ function MuridModal({ title, form, kelas_list, onSubmit, onClose }: MuridModalPr
                                 {f.label} {f.required && <span className="text-rose-500">*</span>}
                             </label>
                             <input
-                                type="text"
+                                type={f.key === 'no_telp' || f.key === 'no_ortu' ? 'tel' : 'text'}
+                                required={f.required}
                                 value={(form.data as any)[f.key]}
                                 onChange={(e) => form.setData(f.key as any, e.target.value)}
                                 placeholder={f.placeholder}
@@ -102,6 +103,7 @@ function MuridModal({ title, form, kelas_list, onSubmit, onClose }: MuridModalPr
                             Kelas <span className="text-rose-500">*</span>
                         </label>
                         <select
+                            required
                             value={(form.data as any).kelas_id}
                             onChange={(e) => form.setData('kelas_id' as any, e.target.value)}
                             className="flex h-9 w-full rounded-lg border border-slate-200 bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"

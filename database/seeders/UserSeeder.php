@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Guru;
-use App\Models\Kelas;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -12,7 +11,7 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // ── Admin ─────────────────────────────────────────────────────────
+        // ── Administrator Akun ─────────────────────────────────────────────
         User::firstOrCreate(
             ['email' => 'admin@sekolah.test'],
             [
@@ -23,79 +22,66 @@ class UserSeeder extends Seeder
             ]
         );
 
-        // ── Guru 1 — Wali Kelas X SIJA 1 ───────────────────────────────────
-        $userGuru1 = User::firstOrCreate(
-            ['email' => 'budi.santoso@sekolah.test'],
-            [
-                'name'              => 'Budi Santoso',
-                'password'          => Hash::make('password'),
-                'role'              => 'guru',
-                'email_verified_at' => now(),
-            ]
-        );
-        $kelasX = Kelas::where('nama_kelas', 'X SIJA 1')->first();
-        $guru1 = Guru::firstOrCreate(
-            ['user_id' => $userGuru1->id],
-            [
-                'nip'          => '196501011990031001',
-                'nama'         => 'Budi Santoso',
-                'no_telp'      => '081234567890',
-                'wali_kelas_id' => $kelasX?->id,
-            ]
-        );
-        // Assign mengajar di beberapa kelas
-        if ($kelasX) {
-            $guru1->kelas()->syncWithoutDetaching([
-                $kelasX->id => ['mapel' => 'Sistem Komputer & Jaringan'],
-            ]);
+        // ── Data Akun Guru Production ───────────────────────────────────────
+        $gurus = [
+            ['name' => 'Achmad Zaenudin, S.Pd', 'email' => 'achmadzaenudin@gmail.com'],
+            ['name' => 'Agung Iswanto, S.Kom', 'email' => 'agungiswanto@gmail.com'],
+            ['name' => 'Akbar Wibisono, S.Pd', 'email' => 'akbarwibisono@gmail.com'],
+            ['name' => 'Annisa Dwi Laili Amin, S.Pd', 'email' => 'annisadwilaili@gmai.com'],
+            ['name' => 'Aprianti Opi Ceisar, S.Pd', 'email' => 'apriantiopiceisar@gmail.com'],
+            ['name' => 'Ari Muslim Nur Priningrat S.Pd', 'email' => 'arimuslim@gmail.com'],
+            ['name' => "Atikah Muthma'innah, S.Pd", 'email' => "atikahmuthma'innah@gmail.com"],
+            ['name' => 'Budy Harry Prasetya, S.T', 'email' => 'budyharryprasetya@gmail.com'],
+            ['name' => 'Eva Yulizar, S.Kom', 'email' => 'evayulizar@gmail.com'],
+            ['name' => 'Guru Teknik Mekatronika', 'email' => 'gurumekatronika@gmail.com'],
+            ['name' => 'Guslia Laila Murni, S.Ag', 'email' => 'guslialailamurni@gmail.com'],
+            ['name' => 'Inti Nur Anesa, S.Pd', 'email' => 'intinuranesa@gmail.com'],
+            ['name' => 'Ipah Kholivah, M.Pd', 'email' => 'ipahkholivah@gmail.com'],
+            ['name' => 'Janesa Ritia Putri, S.S', 'email' => 'janesaritiaputri@gmail.com'],
+            ['name' => 'Kiki Mahar Rizki, S.Pd', 'email' => 'kikimaharizki@gmail.com'],
+            ['name' => 'Kokok Supriyanto, S.Pd', 'email' => 'kokoksupriyanto@gmail.com'],
+            ['name' => 'Muhammad Ikhsan Wahyudi, S.Kom', 'email' => 'mikhsanwahyudi@gmail.com'],
+            ['name' => 'Naomi Simarmata, S.Pd', 'email' => 'naomisimarmata@gmail.com'],
+            ['name' => 'Nirmala Dewi Amelia, S.Pd', 'email' => 'nirmaladewiamelia@gmail.com'],
+            ['name' => 'Nur Hayati Chairani, S.S', 'email' => 'nurhayatichairani@gmail.com'],
+            ['name' => 'Nurul Mukmin, M.Pd.I', 'email' => 'nurulmukmin@gmail.com'],
+            ['name' => 'Pesta Br Tarigan, S.Pd', 'email' => 'pestabrtarigan@gmail.com'],
+            ['name' => 'Randi Ardiansyah, S.Pd', 'email' => 'randiardiansyah@gmail.com'],
+            ['name' => 'Rezza Adzmi, S.Pd M.Si', 'email' => 'rezzaadzmi@gmail.com'],
+            ['name' => 'Ria Indah Sari, S.S', 'email' => 'riaindahsari@gmail.com'],
+            ['name' => 'Rizeki Pambudi, M.Pd', 'email' => 'rizekipambudi@gmail.com'],
+            ['name' => 'Romlah, S.S', 'email' => 'romlah@gmail.com'],
+            ['name' => 'Rosina Pattian, S.Pd', 'email' => 'rosinapattian@gmail.com'],
+            ['name' => 'Sheila Virginia Agisna, S.Pd', 'email' => 'sheilavirginia@gmail.com'],
+            ['name' => 'Suciananel Fitriani, S.Pd', 'email' => 'suciananelfitriani@gmail.com'],
+            ['name' => 'Sugiyanto, S.T', 'email' => 'sugiyanto@gmail.com'],
+            ['name' => 'tester guru', 'email' => 'gurutester@gmail.com'],
+            ['name' => 'Witarmin, S.Pd', 'email' => 'witarmin@gmail.com'],
+            ['name' => 'Yanthy Yulianthi, S.Pd', 'email' => 'yanthyyulianthi@gmail.com'],
+            ['name' => 'Yasner Marnaek Sitinjak, S.Pd', 'email' => 'yasnermarnaeksitinjak@gmail.com'],
+            ['name' => 'Yudo Eko Nugroho, S.T', 'email' => 'yudoekonugroho@gmail.com'],
+        ];
+
+        foreach ($gurus as $item) {
+            $user = User::firstOrCreate(
+                ['email' => $item['email']],
+                [
+                    'name'              => $item['name'],
+                    'password'          => Hash::make('password'),
+                    'role'              => 'guru',
+                    'email_verified_at' => now(),
+                ]
+            );
+
+            Guru::firstOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'nama'          => $item['name'],
+                    'nip'           => null,
+                    'no_telp'       => null,
+                    'wali_kelas_id' => null,
+                ]
+            );
         }
-        $kelasXI = Kelas::where('nama_kelas', 'XI SIJA 1')->first();
-        if ($kelasXI) {
-            $guru1->kelas()->syncWithoutDetaching([
-                $kelasXI->id => ['mapel' => 'Sistem Komputer & Jaringan'],
-            ]);
-        }
-
-        // ── Guru 2 — Wali Kelas XI SIJA 1 ──────────────────────────────────
-        $userGuru2 = User::firstOrCreate(
-            ['email' => 'siti.rahayu@sekolah.test'],
-            [
-                'name'              => 'Siti Rahayu',
-                'password'          => Hash::make('password'),
-                'role'              => 'guru',
-                'email_verified_at' => now(),
-            ]
-        );
-        $kelasXI1 = Kelas::where('nama_kelas', 'XI SIJA 1')->first();
-        Guru::firstOrCreate(
-            ['user_id' => $userGuru2->id],
-            [
-                'nip'          => '197203152000032002',
-                'nama'         => 'Siti Rahayu',
-                'no_telp'      => '081398765432',
-                'wali_kelas_id' => $kelasXI1?->id,
-            ]
-        );
-
-        // ── Guru 3 — Guru Mapel (tidak punya wali kelas) ─────────────────
-        $userGuru3 = User::firstOrCreate(
-            ['email' => 'ahmad.fauzi@sekolah.test'],
-            [
-                'name'              => 'Ahmad Fauzi',
-                'password'          => Hash::make('password'),
-                'role'              => 'guru',
-                'email_verified_at' => now(),
-            ]
-        );
-
-        Guru::firstOrCreate(
-            ['user_id' => $userGuru3->id],
-            [
-                'nip'          => null,
-                'nama'         => 'Ahmad Fauzi',
-                'no_telp'      => '085712345678',
-                'wali_kelas_id' => null, // tidak punya wali kelas
-            ]
-        );
     }
 }

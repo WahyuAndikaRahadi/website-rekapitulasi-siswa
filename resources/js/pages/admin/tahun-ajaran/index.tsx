@@ -42,7 +42,7 @@ export default function TahunAjaranIndex({ tahun_ajarans }: Props) {
                     <form onSubmit={handleCreate} className="flex items-end gap-3">
                         <div className="space-y-1">
                             <label className="text-xs font-medium text-muted-foreground">Label (format: YYYY-YYYY)</label>
-                            <input type="text" value={form.data.label}
+                            <input type="text" required pattern="[0-9]{4}-[0-9]{4}" value={form.data.label}
                                 onChange={(e) => form.setData('label', e.target.value)}
                                 placeholder="2027-2028"
                                 className="h-9 w-40 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />

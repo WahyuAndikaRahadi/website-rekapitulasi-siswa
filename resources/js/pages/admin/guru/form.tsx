@@ -50,7 +50,7 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                     {/* Nama */}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></label>
-                        <input type="text" value={data.nama} onChange={(e) => setData('nama', e.target.value)} placeholder="Nama guru"
+                        <input type="text" required value={data.nama} onChange={(e) => setData('nama', e.target.value)} placeholder="Nama guru"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         {errors.nama && <p className="text-xs text-red-600">{errors.nama}</p>}
                     </div>
@@ -66,7 +66,7 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                     {/* No Telepon */}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium">No. Telepon / WhatsApp <span className="text-muted-foreground font-normal">(opsional)</span></label>
-                        <input type="text" value={data.no_telp} onChange={(e) => setData('no_telp', e.target.value)} placeholder="Misal: 08123456789"
+                        <input type="tel" value={data.no_telp} onChange={(e) => setData('no_telp', e.target.value)} placeholder="Misal: 08123456789"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm font-mono placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         {errors.no_telp && <p className="text-xs text-red-600">{errors.no_telp}</p>}
                     </div>
@@ -74,7 +74,7 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                     {/* Email */}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium">Email <span className="text-red-500">*</span></label>
-                        <input type="email" value={data.email} onChange={(e) => setData('email', e.target.value)} placeholder="guru@sekolah.test"
+                        <input type="email" required value={data.email} onChange={(e) => setData('email', e.target.value)} placeholder="guru@sekolah.test"
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         {errors.email && <p className="text-xs text-red-600">{errors.email}</p>}
                     </div>
@@ -85,7 +85,7 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                             Password {isEdit && <span className="text-muted-foreground font-normal">(kosongkan jika tidak diubah)</span>}
                             {!isEdit && <span className="text-red-500">*</span>}
                         </label>
-                        <input type="password" value={data.password} onChange={(e) => setData('password', e.target.value)}
+                        <input type="password" required={!isEdit} minLength={8} value={data.password} onChange={(e) => setData('password', e.target.value)}
                             placeholder={isEdit ? 'Kosongkan jika tidak diubah' : 'Min. 8 karakter'}
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
                         {errors.password && <p className="text-xs text-red-600">{errors.password}</p>}

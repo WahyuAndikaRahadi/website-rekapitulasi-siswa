@@ -98,6 +98,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                             <label className="text-xs font-semibold text-slate-700">Nama Kelas</label>
                             <input
                                 type="text"
+                                required
                                 value={createForm.data.nama_kelas}
                                 onChange={(e) => createForm.setData('nama_kelas', e.target.value)}
                                 placeholder="Misal: X SIJA 1"
@@ -145,6 +146,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                                     <label className="text-xs font-semibold text-slate-700">Nama Kelas</label>
                                     <input
                                         type="text"
+                                        required
                                         value={editForm.data.nama_kelas}
                                         onChange={(e) => editForm.setData('nama_kelas', e.target.value)}
                                         className="h-9 w-full rounded-lg border border-slate-200 bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
