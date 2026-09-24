@@ -167,17 +167,20 @@ class SuratPanggilanController extends Controller
     {
         $suratPanggil->load(['murid.kelas', 'guru']);
 
-        if (empty($suratPanggil->murid?->no_ortu)) {
-            return back()->with('error', "Gagal: Nomor WhatsApp orang tua belum terdaftar pada data siswa {$suratPanggil->murid->nama}.");
+        $targetPhone = $suratPanggil->murid?->no_ortu ?: $suratPanggil->murid?->no_telp;
+
+        if (empty($targetPhone)) {
+            return back()->with('error', "Gagal: Nomor WhatsApp orang tua belum terdaftar pada data siswa {$suratPanggil->murid?->nama}.");
         }
 
-        $success = $whatsAppService->sendSuratPanggilanNotification($suratPanggil);
+        // Kirim langsung (sync) agar feedback di UI akurat dan realtime
+        $success = $whatsAppService->sendSuratPanggilanNotification($suratPanggil, true);
 
         if ($success) {
-            return back()->with('success', "Notifikasi WhatsApp untuk surat {$suratPanggil->nomor_surat} berhasil dikirim ulang ke orang tua ({$suratPanggil->murid->no_ortu}).");
+            return back()->with('success', "Notifikasi WhatsApp untuk surat {$suratPanggil->nomor_surat} berhasil dikirim ke orang tua ({$targetPhone}).");
         }
 
-        return back()->with('error', "Gagal mengirim notifikasi WhatsApp. Silakan periksa status koneksi gateway WhatsApp.");
+        return back()->with('error', "Gagal mengirim notifikasi WhatsApp. Pastikan WhatsApp Gateway (Port 3000) aktif dan terhubung.");
     }
 
     /**

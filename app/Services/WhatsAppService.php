@@ -337,17 +337,20 @@ class WhatsAppService
     /**
      * Dispatch WhatsApp notification Surat Pemanggilan Orang Tua (Dokumen PDF + Pesan) ke kontak orang tua/wali murid.
      */
-    public function sendSuratPanggilanNotification(\App\Models\SuratPanggil $surat): void
+    /**
+     * Dispatch / Kirim WhatsApp notification Surat Pemanggilan Orang Tua (Dokumen PDF + Pesan) ke kontak orang tua/wali murid.
+     */
+    public function sendSuratPanggilanNotification(\App\Models\SuratPanggil $surat, bool $sync = false): bool
     {
         $murid = $surat->murid;
         if (! $murid) {
-            return;
+            return false;
         }
 
         $targetPhone = $murid->no_ortu ?? $murid->no_telp;
         if (empty($targetPhone)) {
             Log::info("[WhatsAppService] Tidak ada nomor telepon orang tua/murid untuk murid ID {$murid->id} ({$murid->nama})");
-            return;
+            return false;
         }
 
         $waMessage = $this->formatSuratPanggilanMessage($surat);
@@ -364,6 +367,17 @@ class WhatsAppService
             $safeNomor = preg_replace('/[^a-zA-Z0-9_-]/', '-', $surat->nomor_surat);
             $fileName = "Surat_Pemanggilan_{$safeNomor}.pdf";
 
+            if ($sync) {
+                $res = $this->sendFile(
+                    $targetPhone,
+                    $base64Pdf,
+                    $fileName,
+                    'application/pdf',
+                    $waMessage
+                );
+                return ($res['status'] ?? '') === 'success';
+            }
+
             // Kirim Dokumen PDF via WhatsApp Gateway dengan caption pesan resmi
             \App\Jobs\SendWhatsAppFileJob::dispatch(
                 $targetPhone,
@@ -372,9 +386,16 @@ class WhatsAppService
                 'application/pdf',
                 $waMessage
             );
+
+            return true;
         } catch (\Throwable $e) {
             Log::error("[WhatsAppService] Gagal generate PDF untuk dikirim WA: " . $e->getMessage() . ". Mengirim pesan teks fallback.");
+            if ($sync) {
+                $res = $this->sendMessage($targetPhone, $waMessage);
+                return ($res['status'] ?? '') === 'success';
+            }
             \App\Jobs\SendWhatsAppRekapJob::dispatch($targetPhone, $waMessage);
+            return true;
         }
     }
 }
