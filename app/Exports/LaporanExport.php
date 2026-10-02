@@ -17,6 +17,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithEvents
 {
+    private int $rowNumber = 0;
+
     public function __construct(
         private ?int    $tahunAjaranId = null,
         private ?int    $kelasId       = null,
@@ -34,18 +36,26 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
             ->when($this->kelasId,       fn($q) => $q->whereHas('murid', fn($mq) => $mq->where('kelas_id', $this->kelasId)))
             ->when($this->dari,          fn($q) => $q->whereDate('tanggal_kejadian', '>=', $this->dari))
             ->when($this->sampai,        fn($q) => $q->whereDate('tanggal_kejadian', '<=', $this->sampai))
-            ->when($this->kategori,      fn($q) => $q->where('kategori', $this->kategori))
+            ->when($this->kategori, function ($q) {
+                if ($this->kategori === 'prestasi') {
+                    $q->whereIn('kategori', ['prestasi', 'kebaikan']);
+                } else {
+                    $q->where('kategori', $this->kategori);
+                }
+            })
             ->when($this->guruId,        fn($q) => $q->where('guru_id', $this->guruId))
             ->when($this->status,        fn($q) => $q->where('status', $this->status))
-            ->orderBy('tanggal_kejadian')
+            ->orderBy('tanggal_kejadian', 'desc')
             ->orderBy('murid_id');
     }
 
     public function headings(): array
     {
-        $jenisLabel = $this->kategori === 'prestasi'
-            ? 'Jenis Prestasi (Keterangan Prestasi)'
-            : 'Jenis Pelanggaran (Keterangan Pelanggaran)';
+        $jenisLabel = match ($this->kategori) {
+            'prestasi'   => 'Jenis Prestasi (Keterangan Prestasi)',
+            'pelanggaran'=> 'Jenis Pelanggaran (Keterangan Pelanggaran)',
+            default      => 'Kategori & Keterangan Peristiwa',
+        };
 
         return [
             'No',
@@ -65,19 +75,35 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
 
     public function map($laporan): array
     {
-        static $no = 0;
-        $no++;
+        $this->rowNumber++;
 
         $tingkat    = ucfirst($laporan->tingkat_keparahan ?? '');
         $keterangan = $laporan->keterangan ?? '';
         $jenisKet   = $tingkat ? "{$tingkat} — {$keterangan}" : $keterangan;
+        if (!$this->kategori && $laporan->kategori) {
+            $jenisKet = '[' . ucfirst($laporan->kategori) . '] ' . $jenisKet;
+        }
 
         $jumlahBukti   = $laporan->bukti->count();
         $buktiFotoText = $jumlahBukti > 0 ? '' : '-';
 
+        $tanggalStr = '-';
+        if ($laporan->tanggal_kejadian) {
+            try {
+                $tanggalStr = \Carbon\Carbon::parse($laporan->tanggal_kejadian)->format('d/m/Y');
+            } catch (\Throwable $e) {
+                $tanggalStr = (string) $laporan->tanggal_kejadian;
+            }
+        }
+
+        $poinStr = '-';
+        if ($laporan->poin_diberikan !== null) {
+            $poinStr = $laporan->poin_diberikan > 0 ? "+{$laporan->poin_diberikan}" : (string) $laporan->poin_diberikan;
+        }
+
         return [
-            $no,
-            $laporan->tanggal_kejadian ? $laporan->tanggal_kejadian->format('d/m/Y') : '-',
+            $this->rowNumber,
+            $tanggalStr,
             $laporan->guru->nama ?? '-',
             $laporan->guru->no_telp ?? '-',
             $laporan->murid->nama ?? '-',
@@ -85,7 +111,7 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
             $laporan->murid->kelas->nama_kelas ?? '-',
             $jenisKet,
             $laporan->keterangan_tambahan ?? '-',
-            $laporan->poin_diberikan,
+            $poinStr,
             $buktiFotoText,
             ucwords($laporan->status ?? '-'),
         ];

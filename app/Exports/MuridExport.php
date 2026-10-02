@@ -12,6 +12,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class MuridExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
+    private int $rank = 0;
+
     public function __construct(
         private ?int $kelasId = null,
         private ?string $status = 'aktif',
@@ -20,46 +22,56 @@ class MuridExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
     public function collection()
     {
         $murids = Murid::with(['kelas', 'laporans'])
-            ->when($this->status, fn($q) => $q->where('status', $this->status))
+            ->when($this->status && $this->status !== 'semua', fn($q) => $q->where('status', $this->status))
             ->when($this->kelasId, fn($q) => $q->where('kelas_id', $this->kelasId))
             ->get();
 
         return $murids->map(function ($m) {
+            $prestasi = $m->poinPrestasi();
+            $pelanggaran = $m->poinPelanggaran();
+            $skorBersih = $prestasi - $pelanggaran;
+
             return (object) [
                 'id'               => $m->id,
                 'nama'             => $m->nama,
                 'nis'              => $m->nis,
                 'nisn'             => $m->nisn,
                 'nama_kelas'       => $m->kelas?->nama_kelas ?? '-',
-                'poin_prestasi'    => $m->poinPrestasi(),
-                'poin_pelanggaran' => $m->poinPelanggaran(),
+                'status'           => ucfirst($m->status ?? 'aktif'),
+                'poin_prestasi'    => $prestasi,
+                'poin_pelanggaran' => $pelanggaran,
+                'skor_bersih'      => $skorBersih,
                 'kualifikasi'      => $m->kualifikasiPoin(),
                 'tahap_pembinaan'  => $m->tahapPembinaan(),
             ];
         })
-        // Urutkan siswa dari poin prestasi tertinggi
-        ->sortByDesc('poin_prestasi')
+        ->sortBy([
+            ['poin_prestasi', 'desc'],
+            ['poin_pelanggaran', 'asc'],
+            ['nama', 'asc'],
+        ])
         ->values();
     }
 
     public function headings(): array
     {
-        return ['Peringkat', 'Nama Siswa', 'NIS', 'NISN', 'Kelas', 'Poin Prestasi', 'Poin Pelanggaran', 'Kualifikasi', 'Tahap Pembinaan'];
+        return ['Peringkat', 'Nama Siswa', 'NIS', 'NISN', 'Kelas', 'Status', 'Poin Prestasi', 'Poin Pelanggaran', 'Skor Bersih', 'Kualifikasi', 'Tahap Pembinaan'];
     }
 
     public function map($murid): array
     {
-        static $rank = 0;
-        $rank++;
+        $this->rank++;
 
         return [
-            $rank,
+            $this->rank,
             $murid->nama,
             $murid->nis ?? '-',
             $murid->nisn ?? '-',
             $murid->nama_kelas,
+            $murid->status,
             $murid->poin_prestasi,
             $murid->poin_pelanggaran,
+            $murid->skor_bersih,
             $murid->kualifikasi,
             $murid->tahap_pembinaan,
         ];

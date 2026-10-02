@@ -67,9 +67,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Export
     Route::get('/export', [AdminExportController::class, 'index'])->name('export.index');
-    Route::post('/export/laporan', [AdminExportController::class, 'exportLaporan'])->name('export.laporan');
-    Route::post('/export/murid',   [AdminExportController::class, 'exportMurid'])->name('export.murid');
-    Route::post('/export/kelas',   [AdminExportController::class, 'exportKelas'])->name('export.kelas');
+    Route::get('/export/preview', [AdminExportController::class, 'previewData'])->name('export.preview');
+    Route::match(['get', 'post'], '/export/laporan', [AdminExportController::class, 'exportLaporan'])->name('export.laporan');
+    Route::match(['get', 'post'], '/export/murid',   [AdminExportController::class, 'exportMurid'])->name('export.murid');
+    Route::match(['get', 'post'], '/export/kelas',   [AdminExportController::class, 'exportKelas'])->name('export.kelas');
 
     // Surat Pemanggilan Orang Tua
     Route::get('/surat-panggilan', [AdminSuratPanggilanController::class, 'index'])->name('surat-panggilan.index');

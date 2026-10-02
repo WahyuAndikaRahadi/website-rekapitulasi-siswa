@@ -12,6 +12,8 @@ use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class KelasExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
+    private int $rank = 0;
+
     public function __construct(
         private ?int $kelasId = null,
     ) {}
@@ -50,11 +52,10 @@ class KelasExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
 
     public function map($kelas): array
     {
-        static $rank = 0;
-        $rank++;
+        $this->rank++;
 
         return [
-            $rank,
+            $this->rank,
             $kelas->nama_kelas,
             $kelas->tingkat,
             $kelas->wali_kelas,

@@ -1,13 +1,14 @@
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head } from '@inertiajs/react';
-import { Download, FileSpreadsheet, GraduationCap, School } from 'lucide-react';
+import { CheckCircle2, Download, FileSpreadsheet, GraduationCap, Loader2, School, XCircle } from 'lucide-react';
 import React, { useState } from 'react';
 
 interface KelasItem { id: number; nama_kelas: string; }
 
 interface Props {
     kelas_list: KelasItem[];
+    counts?: { laporan: number; murid: number; kelas: number };
 }
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -15,7 +16,52 @@ const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Ekspor Data', href: '/admin/export' },
 ];
 
-export default function ExportIndex({ kelas_list = [] }: Props) {
+type DownloadStatus = 'idle' | 'loading' | 'success' | 'error';
+
+async function fetchDownload(url: string, formData: Record<string, string>): Promise<void> {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+
+    const params = new URLSearchParams();
+    params.append('_token', csrfToken);
+    Object.entries(formData).forEach(([k, v]) => {
+        if (v) params.append(k, v);
+    });
+
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-TOKEN': csrfToken,
+            Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, */*',
+        },
+        body: params,
+    });
+
+    if (!response.ok) {
+        const text = await response.text();
+        throw new Error(text || `HTTP ${response.status}`);
+    }
+
+    const disposition = response.headers.get('content-disposition');
+    let filename = 'export.xlsx';
+    if (disposition) {
+        const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (match?.[1]) filename = match[1].replace(/['"]/g, '');
+    }
+
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(blobUrl);
+    document.body.removeChild(a);
+}
+
+export default function ExportIndex({ kelas_list = [], counts = { laporan: 0, murid: 0, kelas: 0 } }: Props) {
     const [laporanForm, setLaporanForm] = useState({
         kelas_id: '',
         dari: '',
@@ -32,49 +78,66 @@ export default function ExportIndex({ kelas_list = [] }: Props) {
         kelas_id: '',
     });
 
-    const submitDownloadForm = (actionUrl: string, formData: Record<string, string>) => {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = actionUrl;
-        Object.entries(formData).forEach(([k, v]) => {
-            if (v) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = k;
-                input.value = v;
-                form.appendChild(input);
-            }
-        });
-        let csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
-        if (!csrf) {
-            const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
-            if (match) {
-                csrf = decodeURIComponent(match[1]);
-            }
+    const [laporanStatus, setLaporanStatus] = useState<DownloadStatus>('idle');
+    const [muridStatus, setMuridStatus] = useState<DownloadStatus>('idle');
+    const [kelasStatus, setKelasStatus] = useState<DownloadStatus>('idle');
+    const [errorMsg, setErrorMsg] = useState('');
+
+    const handleExport = async (
+        url: string,
+        formData: Record<string, string>,
+        setStatus: React.Dispatch<React.SetStateAction<DownloadStatus>>,
+    ) => {
+        setStatus('loading');
+        setErrorMsg('');
+        try {
+            await fetchDownload(url, formData);
+            setStatus('success');
+            setTimeout(() => setStatus('idle'), 3000);
+        } catch (err: unknown) {
+            setStatus('error');
+            setErrorMsg(err instanceof Error ? err.message : 'Gagal mengunduh file');
+            setTimeout(() => setStatus('idle'), 5000);
         }
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = '_token';
-        csrfInput.value = csrf;
-        form.appendChild(csrfInput);
-        document.body.appendChild(form);
-        form.submit();
-        document.body.removeChild(form);
     };
 
     const handleExportLaporan = (e: React.FormEvent) => {
         e.preventDefault();
-        submitDownloadForm('/admin/export/laporan', laporanForm);
+        handleExport('/admin/export/laporan', laporanForm, setLaporanStatus);
     };
 
     const handleExportMurid = (e: React.FormEvent) => {
         e.preventDefault();
-        submitDownloadForm('/admin/export/murid', muridForm);
+        handleExport('/admin/export/murid', muridForm, setMuridStatus);
     };
 
     const handleExportKelas = (e: React.FormEvent) => {
         e.preventDefault();
-        submitDownloadForm('/admin/export/kelas', kelasForm);
+        handleExport('/admin/export/kelas', kelasForm, setKelasStatus);
+    };
+
+    const btnClass = (status: DownloadStatus) => {
+        if (status === 'loading')
+            return 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-slate-400 text-white text-xs font-semibold shadow-xs cursor-wait';
+        if (status === 'success')
+            return 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold shadow-xs';
+        if (status === 'error')
+            return 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-red-600 text-white text-xs font-semibold shadow-xs cursor-pointer';
+        return 'inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer';
+    };
+
+    const btnIcon = (status: DownloadStatus) => {
+        if (status === 'loading') return <Loader2 className="size-4 animate-spin" />;
+        if (status === 'success') return <CheckCircle2 className="size-4" />;
+        if (status === 'error') return <XCircle className="size-4" />;
+        return <Download className="size-4" />;
+    };
+
+    const btnLabel = (status: DownloadStatus, defaultLabel: string) => {
+        if (status === 'loading') return 'Menyiapkan file...';
+        if (status === 'success') return 'Berhasil diunduh!';
+        if (status === 'error') return 'Gagal — coba lagi';
+        return defaultLabel;
     };
 
     return (
@@ -90,6 +153,43 @@ export default function ExportIndex({ kelas_list = [] }: Props) {
                         Unduh rekapitulasi data kedisiplinan siswa, data murid, dan akumulasi nilai kelas dalam format spreadsheet Excel (.xlsx).
                     </p>
                 </div>
+
+                {/* Ringkasan Data Tersedia */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 flex items-center gap-3 shadow-2xs">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-blue-50 text-[#1E5FA8]">
+                            <FileSpreadsheet className="size-4" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-slate-500 font-medium">Total Laporan Terdata</p>
+                            <p className="text-base font-bold text-slate-900">{counts?.laporan ?? 0} data</p>
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 flex items-center gap-3 shadow-2xs">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700">
+                            <GraduationCap className="size-4" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-slate-500 font-medium">Total Siswa Terdata</p>
+                            <p className="text-base font-bold text-slate-900">{counts?.murid ?? 0} siswa</p>
+                        </div>
+                    </div>
+                    <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 flex items-center gap-3 shadow-2xs">
+                        <div className="flex size-9 items-center justify-center rounded-lg bg-amber-50 text-amber-700">
+                            <School className="size-4" />
+                        </div>
+                        <div>
+                            <p className="text-xs text-slate-500 font-medium">Total Rombel Kelas</p>
+                            <p className="text-base font-bold text-slate-900">{counts?.kelas ?? 0} kelas</p>
+                        </div>
+                    </div>
+                </div>
+
+                {errorMsg && (
+                    <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-xs font-semibold text-red-700">
+                        {errorMsg}
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                     {/* Card 1: Export Laporan */}
@@ -164,10 +264,11 @@ export default function ExportIndex({ kelas_list = [] }: Props) {
                             <button
                                 type="submit"
                                 form="form-export-laporan"
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                                disabled={laporanStatus === 'loading'}
+                                className={btnClass(laporanStatus)}
                             >
-                                <Download className="size-4" />
-                                <span>Unduh Laporan (.xlsx)</span>
+                                {btnIcon(laporanStatus)}
+                                <span>{btnLabel(laporanStatus, 'Unduh Laporan (.xlsx)')}</span>
                             </button>
                         </div>
                     </div>
@@ -197,6 +298,7 @@ export default function ExportIndex({ kelas_list = [] }: Props) {
                                     >
                                         <option value="aktif">Siswa Aktif</option>
                                         <option value="alumni">Alumni</option>
+                                        <option value="semua">Semua Siswa (Aktif &amp; Alumni)</option>
                                     </select>
                                 </div>
 
@@ -219,7 +321,7 @@ export default function ExportIndex({ kelas_list = [] }: Props) {
                                 <div className="rounded-xl bg-slate-50 border border-slate-200/60 p-3 text-xs text-slate-600 space-y-1">
                                     <span className="font-semibold text-slate-800">Kolom Data Excel:</span>
                                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                                        Peringkat, Nama Siswa, NIS, NISN, Kelas, Poin Prestasi, Poin Pelanggaran, Kualifikasi, Tahap Pembinaan.
+                                        Peringkat, Nama Siswa, NIS, NISN, Kelas, Status, Poin Prestasi, Poin Pelanggaran, Skor Bersih, Kualifikasi, Tahap Pembinaan.
                                     </p>
                                 </div>
                             </form>
@@ -229,10 +331,11 @@ export default function ExportIndex({ kelas_list = [] }: Props) {
                             <button
                                 type="submit"
                                 form="form-export-murid"
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                                disabled={muridStatus === 'loading'}
+                                className={btnClass(muridStatus)}
                             >
-                                <Download className="size-4" />
-                                <span>Unduh Data Siswa (.xlsx)</span>
+                                {btnIcon(muridStatus)}
+                                <span>{btnLabel(muridStatus, 'Unduh Data Siswa (.xlsx)')}</span>
                             </button>
                         </div>
                     </div>
@@ -280,10 +383,11 @@ export default function ExportIndex({ kelas_list = [] }: Props) {
                             <button
                                 type="submit"
                                 form="form-export-kelas"
-                                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#0B2559] to-[#1E5FA8] hover:from-[#081B42] hover:to-[#174D88] text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                                disabled={kelasStatus === 'loading'}
+                                className={btnClass(kelasStatus)}
                             >
-                                <Download className="size-4" />
-                                <span>Unduh Data Kelas (.xlsx)</span>
+                                {btnIcon(kelasStatus)}
+                                <span>{btnLabel(kelasStatus, 'Unduh Data Kelas (.xlsx)')}</span>
                             </button>
                         </div>
                     </div>
