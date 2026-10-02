@@ -5,55 +5,145 @@ namespace Database\Seeders;
 use App\Models\Kelas;
 use App\Models\Murid;
 use App\Models\TahunAjaran;
-use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class MuridSeeder extends Seeder
 {
     public function run(): void
     {
-        $kelasList = Kelas::orderBy('nama_kelas')->get();
-
-        if ($kelasList->isEmpty()) {
-            $this->command->warn('Tidak ada Kelas ditemukan. Harap jalankan KelasSeeder terlebih dahulu.');
-            return;
-        }
-
         $tahunAjaran = TahunAjaran::first();
         $tahunAjaranId = $tahunAjaran?->id;
 
-        $faker = Faker::create('id_ID');
+        // 1. Ekstraksi data siswa (Prioritas: public/data-siswa (2).xlsx -> public/data-siswa.xlsx -> file array lokal)
+        $rawStudents = $this->loadStudentData();
 
-        $nisCounter = 20241001;
-        $nisnCounter = 8123400000;
+        if (empty($rawStudents)) {
+            $this->command->error('Tidak ada data siswa yang dapat dimuat. Pastikan file Excel atau file data siswa tersedia.');
+            return;
+        }
 
-        foreach ($kelasList as $kelas) {
-            // 8 murid per kelas untuk data dummy pengujian
-            $jumlahMurid = 8;
+        // 2. Hapus data dummy faker lama jika ada (NIS dummy 8 digit berawalan 20241xxx)
+        Murid::where('nis', 'like', '20241%')->whereRaw('LENGTH(nis) = 8')->forceDelete();
 
-            for ($i = 1; $i <= $jumlahMurid; $i++) {
-                $gender = $faker->randomElement(['male', 'female']);
-                $nama = $faker->firstName($gender) . ' ' . $faker->lastName($gender);
-                $nis = (string) $nisCounter++;
-                $nisn = '00' . ($nisnCounter++);
-                $noTelp = '08' . $faker->numerify('##########');
-                $noOrtu = '08' . $faker->numerify('##########');
+        // 3. Cache dan siapkan pemetaan kelas
+        $kelasMap = Kelas::pluck('id', 'nama_kelas')->all();
 
-                Murid::firstOrCreate(
+        $aktifCount = 0;
+        $alumniCount = 0;
+
+        DB::transaction(function () use ($rawStudents, $tahunAjaranId, &$kelasMap, &$aktifCount, &$alumniCount) {
+            foreach ($rawStudents as $item) {
+                $nis   = !empty($item['nis']) ? trim((string) $item['nis']) : null;
+                $nama  = trim((string) $item['nama']);
+                $kelas = trim((string) ($item['kelas'] ?? ''));
+
+                if ($nama === '') {
+                    continue;
+                }
+
+                $isAlumni = (strtoupper($kelas) === 'ALUMNI');
+                $kelasId = null;
+
+                if (!$isAlumni && $kelas !== '') {
+                    // Pastikan kelas terdaftar di master kelas
+                    if (!isset($kelasMap[$kelas])) {
+                        $tingkat = explode(' ', $kelas)[0] ?? 'X';
+                        $newKelas = Kelas::firstOrCreate(
+                            ['nama_kelas' => $kelas],
+                            [
+                                'tingkat'         => $tingkat,
+                                'tahun_ajaran_id' => $tahunAjaranId,
+                            ]
+                        );
+                        $kelasMap[$kelas] = $newKelas->id;
+                    }
+                    $kelasId = $kelasMap[$kelas];
+                    $aktifCount++;
+                } else {
+                    $alumniCount++;
+                }
+
+                // Sesuai permintaan: biarkan kosong data no hp dan nis/nisn jika tidak ada di excel
+                Murid::updateOrCreate(
                     [
                         'nis' => $nis,
                     ],
                     [
                         'nama'            => $nama,
-                        'nisn'            => $nisn,
-                        'no_telp'         => $noTelp,
-                        'no_ortu'         => $noOrtu,
-                        'status'          => 'aktif',
-                        'kelas_id'        => $kelas->id,
-                        'tahun_ajaran_id' => $tahunAjaranId,
+                        'nisn'            => null,
+                        'no_telp'         => null,
+                        'no_ortu'         => null,
+                        'status'          => $isAlumni ? 'alumni' : 'aktif',
+                        'kelas_id'        => $kelasId,
+                        'tahun_ajaran_id' => $isAlumni ? null : $tahunAjaranId,
                     ]
                 );
             }
+        });
+
+        $totalCount = $aktifCount + $alumniCount;
+        $this->command->info("Berhasil mengimpor {$totalCount} data siswa production SMKN 69 Jakarta ({$aktifCount} siswa aktif, {$alumniCount} alumni).");
+    }
+
+    /**
+     * Membaca data siswa dari file Excel utama atau fallback ke data PHP statis.
+     *
+     * @return array<int, array{nis: ?string, nama: string, kelas: string}>
+     */
+    protected function loadStudentData(): array
+    {
+        $possibleExcelPaths = [
+            public_path('data-siswa (2).xlsx'),
+            public_path('data-siswa.xlsx'),
+        ];
+
+        foreach ($possibleExcelPaths as $excelPath) {
+            if (file_exists($excelPath)) {
+                try {
+                    return $this->parseExcelFile($excelPath);
+                } catch (\Throwable $e) {
+                    $this->command->warn("Gagal membaca {$excelPath}: {$e->getMessage()}. Mencoba sumber data lain...");
+                }
+            }
         }
+
+        // Fallback: file data yang sudah diekstrak
+        $fallbackFile = __DIR__ . '/data/siswa_production.php';
+        if (file_exists($fallbackFile)) {
+            return require $fallbackFile;
+        }
+
+        return [];
+    }
+
+    /**
+     * Parsing file Excel data siswa SMKN 69 Jakarta.
+     */
+    protected function parseExcelFile(string $filePath): array
+    {
+        $spreadsheet = IOFactory::load($filePath);
+        $sheet = $spreadsheet->getActiveSheet();
+        $highestRow = $sheet->getHighestRow();
+
+        $students = [];
+        for ($row = 2; $row <= $highestRow; $row++) {
+            $nis   = trim((string) $sheet->getCell("B$row")->getValue());
+            $nama  = trim((string) $sheet->getCell("C$row")->getValue());
+            $kelas = trim((string) $sheet->getCell("E$row")->getValue());
+
+            if ($nama === '') {
+                continue;
+            }
+
+            $students[] = [
+                'nis'   => $nis !== '' ? $nis : null,
+                'nama'  => $nama,
+                'kelas' => $kelas,
+            ];
+        }
+
+        return $students;
     }
 }

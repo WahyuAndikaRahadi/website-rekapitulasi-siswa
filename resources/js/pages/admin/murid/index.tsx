@@ -498,7 +498,7 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="size-4 shrink-0 text-emerald-600 mt-0.5" />
                                     <span>
-                                        <strong>Siswa Tingkat Akhir LULUS (Alumni):</strong> Murid di kelas <strong>XIII SIJA 1 & 2</strong>, <strong>XII OTO 1 & 2</strong>, dan <strong>XII MEKA 1 & 2</strong> akan otomatis berstatus <strong>Alumni</strong> dan nonaktif dari kelas aktif.
+                                        <strong>Siswa Tingkat Akhir LULUS (Alumni):</strong> Murid di kelas <strong>XIII SIJA 1 & 2</strong>, <strong>XII TO 1 & 2</strong>, dan <strong>XII TM 1 & 2</strong> akan otomatis berstatus <strong>Alumni</strong> dan nonaktif dari kelas aktif.
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-2">
@@ -506,13 +506,13 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
                                     <span>
                                         <strong>Siswa Naik Tingkat:</strong>
                                         <br />• X SIJA ➔ XI SIJA ➔ XII SIJA ➔ XIII SIJA
-                                        <br />• X OTO / MEKA ➔ XI OTO / MEKA ➔ XII OTO / MEKA
+                                        <br />• X TO / TM ➔ XI TO / TM ➔ XII TO / TM
                                     </span>
                                 </li>
                                 <li className="flex items-start gap-2">
                                     <CheckCircle2 className="size-4 shrink-0 text-amber-600 mt-0.5" />
                                     <span>
-                                        <strong>Kelas X Menjadi Kosong:</strong> Seluruh kelas X (X SIJA 1 & 2, X OTO 1 & 2, X MEKA 1 & 2) akan kosong (0 siswa) dan siap diisi oleh peserta didik baru.
+                                        <strong>Kelas X Menjadi Kosong:</strong> Seluruh kelas X (X SIJA 1 & 2, X TO 1 & 2, X TM 1 & 2) akan kosong (0 siswa) dan siap diisi oleh peserta didik baru.
                                     </span>
                                 </li>
                             </ul>

@@ -131,11 +131,13 @@ class MuridController extends Controller
         $result = DB::transaction(function () {
             $kelasMap = Kelas::pluck('id', 'nama_kelas')->all();
 
-            // 1. Siswa tingkat akhir (XIII SIJA 1/2, XII OTO 1/2, XII MEKA 1/2) -> Menjadi ALUMNI
+            // 1. Siswa tingkat akhir (XIII SIJA 1/2, XII TO 1/2, XII TM 1/2, serta fallback OTO/MEKA) -> Menjadi ALUMNI
             $alumniClasses = [
                 'XIII SIJA 1', 'XIII SIJA 2',
+                'XII TO 1', 'XII TO 2',
+                'XII TM 1', 'XII TM 2',
                 'XII OTO 1', 'XII OTO 2',
-                'XII MEKA 1', 'XII MEKA 2'
+                'XII MEKA 1', 'XII MEKA 2',
             ];
             $alumniClassIds = array_filter(array_map(fn($nama) => $kelasMap[$nama] ?? null, $alumniClasses));
 
@@ -155,6 +157,10 @@ class MuridController extends Controller
                 // XI -> XII
                 'XI SIJA 1'  => 'XII SIJA 1',
                 'XI SIJA 2'  => 'XII SIJA 2',
+                'XI TO 1'    => 'XII TO 1',
+                'XI TO 2'    => 'XII TO 2',
+                'XI TM 1'    => 'XII TM 1',
+                'XI TM 2'    => 'XII TM 2',
                 'XI OTO 1'   => 'XII OTO 1',
                 'XI OTO 2'   => 'XII OTO 2',
                 'XI MEKA 1'  => 'XII MEKA 1',
@@ -163,6 +169,10 @@ class MuridController extends Controller
                 // X -> XI
                 'X SIJA 1'   => 'XI SIJA 1',
                 'X SIJA 2'   => 'XI SIJA 2',
+                'X TO 1'     => 'XI TO 1',
+                'X TO 2'     => 'XI TO 2',
+                'X TM 1'     => 'XI TM 1',
+                'X TM 2'     => 'XI TM 2',
                 'X OTO 1'    => 'XI OTO 1',
                 'X OTO 2'    => 'XI OTO 2',
                 'X MEKA 1'   => 'XI MEKA 1',
