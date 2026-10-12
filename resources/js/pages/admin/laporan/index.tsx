@@ -238,9 +238,6 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                         </div>
                         <button onClick={() => apply()} className="h-9 rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors">Terapkan</button>
                         <button onClick={reset} className="h-9 rounded-md border px-3 text-sm hover:bg-muted transition-colors">Reset</button>
-                        <button onClick={handleExport} className="h-9 rounded-md bg-emerald-600 px-3.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors flex items-center gap-1.5 ml-auto">
-                            <FileSpreadsheet className="size-4" /> Export Excel
-                        </button>
                     </div>
                 </div>
 

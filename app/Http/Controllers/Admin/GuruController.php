@@ -35,10 +35,14 @@ class GuruController extends Controller
     public function create(): Response
     {
         $tahunAjaran = TahunAjaran::aktif();
+        $kelasList = Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']);
+        if ($kelasList->isEmpty()) {
+            $kelasList = Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']);
+        }
 
         return Inertia::render('admin/guru/form', [
             'guru'       => null,
-            'kelas_list' => Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']),
+            'kelas_list' => $kelasList,
         ]);
     }
 
@@ -86,6 +90,11 @@ class GuruController extends Controller
         $tahunAjaran = TahunAjaran::aktif();
         $guru->load('user');
 
+        $kelasList = Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']);
+        if ($kelasList->isEmpty()) {
+            $kelasList = Kelas::orderBy('nama_kelas')->get(['id', 'nama_kelas']);
+        }
+
         return Inertia::render('admin/guru/form', [
             'guru' => [
                 'id'            => $guru->id,
@@ -95,7 +104,7 @@ class GuruController extends Controller
                 'email'         => $guru->user->email,
                 'wali_kelas_id' => $guru->wali_kelas_id,
             ],
-            'kelas_list' => Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)->orderBy('nama_kelas')->get(['id', 'nama_kelas']),
+            'kelas_list' => $kelasList,
         ]);
     }
 
@@ -140,44 +149,5 @@ class GuruController extends Controller
 
         return redirect()->route('admin.guru.index')
             ->with('success', 'Akun guru berhasil dihapus.');
-    }
-
-    public function mappingKelas(Guru $guru): Response
-    {
-        $tahunAjaran = TahunAjaran::aktif();
-        $guru->load('kelas');
-
-        return Inertia::render('admin/guru/mapping-kelas', [
-            'guru' => [
-                'id'   => $guru->id,
-                'nama' => $guru->nama,
-            ],
-            'kelas_list' => Kelas::where('tahun_ajaran_id', $tahunAjaran?->id)
-                ->orderBy('nama_kelas')
-                ->get(['id', 'nama_kelas']),
-            'kelas_diampu' => $guru->kelas->map(fn($k) => [
-                'kelas_id' => $k->id,
-                'mapel'    => $k->pivot->mapel,
-            ]),
-        ]);
-    }
-
-    public function syncMappingKelas(Request $request, Guru $guru): RedirectResponse
-    {
-        $request->validate([
-            'kelas'          => ['nullable', 'array'],
-            'kelas.*.kelas_id' => ['required', 'exists:kelas,id'],
-            'kelas.*.mapel'    => ['nullable', 'string', 'max:100'],
-        ]);
-
-        $syncData = [];
-        foreach ($request->get('kelas', []) as $item) {
-            $syncData[$item['kelas_id']] = ['mapel' => $item['mapel'] ?? null];
-        }
-
-        $guru->kelas()->sync($syncData);
-
-        return redirect()->route('admin.guru.index')
-            ->with('success', 'Mapping kelas berhasil diperbarui.');
     }
 }

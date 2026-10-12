@@ -62,8 +62,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Guru
     Route::resource('/guru', AdminGuruController::class)->names('guru');
-    Route::get('/guru/{guru}/mapping-kelas',  [AdminGuruController::class, 'mappingKelas'])->name('guru.mapping-kelas');
-    Route::post('/guru/{guru}/mapping-kelas', [AdminGuruController::class, 'syncMappingKelas'])->name('guru.mapping-kelas.sync');
 
     // Export
     Route::get('/export', [AdminExportController::class, 'index'])->name('export.index');

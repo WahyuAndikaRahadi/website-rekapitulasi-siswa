@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Kelas;
+use App\Models\TahunAjaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -14,16 +15,18 @@ class KelasController extends Controller
     public function index(): Response
     {
         $kelas = Kelas::with(['waliKelas'])
+            ->withCount(['murids' => fn($q) => $q->where('status', 'aktif')])
             ->orderBy('tingkat')
             ->orderBy('nama_kelas')
             ->get();
 
         return Inertia::render('admin/kelas/index', [
             'kelas_list' => $kelas->map(fn($k) => [
-                'id'         => $k->id,
-                'nama_kelas' => $k->nama_kelas,
-                'tingkat'    => $k->tingkat,
-                'wali_kelas' => $k->waliKelas?->nama,
+                'id'           => $k->id,
+                'nama_kelas'   => $k->nama_kelas,
+                'tingkat'      => $k->tingkat,
+                'wali_kelas'   => $k->waliKelas?->nama,
+                'total_murid'  => $k->murids_count,
             ]),
         ]);
     }
@@ -39,7 +42,11 @@ class KelasController extends Controller
             'tingkat.required'    => 'Tingkat harus dipilih.',
         ]);
 
-        Kelas::create($validated);
+        $tahunAjaran = TahunAjaran::aktif();
+        Kelas::create([
+            ...$validated,
+            'tahun_ajaran_id' => $tahunAjaran?->id,
+        ]);
 
         return back()->with('success', 'Kelas berhasil ditambahkan.');
     }

@@ -2,7 +2,7 @@ import { EmptyState } from '@/components/empty-state';
 import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
-import { getViolationPointBadgeInfo } from '@/lib/utils';
+import { getAccumulatedPointColor } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AlertTriangle, ArrowUpCircle, CheckCircle2, GraduationCap, Pencil, Trash2, Users, X } from 'lucide-react';
@@ -19,7 +19,9 @@ interface MuridItem {
     kelas_id: number | null;
     status: 'aktif' | 'alumni';
     poin_pelanggaran?: number;
+    poin_pelanggaran_kotor?: number;
     poin_prestasi?: number;
+    poin_akumulasi?: number;
 }
 interface KelasItem { id: number; nama_kelas: string; }
 
@@ -363,27 +365,36 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
                                 <table className="w-full min-w-[900px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-slate-50/75 text-left">
+                                            <th className="w-12 px-3 py-3 font-semibold text-slate-700 text-center">No.</th>
                                             <th className="px-4 py-3 font-semibold text-slate-700">Nama Lengkap</th>
                                             <th className="px-4 py-3 font-semibold text-slate-700">NIS / NISN</th>
                                             <th className="px-4 py-3 font-semibold text-slate-700">No. HP Siswa</th>
                                             <th className="px-4 py-3 font-semibold text-slate-700">No. HP Orang Tua (WA)</th>
                                             <th className="px-4 py-3 font-semibold text-slate-700">Kelas / Status</th>
-                                            <th className="px-4 py-3 font-semibold text-slate-700 text-center">Poin Pelanggaran</th>
+                                            <th className="px-4 py-3 font-semibold text-slate-700 text-center">Poin Akumulasi</th>
                                             <th className="px-4 py-3 text-right">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100">
-                                        {murids.data.map((m) => {
-                                            const badgeInfo = getViolationPointBadgeInfo(m.poin_pelanggaran ?? 0);
+                                        {murids.data.map((m, index) => {
+                                            const poinPenghargaan = m.poin_prestasi ?? 0;
+                                            const poinPelanggaran = m.poin_pelanggaran_kotor ?? m.poin_pelanggaran ?? 0;
+                                            const akumulasi = m.poin_akumulasi ?? (poinPenghargaan - poinPelanggaran);
+                                            const pointColor = getAccumulatedPointColor(akumulasi);
+                                            const rowNumber = (murids.from ?? 1) + index;
+
                                             return (
                                                 <tr
                                                     key={m.id}
-                                                    style={badgeInfo.hasViolation ? badgeInfo.rowStyle : undefined}
-                                                    className={`transition-colors ${
-                                                        badgeInfo.hasViolation ? badgeInfo.rowClassName : 'hover:bg-slate-50/50'
-                                                    }`}
+                                                    style={pointColor.rowStyle}
+                                                    className="transition-colors hover:brightness-95"
                                                 >
-                                                    <td className="px-4 py-3 font-medium text-slate-900">{m.nama}</td>
+                                                    <td className="px-3 py-3 text-center font-mono text-xs text-slate-600 font-medium border-l-4" style={{ borderLeftColor: pointColor.borderAccent }}>
+                                                        {rowNumber}
+                                                    </td>
+                                                    <td className="px-4 py-3 font-medium text-slate-900">
+                                                        {m.nama}
+                                                    </td>
                                                     <td className="px-4 py-3 text-slate-600">
                                                         {m.nis ? <span className="font-mono text-xs">{m.nis}</span> : <span className="italic text-slate-400">—</span>}
                                                         {m.nisn && <span className="ml-1.5 text-xs text-slate-400 font-mono">/ {m.nisn}</span>}
@@ -411,12 +422,20 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
                                                         )}
                                                     </td>
                                                     <td className="px-4 py-3 text-center">
-                                                        <span
-                                                            style={badgeInfo.style}
-                                                            className={`inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono border shadow-2xs ${badgeInfo.classNames}`}
-                                                        >
-                                                            {m.poin_pelanggaran ?? 0}
-                                                        </span>
+                                                        <div className="inline-flex flex-col items-center gap-0.5">
+                                                            <span
+                                                                style={pointColor.badgeStyle}
+                                                                className="inline-flex items-center justify-center font-bold px-2.5 py-0.5 rounded-full text-xs font-mono border shadow-2xs"
+                                                                title={`Kategori: ${pointColor.name} (${pointColor.label}) | Penghargaan: +${poinPenghargaan} | Pelanggaran: -${poinPelanggaran}`}
+                                                            >
+                                                                {akumulasi > 0 ? `+${akumulasi}` : akumulasi}
+                                                            </span>
+                                                            {(poinPenghargaan > 0 || poinPelanggaran > 0) && (
+                                                                <span className="text-[10px] text-slate-500 font-mono tracking-tight font-medium">
+                                                                    +{poinPenghargaan} / -{poinPelanggaran}
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </td>
                                                     <td className="px-4 py-3 text-right">
                                                         <div className="flex items-center justify-end gap-1">

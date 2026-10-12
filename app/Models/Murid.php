@@ -68,6 +68,13 @@ class Murid extends Model
      */
     public function poinPrestasi(): int
     {
+        if ($this->relationLoaded('laporans')) {
+            return abs((int) $this->laporans
+                ->filter(fn($l) => in_array($l->kategori, ['prestasi', 'kebaikan'])
+                    && (!$l->is_manual || !in_array($l->status, ['menunggu verifikasi', 'ditolak'])))
+                ->sum('poin_diberikan'));
+        }
+
         return abs((int) $this->laporans()
             ->prestasi()
             ->validPoin()
@@ -79,6 +86,13 @@ class Murid extends Model
      */
     public function poinPelanggaranKotor(): int
     {
+        if ($this->relationLoaded('laporans')) {
+            return abs((int) $this->laporans
+                ->filter(fn($l) => $l->kategori === 'pelanggaran'
+                    && (!$l->is_manual || !in_array($l->status, ['menunggu verifikasi', 'ditolak'])))
+                ->sum('poin_diberikan'));
+        }
+
         return abs((int) $this->laporans()
             ->pelanggaran()
             ->validPoin()
@@ -132,6 +146,14 @@ class Murid extends Model
             return 'Tahap I (Peringatan I / K-1)';
         }
         return 'Normal';
+    }
+
+    /**
+     * Poin akumulasi = total poin penghargaan (prestasi/kebaikan) - total poin pelanggaran.
+     */
+    public function poinAkumulasi(): int
+    {
+        return $this->poinPrestasi() - $this->poinPelanggaranKotor();
     }
 
     /**

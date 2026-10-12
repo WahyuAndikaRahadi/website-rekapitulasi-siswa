@@ -90,15 +90,13 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
                                         <td className="px-4 py-3">
                                             <div className="flex gap-1">
                                                 <Link href={`/admin/guru/${g.id}/edit`}
-                                                    className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
+                                                    className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                                    title="Edit Data Guru">
                                                     <Pencil className="size-3.5" />
                                                 </Link>
-                                                <Link href={`/admin/guru/${g.id}/mapping-kelas`}
-                                                    className="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">
-                                                    Mapping Kelas
-                                                </Link>
                                                 <button onClick={() => handleDelete(g.id, g.nama)}
-                                                    className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600">
+                                                    className="rounded p-1 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                    title="Hapus Akun Guru">
                                                     <Trash2 className="size-3.5" />
                                                 </button>
                                             </div>

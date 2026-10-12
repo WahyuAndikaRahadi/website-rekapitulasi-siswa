@@ -32,7 +32,8 @@ class RekapKelasController extends Controller
         $filterSampai = $request->get('sampai');
 
         $muridData = $murids->map(function ($murid) use ($filterStatus, $filterDari, $filterSampai, $kelas) {
-            $laporanQuery = Laporan::where('murid_id', $murid->id);
+            $laporanQuery = Laporan::with(['guru', 'bukti'])
+                ->where('murid_id', $murid->id);
 
             if ($filterStatus !== 'semua') {
                 $laporanQuery->where('status', $filterStatus);
@@ -47,29 +48,38 @@ class RekapKelasController extends Controller
             $laporans = $laporanQuery->orderByDesc('tanggal_kejadian')->get();
 
             return [
-                'id'               => $murid->id,
-                'nama'             => $murid->nama,
-                'nis'              => $murid->nis,
-                'nisn'             => $murid->nisn,
-                'no_telp'          => $murid->no_telp,
-                'nama_kelas'       => $kelas->nama_kelas,
-                'kelas_id'         => $kelas->id,
-                'poin_pelanggaran' => $murid->poinPelanggaran(),
-                'poin_prestasi'    => $murid->poinPrestasi(),
-                'kualifikasi'      => $murid->kualifikasiPoin(),
-                'tahap_pembinaan'  => $murid->tahapPembinaan(),
-                'skor_resmi'       => $murid->skorResmi(),
-                'skor_sementara'   => $murid->skorResmi(),
-                'jumlah_laporan'   => $laporans->count(),
-                'laporans'         => $laporans->map(fn($l) => [
-                    'id'                => $l->id,
-                    'tanggal_kejadian'  => $l->tanggal_kejadian->format('d/m/Y'),
-                    'kategori'          => $l->kategori,
-                    'tingkat_keparahan' => $l->tingkat_keparahan,
-                    'keterangan'        => $l->keterangan,
-                    'is_manual'         => $l->is_manual,
-                    'poin_diberikan'    => $l->poin_diberikan,
-                    'status'            => $l->status,
+                'id'                     => $murid->id,
+                'nama'                   => $murid->nama,
+                'nis'                    => $murid->nis,
+                'nisn'                   => $murid->nisn,
+                'no_telp'                => $murid->no_telp,
+                'no_ortu'                => $murid->no_ortu,
+                'nama_kelas'             => $kelas->nama_kelas,
+                'kelas_id'               => $kelas->id,
+                'poin_pelanggaran'       => $murid->poinPelanggaran(),
+                'poin_pelanggaran_kotor' => $murid->poinPelanggaranKotor(),
+                'poin_prestasi'          => $murid->poinPrestasi(),
+                'poin_akumulasi'         => $murid->poinAkumulasi(),
+                'kualifikasi'            => $murid->kualifikasiPoin(),
+                'tahap_pembinaan'        => $murid->tahapPembinaan(),
+                'skor_resmi'             => $murid->skorResmi(),
+                'skor_sementara'         => $murid->skorResmi(),
+                'jumlah_laporan'         => $laporans->count(),
+                'laporans'               => $laporans->map(fn($l) => [
+                    'id'                  => $l->id,
+                    'tanggal_kejadian'    => $l->tanggal_kejadian->format('d/m/Y'),
+                    'guru_nama'           => $l->guru?->nama ?? 'Guru / Pembina',
+                    'kategori'            => $l->kategori,
+                    'tingkat_keparahan'   => $l->tingkat_keparahan,
+                    'keterangan'          => $l->keterangan,
+                    'keterangan_tambahan' => $l->keterangan_tambahan,
+                    'is_manual'           => $l->is_manual,
+                    'poin_diberikan'      => $l->poin_diberikan,
+                    'status'              => $l->status,
+                    'bukti_urls'          => $l->bukti->map(fn($b) => [
+                        'url'       => asset('storage/' . $b->file_path),
+                        'nama_asli' => $b->nama_file_asli,
+                    ]),
                 ]),
             ];
         });

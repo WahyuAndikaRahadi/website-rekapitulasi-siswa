@@ -152,20 +152,23 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
                         $imgIndex = 0;
 
                         foreach ($laporan->bukti as $b) {
-                            $filePath = Storage::disk('public')->path($b->path_file);
-                            if (file_exists($filePath)) {
-                                $drawing = new Drawing();
-                                $drawing->setName('Bukti Laporan ' . $laporan->id);
-                                $drawing->setDescription($b->nama_asli ?? 'Bukti Foto');
-                                $drawing->setPath($filePath);
-                                $drawing->setHeight(55);
-                                $drawing->setCoordinates('K' . $rowNumber);
-                                $drawing->setOffsetX(5 + ($imgIndex * 60));
-                                $drawing->setOffsetY(5);
-                                $drawing->setWorksheet($sheet);
+                            $path = $b->path_file ?? '';
+                            if (!empty($path)) {
+                                $filePath = Storage::disk('public')->path($path);
+                                if (is_file($filePath)) {
+                                    $drawing = new Drawing();
+                                    $drawing->setName('Bukti Laporan ' . $laporan->id);
+                                    $drawing->setDescription($b->nama_asli ?? 'Bukti Foto');
+                                    $drawing->setPath($filePath);
+                                    $drawing->setHeight(55);
+                                    $drawing->setCoordinates('K' . $rowNumber);
+                                    $drawing->setOffsetX(5 + ($imgIndex * 60));
+                                    $drawing->setOffsetY(5);
+                                    $drawing->setWorksheet($sheet);
 
-                                $hasDrawing = true;
-                                $imgIndex++;
+                                    $hasDrawing = true;
+                                    $imgIndex++;
+                                }
                             }
                         }
 

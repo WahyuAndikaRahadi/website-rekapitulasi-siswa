@@ -18,35 +18,69 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 type DownloadStatus = 'idle' | 'loading' | 'success' | 'error';
 
+function getCsrfToken(): string {
+    const metaToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+    if (metaToken) return metaToken;
+    const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+    if (match) return decodeURIComponent(match[1]);
+    return '';
+}
+
 async function fetchDownload(url: string, formData: Record<string, string>): Promise<void> {
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
+    const csrfToken = getCsrfToken();
 
     const params = new URLSearchParams();
-    params.append('_token', csrfToken);
+    if (csrfToken) {
+        params.append('_token', csrfToken);
+    }
     Object.entries(formData).forEach(([k, v]) => {
-        if (v) params.append(k, v);
+        if (v !== '' && v !== null && v !== undefined) params.append(k, v);
     });
+
+    const headers: Record<string, string> = {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-Requested-With': 'XMLHttpRequest',
+        Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, */*',
+    };
+    if (csrfToken) {
+        headers['X-CSRF-TOKEN'] = csrfToken;
+    }
 
     const response = await fetch(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-CSRF-TOKEN': csrfToken,
-            Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, */*',
-        },
+        headers,
         body: params,
     });
 
     if (!response.ok) {
-        const text = await response.text();
-        throw new Error(text || `HTTP ${response.status}`);
+        let errorMsg = `Gagal mengunduh file (HTTP ${response.status})`;
+        try {
+            const data = await response.json();
+            if (data?.message) {
+                errorMsg = data.message;
+            }
+        } catch {
+            const text = await response.text();
+            if (text && text.length < 200) {
+                errorMsg = text;
+            }
+        }
+        throw new Error(errorMsg);
     }
 
     const disposition = response.headers.get('content-disposition');
     let filename = 'export.xlsx';
     if (disposition) {
-        const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-        if (match?.[1]) filename = match[1].replace(/['"]/g, '');
+        // Coba match filename*=UTF-8''... atau filename="..."
+        const utf8Match = disposition.match(/filename\*=UTF-8''([^;\n]+)/i);
+        if (utf8Match?.[1]) {
+            filename = decodeURIComponent(utf8Match[1]);
+        } else {
+            const match = disposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (match?.[1]) {
+                filename = match[1].replace(/['"]/g, '').trim();
+            }
+        }
     }
 
     const blob = await response.blob();
@@ -57,8 +91,11 @@ async function fetchDownload(url: string, formData: Record<string, string>): Pro
     a.download = filename;
     document.body.appendChild(a);
     a.click();
-    window.URL.revokeObjectURL(blobUrl);
-    document.body.removeChild(a);
+
+    setTimeout(() => {
+        window.URL.revokeObjectURL(blobUrl);
+        a.remove();
+    }, 1500);
 }
 
 export default function ExportIndex({ kelas_list = [], counts = { laporan: 0, murid: 0, kelas: 0 } }: Props) {
@@ -262,9 +299,9 @@ export default function ExportIndex({ kelas_list = [], counts = { laporan: 0, mu
 
                         <div className="mt-6 pt-4 border-t border-slate-100">
                             <button
-                                type="submit"
-                                form="form-export-laporan"
+                                type="button"
                                 disabled={laporanStatus === 'loading'}
+                                onClick={() => handleExport('/admin/export/laporan', laporanForm, setLaporanStatus)}
                                 className={btnClass(laporanStatus)}
                             >
                                 {btnIcon(laporanStatus)}
@@ -329,9 +366,9 @@ export default function ExportIndex({ kelas_list = [], counts = { laporan: 0, mu
 
                         <div className="mt-6 pt-4 border-t border-slate-100">
                             <button
-                                type="submit"
-                                form="form-export-murid"
+                                type="button"
                                 disabled={muridStatus === 'loading'}
+                                onClick={() => handleExport('/admin/export/murid', muridForm, setMuridStatus)}
                                 className={btnClass(muridStatus)}
                             >
                                 {btnIcon(muridStatus)}
@@ -381,9 +418,9 @@ export default function ExportIndex({ kelas_list = [], counts = { laporan: 0, mu
 
                         <div className="mt-6 pt-4 border-t border-slate-100">
                             <button
-                                type="submit"
-                                form="form-export-kelas"
+                                type="button"
                                 disabled={kelasStatus === 'loading'}
+                                onClick={() => handleExport('/admin/export/kelas', kelasForm, setKelasStatus)}
                                 className={btnClass(kelasStatus)}
                             >
                                 {btnIcon(kelasStatus)}

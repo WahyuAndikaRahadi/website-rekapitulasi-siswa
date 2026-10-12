@@ -13,7 +13,7 @@ class MuridSeeder extends Seeder
 {
     public function run(): void
     {
-        $tahunAjaran = TahunAjaran::first();
+        $tahunAjaran = TahunAjaran::aktif() ?? TahunAjaran::first();
         $tahunAjaranId = $tahunAjaran?->id;
 
         // 1. Ekstraksi data siswa (Prioritas: public/data-siswa (2).xlsx -> public/data-siswa.xlsx -> file array lokal)

@@ -10,7 +10,7 @@ class KelasSeeder extends Seeder
 {
     public function run(): void
     {
-        $tahunAjaran = TahunAjaran::first();
+        $tahunAjaran = TahunAjaran::aktif() ?? TahunAjaran::first();
         $tahunAjaranId = $tahunAjaran?->id;
 
         // Migrasikan nama kelas lama (OTO -> TO, MEKA -> TM) jika ada data sebelumnya
