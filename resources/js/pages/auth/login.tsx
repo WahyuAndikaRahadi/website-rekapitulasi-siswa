@@ -72,14 +72,14 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                         </div>
                         <Input
                             id="email"
-                            type="email"
+                            type="text"
                             required
                             autoFocus
                             tabIndex={1}
-                            autoComplete="email"
+                            autoComplete="username"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
-                            placeholder="nama@smkn69jkt.sch.id"
+                            placeholder="admin@smkn69 atau email guru"
                             className="h-11 pl-10 bg-background/60 focus-visible:bg-background"
                         />
                     </div>
