@@ -52,6 +52,7 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {}, poin_maste
 
     const handleVerificationSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (processing) return;
         patch(`/admin/laporan/${laporan.id}/tindaklanjut`);
     };
 
@@ -226,6 +227,20 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {}, poin_maste
                             </h2>
                         </div>
                         <form onSubmit={handleVerificationSubmit} className="space-y-4 p-5">
+                            {Object.keys(errors).length > 0 && (
+                                <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                                    <AlertCircle className="size-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="font-bold">Gagal memproses verifikasi:</p>
+                                        <ul className="list-inside list-disc space-y-0.5">
+                                            {Object.entries(errors).map(([field, msg]) => (
+                                                <li key={field}>{msg}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-1.5">
                                 <label className="text-sm font-semibold">Keputusan Verifikasi <span className="text-red-500">*</span></label>
                                 <div className="flex gap-4">
@@ -284,11 +299,12 @@ export default function AdminLaporanShow({ laporan, poin_ranges = {}, poin_maste
                                     type="submit"
                                     isLoading={processing}
                                     loadingText="Menyimpan..."
+                                    disabled={processing}
                                 >
                                     Simpan Keputusan Verifikasi
                                 </Button>
-                                <Link href="/admin/laporan">
-                                    <Button variant="secondary" type="button">
+                                <Link href="/admin/laporan" className={processing ? 'pointer-events-none opacity-50' : ''}>
+                                    <Button variant="secondary" type="button" disabled={processing}>
                                         Kembali
                                     </Button>
                                 </Link>

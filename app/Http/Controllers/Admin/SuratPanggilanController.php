@@ -11,6 +11,7 @@ use App\Services\NomorSuratGenerator;
 use App\Services\WhatsAppService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -83,6 +84,13 @@ class SuratPanggilanController extends Controller
         WhatsAppService $whatsAppService
     ) {
         $validated = $request->validated();
+
+        // Idempotency: cegah double submit dalam 15 detik terakhir untuk murid dan tanggal yang sama
+        $cacheKey = "surat_idempotency_{$validated['murid_id']}_{$validated['tanggal_panggilan']}";
+        if (!Cache::add($cacheKey, true, 15)) {
+            return redirect()->route('admin.surat-panggilan.index')
+                ->with('info', 'Surat pemanggilan untuk siswa dan tanggal ini sedang diproses atau sudah diterbitkan baru-baru ini.');
+        }
 
         $tahunSurat = !empty($validated['tanggal_surat'])
             ? (int) date('Y', strtotime($validated['tanggal_surat']))
@@ -180,7 +188,7 @@ class SuratPanggilanController extends Controller
             return back()->with('success', "Notifikasi WhatsApp untuk surat {$suratPanggil->nomor_surat} berhasil dikirim ke orang tua ({$targetPhone}).");
         }
 
-        return back()->with('error', "Gagal mengirim notifikasi WhatsApp. Pastikan WhatsApp Gateway (Port 3000) aktif dan terhubung.");
+        return back()->with('error', "Gagal mengirim notifikasi WhatsApp. Pastikan WhatsApp Gateway aktif dan terhubung.");
     }
 
     /**

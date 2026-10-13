@@ -107,6 +107,28 @@ class LaporanController extends Controller
         $guru        = $request->user()->guru;
         $isManual    = (bool) $request->input('is_manual', false);
         $status      = $isManual ? 'menunggu verifikasi' : 'baru dilaporkan';
+        $token       = $request->input('idempotency_token');
+
+        // Idempotensi: Cegah pengiriman ganda jika user mengklik tombol berkali-kali
+        if ($token) {
+            $lockKey = "laporan_idempotency_{$guru->id}_{$token}";
+            if (!\Illuminate\Support\Facades\Cache::add($lockKey, true, 30)) {
+                return back()->with('success', 'Catatan laporan sudah berhasil diproses.');
+            }
+        } else {
+            // Fallback proteksi duplikasi serupa dalam 10 detik terakhir
+            $recentDuplicate = Laporan::where('guru_id', $guru->id)
+                ->where('murid_id', $request->murid_id)
+                ->where('kategori', $request->kategori)
+                ->where('keterangan', $request->keterangan)
+                ->where('tanggal_kejadian', $request->tanggal_kejadian)
+                ->where('created_at', '>=', now()->subSeconds(10))
+                ->first();
+
+            if ($recentDuplicate) {
+                return back()->with('success', 'Catatan laporan sudah berhasil disimpan sebelumnya.');
+            }
+        }
 
         $murid = Murid::findOrFail($request->murid_id);
         $poinSebelumnya = $murid->poinPelanggaran();

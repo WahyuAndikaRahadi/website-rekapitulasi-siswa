@@ -38,7 +38,8 @@ class EmailVerificationTest extends TestCase
 
         Event::assertDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        $expectedDashboard = ($user->isAdmin() ? route('admin.dashboard', absolute: false) : route('guru.dashboard', absolute: false)) . '?verified=1';
+        $response->assertRedirect($expectedDashboard);
     }
 
     public function test_email_is_not_verified_with_invalid_hash()

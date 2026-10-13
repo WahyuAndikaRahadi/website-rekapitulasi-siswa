@@ -14,8 +14,13 @@ use App\Http\Controllers\Guru\LaporanController as GuruLaporanController;
 use App\Http\Controllers\Guru\RekapKelasController as GuruRekapKelasController;
 use Illuminate\Support\Facades\Route;
 
-// Root redirect ke login
+// Root redirect: Jika sudah login arahkan ke dashboard masing-masing, jika belum arahkan ke login
 Route::get('/', function () {
+    if (auth()->check()) {
+        return auth()->user()->isAdmin()
+            ? redirect()->route('admin.dashboard')
+            : redirect()->route('guru.dashboard');
+    }
     return redirect()->route('login');
 })->name('home');
 

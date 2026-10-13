@@ -10,6 +10,7 @@ use App\Models\PoinMaster;
 use App\Models\TahunAjaran;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -144,6 +145,18 @@ class LaporanController extends Controller
      */
     public function tindakLanjut(Request $request, Laporan $laporan): RedirectResponse
     {
+        // Idempotency: Jika status laporan sudah bukan 'menunggu verifikasi', hindari eksekusi berulang
+        if ($laporan->status !== 'menunggu verifikasi') {
+            return redirect()->route('admin.laporan.show', $laporan)
+                ->with('info', 'Laporan ini sudah diverifikasi sebelumnya.');
+        }
+
+        $lockKey = "laporan_verifikasi_{$laporan->id}";
+        if (!Cache::add($lockKey, true, 15)) {
+            return redirect()->route('admin.laporan.show', $laporan)
+                ->with('info', 'Verifikasi laporan ini sedang diproses. Silakan tunggu beberapa saat.');
+        }
+
         $request->validate([
             'status'         => ['required', 'in:baru dilaporkan,pembinaan tindak lanjut,selesai,ditolak,ditindaklanjuti'],
             'tindak_lanjut'  => ['nullable', 'string', 'max:1000'],

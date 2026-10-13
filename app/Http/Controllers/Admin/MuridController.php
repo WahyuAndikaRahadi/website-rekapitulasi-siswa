@@ -239,8 +239,13 @@ class MuridController extends Controller
             'file'     => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120'],
             'kelas_id' => ['required', 'exists:kelas,id'],
         ], [
-            'file.required' => 'File Excel harus diunggah.',
+            'file.required'     => 'File Excel harus diunggah.',
+            'file.file'         => 'File yang diunggah tidak valid.',
+            'file.uploaded'     => 'File gagal diunggah. Kemungkinan ukuran melebihi batas upload server.',
+            'file.mimes'        => 'Format file harus berupa file spreadsheet (.xlsx, .xls) atau .csv.',
+            'file.max'          => 'Ukuran file Excel tidak boleh melebihi 5 MB.',
             'kelas_id.required' => 'Kelas tujuan harus dipilih.',
+            'kelas_id.exists'   => 'Kelas tujuan tidak ditemukan.',
         ]);
 
         $import = new MuridImport(0, $request->kelas_id);
@@ -260,8 +265,11 @@ class MuridController extends Controller
 
         if (empty($previewData) || ! $kelasId) {
             return redirect()->route('admin.murid.import.form')
-                ->with('error', 'Sesi import telah kedaluwarsa. Silakan upload ulang.');
+                ->with('error', 'Sesi import telah kedaluwarsa atau sudah diproses. Silakan upload ulang.');
         }
+
+        // Segera hapus session untuk menjamin Idempotency (mencegah klik ganda memproses ulang)
+        Session::forget(['import_preview', 'import_errors', 'import_kelas_id']);
 
         $imported = 0;
         $skipped  = 0;

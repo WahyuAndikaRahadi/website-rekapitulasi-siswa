@@ -4,6 +4,7 @@ import { formatIndonesianDate } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router } from '@inertiajs/react';
 import {
+    AlertCircle,
     Calendar,
     ChevronDown,
     Clock,
@@ -208,6 +209,7 @@ export default function SuratPanggilanIndex({
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (isSubmitting) return;
         if (!form.murid_id) {
             setErrors({ murid_id: 'Pilih siswa terlebih dahulu.' });
             return;
@@ -522,6 +524,20 @@ export default function SuratPanggilanIndex({
                         </div>
 
                         <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+                            {Object.keys(errors).length > 0 && (
+                                <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
+                                    <AlertCircle className="size-4 shrink-0 text-rose-600 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="font-bold">Terjadi kesalahan pada formulir surat pemanggilan:</p>
+                                        <ul className="list-inside list-disc space-y-0.5">
+                                            {Object.entries(errors).map(([field, msg]) => (
+                                                <li key={field}>{msg}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Pilih Siswa (Searchable Combobox) */}
                             <div className="space-y-1.5 relative" ref={muridDropdownRef}>
                                 <label className="text-xs font-semibold text-slate-700 flex justify-between items-center">
@@ -811,8 +827,9 @@ export default function SuratPanggilanIndex({
                             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                                 <button
                                     type="button"
+                                    disabled={isSubmitting}
                                     onClick={() => setIsModalOpen(false)}
-                                    className="h-10 rounded-xl px-4 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                                    className="h-10 rounded-xl px-4 text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors disabled:opacity-50"
                                 >
                                     Batal
                                 </button>

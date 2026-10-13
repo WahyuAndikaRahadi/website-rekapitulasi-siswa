@@ -55,6 +55,7 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
     const [searchQuery, setSearchQuery] = useState(initialMaster ? initialMaster.nama : '');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [selectedMaster, setSelectedMaster] = useState<PoinMasterItem | null>(initialMaster ?? null);
+    const [clientFileError, setClientFileError] = useState<string | null>(null);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { data, setData, post, processing, errors } = useForm<{
@@ -94,12 +95,12 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const categoryMasters = poin_masters.filter((pm) =>
+    const categoryMasters = poin_masters.filter((pm: PoinMasterItem) =>
         data.kategori === 'prestasi'
             ? pm.kategori === 'prestasi' || pm.kategori === 'kebaikan'
             : pm.kategori === 'pelanggaran'
     );
-    const filteredMasters = categoryMasters.filter((pm) =>
+    const filteredMasters = categoryMasters.filter((pm: PoinMasterItem) =>
         pm.nama.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -164,17 +165,53 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
         setData('bukti_hapus', next);
     };
 
+    const MAX_FILE_SIZE_KB = 2048; // 2 MB
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setClientFileError(null);
         const files = Array.from(e.target.files ?? []);
+        if (files.length === 0) return;
+
         if (existingBukti.length + newPreviews.length + files.length > 5) {
-            alert('Maksimal 5 foto bukti.');
+            setClientFileError('Maksimal 5 foto bukti yang dapat diunggah.');
+            e.target.value = '';
             return;
         }
+
+        const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png'];
+        const invalidFiles: string[] = [];
+        const oversizedFiles: string[] = [];
+
+        files.forEach((f) => {
+            const ext = f.name.split('.').pop()?.toLowerCase();
+            const isValidMime = allowedMimes.includes(f.type.toLowerCase()) || ['jpg', 'jpeg', 'png'].includes(ext ?? '');
+            if (!isValidMime) {
+                invalidFiles.push(f.name);
+            }
+            if (f.size > MAX_FILE_SIZE_KB * 1024) {
+                oversizedFiles.push(`${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`);
+            }
+        });
+
+        if (invalidFiles.length > 0) {
+            setClientFileError(`Format file tidak didukung: ${invalidFiles.join(', ')}. Hanya JPG, JPEG, dan PNG yang diizinkan.`);
+            e.target.value = '';
+            return;
+        }
+
+        if (oversizedFiles.length > 0) {
+            setClientFileError(`Ukuran foto bukti terlalu besar: ${oversizedFiles.join(', ')}. Batas maksimal adalah ${MAX_FILE_SIZE_KB / 1024} MB per foto.`);
+            e.target.value = '';
+            return;
+        }
+
         setNewPreviews((prev) => [...prev, ...files.map((f) => ({ file: f, url: URL.createObjectURL(f) }))]);
         setData('bukti', [...data.bukti, ...files]);
+        e.target.value = '';
     };
 
     const removeNew = (idx: number) => {
+        setClientFileError(null);
         URL.revokeObjectURL(newPreviews[idx].url);
         setNewPreviews((prev) => prev.filter((_, i) => i !== idx));
         setData('bukti', data.bukti.filter((_, i) => i !== idx));
@@ -182,8 +219,13 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (processing) return;
         post(`/guru/laporan/${laporan.id}`, { forceFormData: true });
     };
+
+    const buktiErrors = Object.entries(errors)
+        .filter(([key]) => key === 'bukti' || key.startsWith('bukti.'))
+        .map(([, msg]) => msg);
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -197,6 +239,22 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5 rounded-2xl border bg-card p-6 shadow-xs">
+                    {/* Top Error Alert Banner */}
+                    {(Object.keys(errors).length > 0 || clientFileError) && (
+                        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                            <AlertCircle className="size-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                            <div className="space-y-1">
+                                <p className="font-bold">Terjadi kesalahan pada formulir:</p>
+                                <ul className="list-inside list-disc text-xs space-y-0.5">
+                                    {clientFileError && <li>{clientFileError}</li>}
+                                    {Object.entries(errors).map(([field, msg]) => (
+                                        <li key={field}>{msg}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Murid Info */}
                     <div className="flex items-center gap-3 rounded-xl border bg-muted/40 p-3">
                         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -300,7 +358,7 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
                                 {isDropdownOpen && (
                                     <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-xl border-2 border-border bg-popover py-1.5 text-popover-foreground shadow-2xl">
                                         {filteredMasters.length > 0 ? (
-                                            filteredMasters.map((item) => (
+                                            filteredMasters.map((item: PoinMasterItem) => (
                                                 <div
                                                     key={item.id}
                                                     onClick={() => handleSelectMasterItem(item)}
@@ -489,6 +547,18 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
                         <label className="text-xs font-bold uppercase tracking-wider text-foreground">
                             Tambah Foto Bukti Baru
                         </label>
+                        {clientFileError && (
+                            <p className="text-xs font-semibold text-red-600 dark:text-red-400">{clientFileError}</p>
+                        )}
+                        {buktiErrors.length > 0 && (
+                            <div className="space-y-1">
+                                {buktiErrors.map((msg, i) => (
+                                    <p key={i} className="text-xs font-semibold text-red-600 dark:text-red-400">
+                                        {msg}
+                                    </p>
+                                ))}
+                            </div>
+                        )}
                         {newPreviews.length > 0 && (
                             <div className="flex flex-wrap gap-2 pb-1">
                                 {newPreviews.map((p, i) => (
@@ -526,11 +596,12 @@ export default function EditLaporan({ laporan, poin_ranges, poin_masters = [] }:
                             type="submit"
                             isLoading={processing}
                             loadingText="Menyimpan..."
+                            disabled={processing}
                         >
                             Simpan Perubahan
                         </Button>
-                        <Link href="/guru/laporan/riwayat">
-                            <Button variant="secondary" type="button">
+                        <Link href="/guru/laporan/riwayat" className={processing ? 'pointer-events-none opacity-50' : ''}>
+                            <Button variant="secondary" type="button" disabled={processing}>
                                 Batal
                             </Button>
                         </Link>

@@ -72,9 +72,9 @@ class MuridSeeder extends Seeder
                     ],
                     [
                         'nama'            => $nama,
-                        'nisn'            => null,
-                        'no_telp'         => null,
-                        'no_ortu'         => null,
+                        'nisn'            => !empty($item['nisn']) ? trim((string) $item['nisn']) : null,
+                        'no_telp'         => !empty($item['no_telp']) ? trim((string) $item['no_telp']) : null,
+                        'no_ortu'         => !empty($item['no_ortu']) ? trim((string) $item['no_ortu']) : null,
                         'status'          => $isAlumni ? 'alumni' : 'aktif',
                         'kelas_id'        => $kelasId,
                         'tahun_ajaran_id' => $isAlumni ? null : $tahunAjaranId,

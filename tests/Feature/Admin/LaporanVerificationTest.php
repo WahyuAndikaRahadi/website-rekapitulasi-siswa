@@ -26,10 +26,8 @@ class LaporanVerificationTest extends TestCase
         parent::setUp();
 
         $this->tahunAjaran = TahunAjaran::create([
-            'tahun_mulai' => 2025,
-            'tahun_selesai' => 2026,
-            'semester' => 'ganjil',
-            'is_aktif' => true,
+            'label' => '2025/2026 Ganjil',
+            'is_active' => true,
         ]);
 
         $this->adminUser = User::factory()->create(['role' => 'admin']);
@@ -153,10 +151,10 @@ class LaporanVerificationTest extends TestCase
         $this->assertEquals(0, $this->murid->poinPrestasi());
 
         $response = $this->actingAs($this->adminUser)
-            ->post("/admin/laporan/{$laporan->id}/tindak-lanjut", [
-                'tindakan' => 'setujui',
+            ->patch("/admin/laporan/{$laporan->id}/tindaklanjut", [
+                'status' => 'baru dilaporkan',
                 'poin_diberikan' => 50,
-                'tingkat_keparahan' => 'berat',
+                'tindak_lanjut' => 'Disetujui',
             ]);
 
         $response->assertRedirect();
@@ -179,9 +177,9 @@ class LaporanVerificationTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->adminUser)
-            ->post("/admin/laporan/{$laporan->id}/tindak-lanjut", [
-                'tindakan' => 'tolak',
-                'alasan_penolakan' => 'Bukti foto tidak sesuai dengan siswa bersangkutan.',
+            ->patch("/admin/laporan/{$laporan->id}/tindaklanjut", [
+                'status' => 'ditolak',
+                'tindak_lanjut' => 'Bukti foto tidak sesuai dengan siswa bersangkutan.',
             ]);
 
         $response->assertRedirect();

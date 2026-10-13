@@ -38,6 +38,7 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
     const [selectedMaster, setSelectedMaster] = useState<PoinMasterItem | null>(null);
     const [isManualMode, setIsManualMode] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const [clientFileError, setClientFileError] = useState<string | null>(null);
 
     const { data, setData, post, processing, errors, reset, clearErrors } = useForm<{
         murid_id: number | '';
@@ -48,6 +49,7 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
         poin_diberikan: number | '';
         tanggal_kejadian: string;
         keterangan_tambahan: string;
+        idempotency_token: string;
         bukti: File[];
     }>({
         murid_id: '',
@@ -58,11 +60,16 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
         poin_diberikan: '',
         tanggal_kejadian: new Date().toISOString().split('T')[0],
         keterangan_tambahan: '',
+        idempotency_token: '',
         bukti: [],
     });
 
     useEffect(() => {
         if (murid && open) {
+            const newToken = typeof crypto !== 'undefined' && crypto.randomUUID
+                ? crypto.randomUUID()
+                : 'idemp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+
             setData((prev) => ({
                 ...prev,
                 murid_id: murid.id,
@@ -73,6 +80,7 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
                 poin_diberikan: '',
                 tanggal_kejadian: new Date().toISOString().split('T')[0],
                 keterangan_tambahan: '',
+                idempotency_token: newToken,
                 bukti: [],
             }));
             setSearchQuery('');
@@ -80,6 +88,7 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
             setIsManualMode(false);
             setIsDropdownOpen(false);
             setPreviewFiles([]);
+            setClientFileError(null);
             clearErrors();
         }
     }, [murid, open]);
@@ -159,18 +168,54 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
         }));
     };
 
+    const MAX_FILE_SIZE_KB = 2048; // 2 MB
+
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setClientFileError(null);
         const files = Array.from(e.target.files ?? []);
+        if (files.length === 0) return;
+
         if (previewFiles.length + files.length > 5) {
-            alert('Maksimal 5 foto bukti.');
+            setClientFileError('Maksimal 5 foto bukti yang dapat diunggah.');
+            e.target.value = '';
             return;
         }
+
+        const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png'];
+        const invalidFiles: string[] = [];
+        const oversizedFiles: string[] = [];
+
+        files.forEach((f) => {
+            const ext = f.name.split('.').pop()?.toLowerCase();
+            const isValidMime = allowedMimes.includes(f.type.toLowerCase()) || ['jpg', 'jpeg', 'png'].includes(ext ?? '');
+            if (!isValidMime) {
+                invalidFiles.push(f.name);
+            }
+            if (f.size > MAX_FILE_SIZE_KB * 1024) {
+                oversizedFiles.push(`${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`);
+            }
+        });
+
+        if (invalidFiles.length > 0) {
+            setClientFileError(`Format file tidak didukung: ${invalidFiles.join(', ')}. Hanya JPG, JPEG, dan PNG yang diizinkan.`);
+            e.target.value = '';
+            return;
+        }
+
+        if (oversizedFiles.length > 0) {
+            setClientFileError(`Ukuran foto bukti terlalu besar: ${oversizedFiles.join(', ')}. Batas maksimal adalah ${MAX_FILE_SIZE_KB / 1024} MB per foto.`);
+            e.target.value = '';
+            return;
+        }
+
         const newPreviews = files.map((f) => ({ file: f, url: URL.createObjectURL(f) }));
         setPreviewFiles((prev) => [...prev, ...newPreviews]);
         setData('bukti', [...data.bukti, ...files]);
+        e.target.value = '';
     };
 
     const removeFile = (idx: number) => {
+        setClientFileError(null);
         URL.revokeObjectURL(previewFiles[idx].url);
         setPreviewFiles((prev) => prev.filter((_, i) => i !== idx));
         setData('bukti', data.bukti.filter((_, i) => i !== idx));
@@ -178,6 +223,8 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (processing) return;
+
         post('/guru/laporan', {
             forceFormData: true,
             preserveScroll: true,
@@ -188,9 +235,14 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
                 setSearchQuery('');
                 setSelectedMaster(null);
                 setIsManualMode(false);
+                setClientFileError(null);
             },
         });
     };
+
+    const buktiErrors = Object.entries(errors)
+        .filter(([key]) => key === 'bukti' || key.startsWith('bukti.'))
+        .map(([, msg]) => msg);
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -224,6 +276,24 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4 pt-1">
+                    {/* Ringkasan Pesan Error (Validasi & Server) */}
+                    {(Object.keys(errors).length > 0 || clientFileError) && (
+                        <div className="rounded-xl border-2 border-red-500 bg-red-50 p-3.5 dark:bg-red-950/40 text-red-900 dark:text-red-200 shadow-xs">
+                            <div className="flex items-start gap-2.5">
+                                <AlertCircle className="size-5 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                                <div className="space-y-1">
+                                    <p className="text-xs font-black uppercase tracking-wider">Perhatian: Ada Kesalahan Pengisian</p>
+                                    <ul className="text-xs list-disc pl-4 space-y-0.5 font-semibold">
+                                        {clientFileError && <li>{clientFileError}</li>}
+                                        {Object.entries(errors).map(([key, msg]) => (
+                                            <li key={key}>{msg}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Kategori Toggle */}
                     <div className="space-y-1.5">
                         <label className="text-xs font-extrabold uppercase tracking-wider text-foreground">
@@ -508,7 +578,20 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
                                 />
                             </label>
                         )}
-                        {errors.bukti && <p className="text-xs font-semibold text-red-600">{errors.bukti}</p>}
+                        {(clientFileError || buktiErrors.length > 0) && (
+                            <div className="space-y-1 pt-1">
+                                {clientFileError && (
+                                    <p className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                                        <AlertCircle className="size-3.5 shrink-0" /> {clientFileError}
+                                    </p>
+                                )}
+                                {buktiErrors.map((err, i) => (
+                                    <p key={i} className="text-xs font-bold text-red-600 dark:text-red-400 flex items-center gap-1.5">
+                                        <AlertCircle className="size-3.5 shrink-0" /> {err}
+                                    </p>
+                                ))}
+                            </div>
+                        )}
                     </div>
 
                     {/* Submit and Cancel Actions */}
@@ -516,12 +599,14 @@ export function TambahCatatanModal({ open, onOpenChange, murid, poinMasters = []
                         <Button
                             type="button"
                             variant="secondary"
+                            disabled={processing}
                             onClick={() => onOpenChange(false)}
                         >
                             Batal
                         </Button>
                         <Button
                             type="submit"
+                            disabled={processing}
                             isLoading={processing}
                             loadingText="Menyimpan..."
                         >

@@ -13,7 +13,7 @@ class WhatsAppService
 
     public function __construct()
     {
-        $this->gatewayUrl = rtrim(config('services.whatsapp.gateway_url', env('WA_GATEWAY_URL', 'http://localhost:3000')), '/');
+        $this->gatewayUrl = rtrim(config('services.whatsapp.gateway_url', env('WA_GATEWAY_URL', 'http://localhost:3001')), '/');
     }
 
     /**
@@ -138,6 +138,14 @@ class WhatsAppService
     }
 
     /**
+     * Helper untuk memformat angka poin akumulasi dengan tanda plus jika positif (contoh: +25, -10, 0)
+     */
+    public static function formatPoinAkumulasi(int $poin): string
+    {
+        return $poin > 0 ? "+{$poin}" : (string) $poin;
+    }
+
+    /**
      * Buat format template pesan WhatsApp berdasarkan akumulasi poin & 4 Tahapan Pembinaan SMKN 69 Jakarta.
      */
     public function formatPelanggaranMessage(Murid $murid, Laporan $laporan, int $poinSebelumnya, int $poinSekarang): string
@@ -246,7 +254,7 @@ class WhatsAppService
             . "📅 *Tanggal*: {$tanggal}\n"
             . "📝 *Keterangan*: {$keterangan}\n"
             . "⚠️ *Poin Pelanggaran*: +{$poinMasuk} Poin\n"
-            . "📊 *Total Akumulasi Poin*: {$poinSekarang} Poin (Kategori: {$kualifikasi})\n"
+            . "📊 *Total Akumulasi Poin Pelanggaran*: {$poinSekarang} Poin (Kategori: {$kualifikasi})\n"
             . "🛡️ *Status Pembinaan*: {$tahapPembinaan}\n\n"
             . "Catatan ini dikirimkan secara otomatis sebagai bentuk transparansi dan sinergi pembinaan karakter antara pihak sekolah dan orang tua murid.\n\n"
             . "Terima kasih atas perhatian dan kerjasamanya.\n"
@@ -275,7 +283,7 @@ class WhatsAppService
             . "📅 *Tanggal*: {$tanggal}\n"
             . "🏆 *Keterangan*: {$keterangan}\n"
             . "✨ *Poin Apresiasi*: +{$poinMasuk} Poin\n"
-            . "📊 *Total Akumulasi Poin Prestasi*: {$poinSekarang} Poin\n\n"
+            . "📊 *Total Akumulasi Poin Prestasi*: +{$poinSekarang} Poin\n\n"
             . "Terima kasih atas bimbingan dan dukungan Bapak/Ibu di rumah. Semoga ananda terus berprestasi dan menjadi teladan bagi siswa lainnya.\n\n"
             . "_— Sistem Rekapitulasi Siswa SMKN 69 Jakarta_";
     }

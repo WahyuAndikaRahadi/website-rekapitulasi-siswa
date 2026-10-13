@@ -24,10 +24,8 @@ class MuridPoinCalculationTest extends TestCase
         parent::setUp();
 
         $this->tahunAjaran = TahunAjaran::create([
-            'tahun_mulai' => 2025,
-            'tahun_selesai' => 2026,
-            'semester' => 'ganjil',
-            'is_aktif' => true,
+            'label' => '2025/2026 Ganjil',
+            'is_active' => true,
         ]);
 
         $user = User::factory()->create(['role' => 'guru']);
@@ -59,8 +57,8 @@ class MuridPoinCalculationTest extends TestCase
         $this->assertEquals(0, $this->murid->poinPrestasi());
         $this->assertEquals(0, $this->murid->poinPelanggaranKotor());
         $this->assertEquals(0, $this->murid->poinPelanggaran());
-        $this->assertEquals('Sangat Baik', $this->murid->kualifikasiPoin());
-        $this->assertNull($this->murid->tahapPembinaan());
+        $this->assertEquals('Baik', $this->murid->kualifikasiPoin());
+        $this->assertEquals('Normal', $this->murid->tahapPembinaan());
     }
 
     public function test_master_violation_report_auto_applies_points(): void
@@ -82,7 +80,7 @@ class MuridPoinCalculationTest extends TestCase
         $this->assertEquals(5, $this->murid->poinPelanggaran());
         $this->assertEquals(0, $this->murid->poinPrestasi());
         $this->assertEquals('Baik', $this->murid->kualifikasiPoin());
-        $this->assertEquals('Tahap I (Peringatan Lisan / Wali Kelas & BK)', $this->murid->tahapPembinaan());
+        $this->assertEquals('Normal', $this->murid->tahapPembinaan());
     }
 
     public function test_prestasi_deducts_active_violation_points_simultaneously(): void
@@ -157,7 +155,7 @@ class MuridPoinCalculationTest extends TestCase
         $this->assertEquals(10, $this->murid->poinPelanggaranKotor());
         // max(0, 10 - 50) = 0
         $this->assertEquals(0, $this->murid->poinPelanggaran());
-        $this->assertEquals('Sangat Baik', $this->murid->kualifikasiPoin());
+        $this->assertEquals('Baik', $this->murid->kualifikasiPoin());
     }
 
     public function test_unverified_manual_report_does_not_apply_points_until_verified(): void
@@ -204,13 +202,13 @@ class MuridPoinCalculationTest extends TestCase
 
     public function test_tahap_pembinaan_thresholds(): void
     {
-        // Level 1: 1-20 -> Tahap I
+        // Level 1: 25-49 -> Tahap I
         $l1 = Laporan::create([
             'guru_id' => $this->guru->id,
             'murid_id' => $this->murid->id,
             'kategori' => 'pelanggaran',
             'keterangan' => 'V1',
-            'poin_diberikan' => -15,
+            'poin_diberikan' => -30,
             'is_manual' => false,
             'status' => 'baru dilaporkan',
             'tanggal_kejadian' => now()->toDateString(),
@@ -218,49 +216,49 @@ class MuridPoinCalculationTest extends TestCase
         ]);
         $this->assertStringContainsString('Tahap I', $this->murid->tahapPembinaan());
 
-        // Level 2: 21-40 -> Tahap II
+        // Level 2: 50-74 -> Tahap II
         $l2 = Laporan::create([
             'guru_id' => $this->guru->id,
             'murid_id' => $this->murid->id,
             'kategori' => 'pelanggaran',
             'keterangan' => 'V2',
-            'poin_diberikan' => -15,
+            'poin_diberikan' => -25,
             'is_manual' => false,
             'status' => 'baru dilaporkan',
             'tanggal_kejadian' => now()->toDateString(),
             'tahun_ajaran_id' => $this->tahunAjaran->id,
         ]);
-        // Total 30
+        // Total 55
         $this->assertStringContainsString('Tahap II', $this->murid->tahapPembinaan());
 
-        // Level 4: 61-80 -> Tahap IV
+        // Level 3: 75-99 -> Tahap III
         $l3 = Laporan::create([
             'guru_id' => $this->guru->id,
             'murid_id' => $this->murid->id,
             'kategori' => 'pelanggaran',
             'keterangan' => 'V3',
-            'poin_diberikan' => -40,
+            'poin_diberikan' => -25,
             'is_manual' => false,
             'status' => 'baru dilaporkan',
             'tanggal_kejadian' => now()->toDateString(),
             'tahun_ajaran_id' => $this->tahunAjaran->id,
         ]);
-        // Total 70
-        $this->assertStringContainsString('Tahap IV', $this->murid->tahapPembinaan());
+        // Total 80
+        $this->assertStringContainsString('Tahap III', $this->murid->tahapPembinaan());
 
-        // Level 6: >=100 -> Tahap VI
+        // Level 4: >=100 -> Tahap IV
         $l4 = Laporan::create([
             'guru_id' => $this->guru->id,
             'murid_id' => $this->murid->id,
             'kategori' => 'pelanggaran',
             'keterangan' => 'V4',
-            'poin_diberikan' => -35,
+            'poin_diberikan' => -25,
             'is_manual' => false,
             'status' => 'baru dilaporkan',
             'tanggal_kejadian' => now()->toDateString(),
             'tahun_ajaran_id' => $this->tahunAjaran->id,
         ]);
         // Total 105
-        $this->assertStringContainsString('Tahap VI', $this->murid->tahapPembinaan());
+        $this->assertStringContainsString('Tahap IV', $this->murid->tahapPembinaan());
     }
 }

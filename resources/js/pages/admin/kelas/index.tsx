@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { GraduationCap, Pencil, Plus, School, Search, Trash2, Users, X } from 'lucide-react';
+import { AlertCircle, GraduationCap, Pencil, Plus, School, Search, Trash2, Users, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface KelasItem {
@@ -49,6 +49,7 @@ export default function KelasIndex({ kelas_list }: Props) {
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
+        if (createForm.processing) return;
         createForm.post('/admin/kelas', {
             onSuccess: () => {
                 createForm.reset();
@@ -59,7 +60,7 @@ export default function KelasIndex({ kelas_list }: Props) {
 
     const handleEdit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (!editItem) return;
+        if (editForm.processing || !editItem) return;
         editForm.put(`/admin/kelas/${editItem.id}`, {
             onSuccess: () => setEditItem(null),
         });
@@ -150,6 +151,19 @@ export default function KelasIndex({ kelas_list }: Props) {
                                 </button>
                             </div>
                             <form onSubmit={handleCreate} className="space-y-4">
+                                {Object.keys(createForm.errors).length > 0 && (
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                                        <AlertCircle className="size-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                                        <div className="space-y-0.5">
+                                            <p className="font-bold">Terjadi kesalahan input data:</p>
+                                            <ul className="list-inside list-disc space-y-0.5">
+                                                {Object.entries(createForm.errors).map(([field, msg]) => (
+                                                    <li key={field}>{msg}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-foreground">Tingkat <span className="text-red-500">*</span></label>
                                     <select
@@ -180,6 +194,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                                     <Button
                                         type="button"
                                         variant="secondary"
+                                        disabled={createForm.processing}
                                         onClick={() => {
                                             setIsCreateOpen(false);
                                             createForm.reset();
@@ -191,6 +206,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                                     <Button
                                         type="submit"
                                         isLoading={createForm.processing}
+                                        disabled={createForm.processing}
                                         loadingText="Menyimpan..."
                                         className="flex-1"
                                     >
@@ -219,6 +235,19 @@ export default function KelasIndex({ kelas_list }: Props) {
                                 </button>
                             </div>
                             <form onSubmit={handleEdit} className="space-y-4">
+                                {Object.keys(editForm.errors).length > 0 && (
+                                    <div className="flex items-start gap-2.5 rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                                        <AlertCircle className="size-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                                        <div className="space-y-0.5">
+                                            <p className="font-bold">Terjadi kesalahan input data:</p>
+                                            <ul className="list-inside list-disc space-y-0.5">
+                                                {Object.entries(editForm.errors).map(([field, msg]) => (
+                                                    <li key={field}>{msg}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-semibold text-foreground">Tingkat <span className="text-red-500">*</span></label>
                                     <select
@@ -248,6 +277,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                                     <Button
                                         type="button"
                                         variant="secondary"
+                                        disabled={editForm.processing}
                                         onClick={() => setEditItem(null)}
                                         className="flex-1"
                                     >
@@ -256,6 +286,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                                     <Button
                                         type="submit"
                                         isLoading={editForm.processing}
+                                        disabled={editForm.processing}
                                         loadingText="Menyimpan..."
                                         className="flex-1"
                                     >

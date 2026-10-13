@@ -75,6 +75,10 @@ class Murid extends Model
                 ->sum('poin_diberikan'));
         }
 
+        if (!$this->exists) {
+            return 0;
+        }
+
         return abs((int) $this->laporans()
             ->prestasi()
             ->validPoin()
@@ -91,6 +95,10 @@ class Murid extends Model
                 ->filter(fn($l) => $l->kategori === 'pelanggaran'
                     && (!$l->is_manual || !in_array($l->status, ['menunggu verifikasi', 'ditolak'])))
                 ->sum('poin_diberikan'));
+        }
+
+        if (!$this->exists) {
+            return 0;
         }
 
         return abs((int) $this->laporans()

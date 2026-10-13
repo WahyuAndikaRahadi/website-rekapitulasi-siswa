@@ -5,7 +5,7 @@ import AppLayout from '@/layouts/app-layout';
 import { getAccumulatedPointColor } from '@/lib/utils';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
-import { AlertTriangle, ArrowUpCircle, CheckCircle2, GraduationCap, Pencil, Trash2, Users, X } from 'lucide-react';
+import { AlertCircle, AlertTriangle, ArrowUpCircle, CheckCircle2, GraduationCap, Pencil, Trash2, Users, X } from 'lucide-react';
 import { useState } from 'react';
 
 interface MuridItem {
@@ -78,6 +78,19 @@ function MuridModal({ title, form, kelas_list, onSubmit, onClose }: MuridModalPr
                     </button>
                 </div>
                 <form onSubmit={onSubmit} className="space-y-4">
+                    {Object.keys(form.errors).length > 0 && (
+                        <div className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+                            <AlertCircle className="size-4 shrink-0 text-rose-600 mt-0.5" />
+                            <div className="space-y-0.5">
+                                <p className="font-bold">Terjadi kesalahan input data:</p>
+                                <ul className="list-inside list-disc space-y-0.5">
+                                    {Object.entries(form.errors).map(([field, msg]) => (
+                                        msg && <li key={field}>{msg}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
                     {[
                         { key: 'nama', label: 'Nama Lengkap', required: true, placeholder: 'Nama murid' },
                         { key: 'nis', label: 'NIS', required: false, placeholder: 'Opsional' },
@@ -121,6 +134,7 @@ function MuridModal({ title, form, kelas_list, onSubmit, onClose }: MuridModalPr
                         <Button
                             type="button"
                             variant="secondary"
+                            disabled={form.processing}
                             onClick={onClose}
                             className="flex-1 rounded-lg"
                         >
@@ -129,6 +143,7 @@ function MuridModal({ title, form, kelas_list, onSubmit, onClose }: MuridModalPr
                         <Button
                             type="submit"
                             isLoading={form.processing}
+                            disabled={form.processing}
                             loadingText="Menyimpan..."
                             className="flex-1 rounded-lg bg-primary text-primary-foreground"
                         >
@@ -202,6 +217,7 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
+        if (createForm.processing) return;
         createForm.post('/admin/murid', {
             onSuccess: () => {
                 createForm.reset();
@@ -212,6 +228,7 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
 
     const handleEdit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (editForm.processing) return;
         editForm.put(`/admin/murid/${editItem!.id}`, {
             onSuccess: () => setEditItem(null),
         });

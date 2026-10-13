@@ -3,6 +3,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, router, useForm } from '@inertiajs/react';
 import { AlertCircle, ArrowLeft, CheckCircle, Download, FileSpreadsheet, Upload } from 'lucide-react';
+import React, { useState } from 'react';
 
 interface PreviewRow {
     baris: number;
@@ -30,22 +31,63 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function MuridImport({ kelas_list, preview, errors_import }: Props) {
+    const [clientFileError, setClientFileError] = useState<string | null>(null);
+    const [isConfirming, setIsConfirming] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
+
     const uploadForm = useForm({
         file: null as File | null,
         kelas_id: kelas_list[0]?.id.toString() ?? '',
     });
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setClientFileError(null);
+        const file = e.target.files?.[0] ?? null;
+        if (!file) {
+            uploadForm.setData('file', null);
+            return;
+        }
+
+        const ext = file.name.split('.').pop()?.toLowerCase();
+        const allowedExts = ['xlsx', 'xls', 'csv'];
+        if (!ext || !allowedExts.includes(ext)) {
+            setClientFileError(`Format file "${file.name}" tidak didukung. Hanya file .xlsx, .xls, atau .csv yang diizinkan.`);
+            e.target.value = '';
+            uploadForm.setData('file', null);
+            return;
+        }
+
+        const MAX_SIZE_MB = 5;
+        if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+            setClientFileError(`Ukuran file "${file.name}" terlalu besar (${(file.size / (1024 * 1024)).toFixed(1)} MB). Batas maksimal adalah ${MAX_SIZE_MB} MB.`);
+            e.target.value = '';
+            uploadForm.setData('file', null);
+            return;
+        }
+
+        uploadForm.setData('file', file);
+    };
+
     const handleUpload = (e: React.FormEvent) => {
         e.preventDefault();
+        if (uploadForm.processing || clientFileError || !uploadForm.data.file) return;
         uploadForm.post('/admin/murid-import', { forceFormData: true });
     };
 
     const handleConfirm = () => {
-        router.post('/admin/murid-import/confirm');
+        if (isConfirming || isCancelling) return;
+        setIsConfirming(true);
+        router.post('/admin/murid-import/confirm', {}, {
+            onFinish: () => setIsConfirming(false),
+        });
     };
 
     const handleCancel = () => {
-        router.post('/admin/murid-import/cancel');
+        if (isConfirming || isCancelling) return;
+        setIsCancelling(true);
+        router.post('/admin/murid-import/cancel', {}, {
+            onFinish: () => setIsCancelling(false),
+        });
     };
 
     const validRows = preview?.filter((r) => r.status === 'valid') ?? [];
@@ -113,6 +155,21 @@ export default function MuridImport({ kelas_list, preview, errors_import }: Prop
                     <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-2xs">
                         <h2 className="mb-4 text-sm font-bold text-slate-900">Form Upload Data</h2>
                         <form onSubmit={handleUpload} className="space-y-5">
+                            {(Object.keys(uploadForm.errors).length > 0 || clientFileError) && (
+                                <div className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-800">
+                                    <AlertCircle className="size-4 shrink-0 text-rose-600 mt-0.5" />
+                                    <div className="space-y-1">
+                                        <p className="font-bold">Terjadi kesalahan validasi file import:</p>
+                                        <ul className="list-inside list-disc space-y-0.5">
+                                            {clientFileError && <li>{clientFileError}</li>}
+                                            {Object.entries(uploadForm.errors).map(([field, msg]) => (
+                                                <li key={field}>{msg}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="space-y-1.5 max-w-md">
                                 <label className="text-xs font-semibold text-slate-700">
                                     Pilih Kelas Tujuan <span className="text-rose-500">*</span>
@@ -147,19 +204,22 @@ export default function MuridImport({ kelas_list, preview, errors_import }: Prop
                                     <input
                                         type="file"
                                         accept=".xlsx,.xls,.csv"
-                                        onChange={(e) => uploadForm.setData('file', e.target.files?.[0] ?? null)}
+                                        onChange={handleFileChange}
                                         className="sr-only"
                                     />
                                 </label>
+                                {clientFileError && (
+                                    <p className="text-xs text-rose-600 font-semibold">{clientFileError}</p>
+                                )}
                                 {uploadForm.errors.file && (
-                                    <p className="text-xs text-rose-600">{uploadForm.errors.file}</p>
+                                    <p className="text-xs text-rose-600 font-semibold">{uploadForm.errors.file}</p>
                                 )}
                             </div>
 
                             <Button
                                 type="submit"
                                 isLoading={uploadForm.processing}
-                                disabled={!uploadForm.data.file || !uploadForm.data.kelas_id}
+                                disabled={!uploadForm.data.file || !uploadForm.data.kelas_id || !!clientFileError || uploadForm.processing}
                                 loadingText="Mengunggah &amp; Memvalidasi Data..."
                                 className="h-10 rounded-xl px-5 text-xs font-semibold cursor-pointer"
                             >
@@ -258,7 +318,10 @@ export default function MuridImport({ kelas_list, preview, errors_import }: Prop
                             {validRows.length > 0 && (
                                 <Button
                                     onClick={handleConfirm}
-                                    className="h-10 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-xs"
+                                    isLoading={isConfirming}
+                                    loadingText="Menyimpan Data Murid..."
+                                    disabled={isConfirming || isCancelling}
+                                    className="h-10 rounded-xl bg-primary px-5 text-xs font-bold text-primary-foreground hover:bg-primary/90 cursor-pointer shadow-xs disabled:opacity-50"
                                 >
                                     <CheckCircle className="size-4 mr-2" />
                                     Konfirmasi &amp; Simpan {validRows.length} Data Murid
@@ -267,10 +330,11 @@ export default function MuridImport({ kelas_list, preview, errors_import }: Prop
                             <Button
                                 variant="secondary"
                                 type="button"
+                                disabled={isConfirming || isCancelling}
                                 onClick={handleCancel}
-                                className="h-10 rounded-xl px-4 text-xs font-semibold cursor-pointer"
+                                className="h-10 rounded-xl px-4 text-xs font-semibold cursor-pointer disabled:opacity-50"
                             >
-                                Upload Ulang File Lain
+                                {isCancelling ? 'Membatalkan...' : 'Upload Ulang File Lain'}
                             </Button>
                         </div>
                     </div>

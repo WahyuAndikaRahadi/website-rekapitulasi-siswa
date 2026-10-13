@@ -71,4 +71,31 @@ class WhatsAppServiceTest extends TestCase
         $this->assertStringContainsString('Juara 1 Lomba Web Design', $message);
         $this->assertStringContainsString('+20 Poin', $message);
     }
+
+    public function test_it_formats_surat_panggilan_message_correctly(): void
+    {
+        $service = new WhatsAppService();
+
+        $murid = new Murid([
+            'nama' => 'Ahmad Fauzi',
+            'nis'  => '20241003',
+        ]);
+        $murid->setRelation('kelas', new Kelas(['nama_kelas' => 'XII SIJA 2']));
+
+        $surat = new \App\Models\SuratPanggil([
+            'nomor_surat'        => '001/SMKN69/SP-1/2026',
+            'perihal'            => 'Panggilan I (SP-1)',
+            'waktu'              => '09:00 WIB',
+            'tempat'             => 'Ruang BK',
+            'nama_guru_menemui'  => 'Ibu Sri Handayani',
+            'tanggal_panggilan'  => now(),
+        ]);
+        $surat->setRelation('murid', $murid);
+
+        $message = $service->formatSuratPanggilanMessage($surat);
+
+        $this->assertStringContainsString('SURAT PEMANGGILAN ORANG TUA / WALI SISWA', $message);
+        $this->assertStringContainsString('Ahmad Fauzi', $message);
+        $this->assertStringContainsString('Panggilan I (SP-1)', $message);
+    }
 }

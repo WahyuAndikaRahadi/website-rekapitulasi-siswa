@@ -2,6 +2,7 @@ import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
+import { AlertCircle } from 'lucide-react';
 
 interface GuruData {
     id?: number;
@@ -35,6 +36,7 @@ export default function GuruForm({ guru, kelas_list }: Props) {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        if (processing) return;
         isEdit ? put(`/admin/guru/${guru!.id}`) : post('/admin/guru');
     };
 
@@ -47,6 +49,19 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
+                    {Object.keys(errors).length > 0 && (
+                        <div className="flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300">
+                            <AlertCircle className="size-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" />
+                            <div className="space-y-1">
+                                <p className="font-bold">Terjadi kesalahan pada data guru:</p>
+                                <ul className="list-inside list-disc space-y-0.5">
+                                    {Object.entries(errors).map(([field, msg]) => (
+                                        <li key={field}>{msg}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </div>
+                    )}
                     {/* Nama */}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium">Nama Lengkap <span className="text-red-500">*</span></label>
@@ -107,11 +122,12 @@ export default function GuruForm({ guru, kelas_list }: Props) {
                             type="submit"
                             isLoading={processing}
                             loadingText={isEdit ? 'Menyimpan...' : 'Membuat Akun...'}
+                            disabled={processing}
                         >
                             {isEdit ? 'Simpan Perubahan' : 'Buat Akun Guru'}
                         </Button>
-                        <Link href="/admin/guru">
-                            <Button variant="secondary" type="button">
+                        <Link href="/admin/guru" className={processing ? 'pointer-events-none opacity-50' : ''}>
+                            <Button variant="secondary" type="button" disabled={processing}>
                                 Batal
                             </Button>
                         </Link>

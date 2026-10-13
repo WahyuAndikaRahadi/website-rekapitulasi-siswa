@@ -150,9 +150,15 @@ class ExportController extends Controller
             'guru_id'         => ['nullable', 'exists:gurus,id'],
             'status'          => ['nullable', 'string'],
             'dari'            => ['nullable', 'date'],
-            'sampai'          => ['nullable', 'date'],
+            'sampai'          => ['nullable', 'date', 'after_or_equal:dari'],
             'kategori'        => ['nullable', 'in:pelanggaran,prestasi'],
             'tahun_ajaran_id' => ['nullable', 'exists:tahun_ajarans,id'],
+        ], [
+            'sampai.after_or_equal' => 'Tanggal akhir harus sama dengan atau setelah tanggal awal.',
+            'dari.date'             => 'Format tanggal awal tidak valid.',
+            'sampai.date'           => 'Format tanggal akhir tidak valid.',
+            'kategori.in'           => 'Kategori laporan yang dipilih tidak valid.',
+            'kelas_id.exists'       => 'Kelas yang dipilih tidak ditemukan.',
         ]);
 
         $kategoriLabel = $request->kategori ? '-' . $request->kategori : '';
@@ -174,6 +180,9 @@ class ExportController extends Controller
         $request->validate([
             'kelas_id' => ['nullable', 'exists:kelas,id'],
             'status'   => ['nullable', 'in:aktif,alumni,semua'],
+        ], [
+            'kelas_id.exists' => 'Kelas yang dipilih tidak ditemukan.',
+            'status.in'       => 'Pilihan status siswa tidak valid.',
         ]);
 
         $status = $request->status;
@@ -193,6 +202,8 @@ class ExportController extends Controller
     {
         $request->validate([
             'kelas_id' => ['nullable', 'exists:kelas,id'],
+        ], [
+            'kelas_id.exists' => 'Kelas yang dipilih tidak ditemukan.',
         ]);
 
         $filename = 'kelas-akumulasi-skor-' . now()->format('Ymd-His') . '.xlsx';

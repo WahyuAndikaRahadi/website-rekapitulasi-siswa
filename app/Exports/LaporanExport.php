@@ -156,18 +156,22 @@ class LaporanExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoS
                             if (!empty($path)) {
                                 $filePath = Storage::disk('public')->path($path);
                                 if (is_file($filePath)) {
-                                    $drawing = new Drawing();
-                                    $drawing->setName('Bukti Laporan ' . $laporan->id);
-                                    $drawing->setDescription($b->nama_asli ?? 'Bukti Foto');
-                                    $drawing->setPath($filePath);
-                                    $drawing->setHeight(55);
-                                    $drawing->setCoordinates('K' . $rowNumber);
-                                    $drawing->setOffsetX(5 + ($imgIndex * 60));
-                                    $drawing->setOffsetY(5);
-                                    $drawing->setWorksheet($sheet);
+                                    try {
+                                        $drawing = new Drawing();
+                                        $drawing->setName('Bukti Laporan ' . $laporan->id);
+                                        $drawing->setDescription($b->nama_asli ?? 'Bukti Foto');
+                                        $drawing->setPath($filePath);
+                                        $drawing->setHeight(55);
+                                        $drawing->setCoordinates('K' . $rowNumber);
+                                        $drawing->setOffsetX(5 + ($imgIndex * 60));
+                                        $drawing->setOffsetY(5);
+                                        $drawing->setWorksheet($sheet);
 
-                                    $hasDrawing = true;
-                                    $imgIndex++;
+                                        $hasDrawing = true;
+                                        $imgIndex++;
+                                    } catch (\Throwable $e) {
+                                        // Mengabaikan berkas gambar yang korup/tidak valid agar proses ekspor tetap berjalan lancar
+                                    }
                                 }
                             }
                         }
