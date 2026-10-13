@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             ['email' => 'admin@sekolah.test'],
             [
                 'name'              => 'Administrator',
-                'password'          => Hash::make('password'),
+                'password'          => Hash::make('admin69sukses'),
                 'role'              => 'admin',
                 'email_verified_at' => now(),
             ]
