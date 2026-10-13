@@ -180,7 +180,7 @@ class WhatsAppService
                 . "Bapak/Ibu Orang Tua/Wali diwajibkan menghadiri *PANGGILAN KEEMPAT (KONFERENSI KASUS)* bersama Kepala Sekolah, Wakabid Kesiswaan, Tim BK, Kakom, dan Wali Kelas untuk menentukan tindakan tegas atau keputusan pengembalian murid kepada Orang Tua/Wali Murid.\n\n"
                 . "Mohon segera berkoordinasi dengan pihak sekolah.\n"
                 . "Terima kasih atas perhatian dan kerjasamanya.\n"
-                . "_— Sistem Rekapitulasi & Pembinaan Siswa SMKN 69 Jakarta_";
+                . "_— E Point 69 & Pembinaan Siswa SMKN 69 Jakarta_";
         }
 
         // 2. Deteksi Melewati Threshold Tahap III (>= 75 Poin)
@@ -200,7 +200,7 @@ class WhatsAppService
                 . "Siswa telah dirujuk ke *Guru BK/BP*. Wali Kelas dan Ketua Kompetensi Keahlian (Kakom) berkolaborasi dengan Guru BK/BP untuk melaksanakan *PEMANGGILAN ORANG TUA KETIGA* guna pembinaan intensif berupa konseling reflektif dan penyadaran perilaku, serta penandatanganan *Surat Pernyataan Bermaterai* yang diketahui oleh Wakabid Kesiswaan.\n\n"
                 . "Harap menunggu jadwal resmi pemanggilan atau menghubungi pihak BK/Wali Kelas.\n"
                 . "Terima kasih atas kerjasamanya.\n"
-                . "_— Sistem Rekapitulasi & Pembinaan Siswa SMKN 69 Jakarta_";
+                . "_— E Point 69 & Pembinaan Siswa SMKN 69 Jakarta_";
         }
 
         // 3. Deteksi Melewati Threshold Tahap II (>= 50 Poin)
@@ -220,7 +220,7 @@ class WhatsAppService
                 . "Penanganan dilanjutkan ke tingkat *Program Keahlian (Kakom & Staf Kesiswaan)*. Wali Kelas akan melakukan *PEMANGGILAN KEDUA* terhadap Orang Tua/Wali (dicatat di Buku Pembinaan Wali Kelas) dan dikoordinasikan ke BK/Kesiswaan.\n\n"
                 . "Mohon kesediaan Bapak/Ibu untuk mendampingi ananda dalam perbaikan sikap dan kedisiplinan.\n"
                 . "Terima kasih.\n"
-                . "_— Sistem Rekapitulasi & Pembinaan Siswa SMKN 69 Jakarta_";
+                . "_— E Point 69 & Pembinaan Siswa SMKN 69 Jakarta_";
         }
 
         // 4. Deteksi Melewati Threshold Tahap I (>= 25 Poin)
@@ -240,7 +240,7 @@ class WhatsAppService
                 . "Wali Kelas akan melakukan *PEMANGGILAN PERTAMA* terhadap Orang Tua/Wali (dicatat di Buku Pembinaan Wali Kelas). Alur penanganan dan pembinaan diinformasikan ke BK / Ketua Kompetensi Keahlian / Kesiswaan.\n\n"
                 . "Dukungan dan perhatian Bapak/Ibu di rumah sangat dibutuhkan untuk perbaikan kedisiplinan ananda.\n"
                 . "Terima kasih.\n"
-                . "_— Sistem Rekapitulasi & Pembinaan Siswa SMKN 69 Jakarta_";
+                . "_— E Point 69 & Pembinaan Siswa SMKN 69 Jakarta_";
         }
 
         // 5. Template Standar Notifikasi Catatan Pelanggaran Biasa (Kecil/Besar)
@@ -258,7 +258,7 @@ class WhatsAppService
             . "🛡️ *Status Pembinaan*: {$tahapPembinaan}\n\n"
             . "Catatan ini dikirimkan secara otomatis sebagai bentuk transparansi dan sinergi pembinaan karakter antara pihak sekolah dan orang tua murid.\n\n"
             . "Terima kasih atas perhatian dan kerjasamanya.\n"
-            . "_— Sistem Rekapitulasi Siswa SMKN 69 Jakarta_";
+            . "_— E Point 69 SMKN 69 Jakarta_";
     }
 
     /**
@@ -285,7 +285,7 @@ class WhatsAppService
             . "✨ *Poin Apresiasi*: +{$poinMasuk} Poin\n"
             . "📊 *Total Akumulasi Poin Prestasi*: +{$poinSekarang} Poin\n\n"
             . "Terima kasih atas bimbingan dan dukungan Bapak/Ibu di rumah. Semoga ananda terus berprestasi dan menjadi teladan bagi siswa lainnya.\n\n"
-            . "_— Sistem Rekapitulasi Siswa SMKN 69 Jakarta_";
+            . "_— E Point 69 SMKN 69 Jakarta_";
     }
 
     /**
@@ -339,7 +339,7 @@ class WhatsAppService
             . "👥 *Menemui*: *{$surat->nama_guru_menemui}*\n\n"
             . "Kami sangat mengharapkan kehadiran Bapak/Ibu tepat waktu demi kebaikan dan kelanjutan proses pembinaan ananda di sekolah.\n\n"
             . "Atas perhatian dan kerja sama yang baik, kami ucapkan terima kasih.\n"
-            . "_— Sistem Rekapitulasi & Kesiswaan SMKN 69 Jakarta_";
+            . "_— E Point 69 & Kesiswaan SMKN 69 Jakarta_";
     }
 
     /**

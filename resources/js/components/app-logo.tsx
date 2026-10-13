@@ -8,10 +8,10 @@ export default function AppLogo() {
             </div>
             <div className="grid flex-1 text-left">
                 <span className="truncate text-sm font-bold leading-tight tracking-wide text-foreground">
-                    SMK NEGERI 69
+                    E Point 69
                 </span>
                 <span className="text-[11px] font-medium text-muted-foreground leading-tight">
-                    JAKARTA
+                    SMKN 69 JAKARTA
                 </span>
             </div>
         </div>

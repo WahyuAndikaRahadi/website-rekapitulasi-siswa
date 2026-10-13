@@ -96,7 +96,7 @@ export function AppSidebar() {
                             <Link href={dashboardUrl} prefetch>
                                 <img src="/logo.png" alt="SMKN 69" className="h-10 w-auto object-contain mt-1" />
                                 <div className="flex flex-col gap-0.5 leading-none">
-                                    <span className="text-sm font-bold text-white tracking-wide">SMKN 69 JAKARTA</span>
+                                    <span className="text-sm font-bold text-white tracking-wide">E POINT 69</span>
                                     <span className="text-white/75 text-xs font-normal">
                                         {isAdmin ? 'Panel Administrator' : 'Portal Guru'}
                                     </span>

@@ -35,10 +35,10 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                         />
                         <div>
                             <span className="text-xl font-extrabold tracking-wider block text-white drop-shadow-sm">
-                                SMKN 69 JAKARTA
+                                E POINT 69
                             </span>
                             <span className="text-[11px] font-medium text-white/70 tracking-widest uppercase">
-                                Berbudaya · Berkarakter · Berkarya
+                                SMKN 69 JAKARTA · Berbudaya · Berkarakter · Berkarya
                             </span>
                         </div>
                     </Link>
@@ -48,7 +48,7 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                 <div className="relative z-10 space-y-4">
                     <div>
                         <p className="text-[11px] font-semibold tracking-widest uppercase text-white/50 mb-3">
-                            Sistem Rekapitulasi Siswa
+                            E Point 69 - SMKN 69 Jakarta
                         </p>
                         <h2 className="text-3xl font-bold leading-snug text-white tracking-tight">
                             Pencatatan poin<br />
@@ -88,10 +88,10 @@ export default function AuthSimpleLayout({ children, title, description }: AuthL
                             </div>
                             <div>
                                 <span className="text-lg font-bold tracking-tight text-primary block">
-                                    SMK NEGERI 69 JAKARTA
+                                    E POINT 69
                                 </span>
                                 <span className="text-xs text-muted-foreground">
-                                    Sistem Rekapitulasi Siswa
+                                    SMK NEGERI 69 JAKARTA
                                 </span>
                             </div>
                         </Link>

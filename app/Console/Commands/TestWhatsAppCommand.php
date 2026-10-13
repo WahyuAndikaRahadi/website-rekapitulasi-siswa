@@ -28,7 +28,7 @@ class TestWhatsAppCommand extends Command
     public function handle(WhatsAppService $service): int
     {
         $number = $this->argument('number');
-        $message = $this->argument('message') ?? 'Halo! Ini adalah pesan tes dari Sistem Rekapitulasi Siswa SMKN 69 Jakarta.';
+        $message = $this->argument('message') ?? 'Halo! Ini adalah pesan tes dari E Point 69 SMKN 69 Jakarta.';
         $useQueue = $this->option('queue');
 
         $this->info("Menyiapkan pengiriman ke {$number}...");

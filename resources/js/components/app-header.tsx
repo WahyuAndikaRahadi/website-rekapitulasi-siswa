@@ -46,8 +46,8 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                                         <AppLogoIcon className="size-6" />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-bold text-white leading-tight">SMKN 69</span>
-                                        <span className="text-[11px] text-white/70 leading-tight">JAKARTA</span>
+                                        <span className="text-sm font-bold text-white leading-tight">E POINT 69</span>
+                                        <span className="text-[11px] text-white/70 leading-tight">SMKN 69 JAKARTA</span>
                                     </div>
                                 </SheetHeader>
                                 <div className="mt-6 flex h-full flex-1 flex-col space-y-4">

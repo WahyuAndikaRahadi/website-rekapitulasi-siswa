@@ -21,10 +21,10 @@ export default function AuthCardLayout({
                     </div>
                     <div className="text-center">
                         <span className="text-base font-bold tracking-tight text-[#0B2559] block">
-                            SMK NEGERI 69 JAKARTA
+                            E POINT 69
                         </span>
                         <span className="text-xs text-muted-foreground">
-                            Sistem Rekapitulasi Siswa
+                            SMK NEGERI 69 JAKARTA
                         </span>
                     </div>
                 </Link>
