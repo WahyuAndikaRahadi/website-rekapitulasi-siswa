@@ -60,7 +60,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 </motion.div>
             )}
 
-            <form className="flex flex-col gap-5" onSubmit={submit}>
+            <form className="flex flex-col gap-5" onSubmit={submit} noValidate>
                 {/* Email */}
                 <motion.div {...fadeUp(0.05)} className="space-y-1.5">
                     <Label htmlFor="email" className="text-sm font-medium text-foreground">
