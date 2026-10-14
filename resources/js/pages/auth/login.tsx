@@ -79,7 +79,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                             autoComplete="username"
                             value={data.email}
                             onChange={(e) => setData('email', e.target.value)}
-                            placeholder="admin@smkn69 atau email guru"
+                            placeholder="Masukkan email atau username"
                             className="h-11 pl-10 bg-background/60 focus-visible:bg-background"
                         />
                     </div>
