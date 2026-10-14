@@ -378,7 +378,7 @@ export default function MuridIndex({ murids, filters, status, kelas_list, total_
                         />
                     ) : (
                         <>
-                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                                 <table className="w-full min-w-[900px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-slate-50/75 text-left">

@@ -175,7 +175,7 @@ export default function GuruDashboard({
                             </p>
                         </div>
                     ) : (
-                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                             <table className="w-full min-w-[650px] text-left text-xs whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b border-slate-100 text-slate-400">

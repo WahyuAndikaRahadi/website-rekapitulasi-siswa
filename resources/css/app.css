@@ -168,25 +168,29 @@
     box-shadow: 0 10px 30px -10px rgba(11, 37, 89, 0.2), 0 0 0 1px rgba(30, 95, 168, 0.08);
 }
 
-/* Responsive Table Touch Scroll on Mobile & Desktop */
-.table-scroll-wrapper {
+/* Responsive Table Touch Scroll on Mobile & Desktop - Smooth Vertical & Horizontal Panning */
+.table-scroll-wrapper,
+.overflow-x-auto,
+[class*="table-scroll"] {
     width: 100%;
     max-width: 100%;
     min-width: 0;
     overflow-x: auto !important;
+    overflow-y: visible !important;
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-x: contain;
+    overscroll-behavior-y: auto;
+    touch-action: pan-x pan-y !important;
     display: block;
     position: relative;
 }
 
-/* Ensure all overflow-x-auto elements have smooth touch scrolling & visible custom scrollbar */
-.overflow-x-auto {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
-    overscroll-behavior-x: contain;
-    max-width: 100%;
-    min-width: 0;
+/* Ensure any element with touch-pan-x or table children never lock vertical page scrolling on mobile */
+.table-scroll-wrapper.touch-pan-x,
+.overflow-x-auto.touch-pan-x,
+.table-scroll-wrapper table,
+.overflow-x-auto table {
+    touch-action: pan-x pan-y !important;
 }
 
 .table-scroll-wrapper::-webkit-scrollbar,

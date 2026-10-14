@@ -266,7 +266,7 @@ export default function MuridImport({ kelas_list, preview, errors_import }: Prop
                                     Pratinjau Data Siswa ({preview.length} Baris Terdeteksi)
                                 </h2>
                             </div>
-                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                                 <table className="w-full min-w-[750px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-slate-50/50 text-left text-xs font-semibold text-slate-700">

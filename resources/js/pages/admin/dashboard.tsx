@@ -353,7 +353,7 @@ export default function AdminDashboard({
                                 description="Tidak ada siswa dengan catatan pelanggaran aktif."
                             />
                         ) : (
-                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                             <table className="w-full min-w-[550px] text-xs whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b border-border text-left">

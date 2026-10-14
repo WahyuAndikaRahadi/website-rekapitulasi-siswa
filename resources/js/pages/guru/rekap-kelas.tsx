@@ -227,7 +227,7 @@ export default function RekapKelas({
                             description="Belum ada data siswa yang tercatat di kelas ini."
                         />
                     ) : (
-                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                             <table className="w-full min-w-[850px] text-sm whitespace-nowrap text-left">
                                 <thead className="border-b bg-muted/40 text-xs">
                                     <tr>

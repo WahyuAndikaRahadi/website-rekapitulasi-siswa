@@ -364,7 +364,7 @@ export default function SuratPanggilanIndex({
                     </div>
 
                     {/* Table */}
-                    <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                    <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                         <table className="w-full min-w-[850px] text-left text-sm text-slate-700 whitespace-nowrap">
                             <thead className="bg-slate-50/75 text-xs font-semibold text-slate-500 uppercase tracking-wider border-b border-slate-100">
                                 <tr>

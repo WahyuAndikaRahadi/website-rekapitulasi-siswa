@@ -64,7 +64,7 @@ export default function TahunAjaranIndex({ tahun_ajarans }: Props) {
                     {tahun_ajarans.length === 0 ? (
                         <EmptyState icon={CalendarDays} title="Belum ada tahun ajaran" />
                     ) : (
-                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                             <table className="w-full min-w-[500px] text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b bg-muted/30 text-left">

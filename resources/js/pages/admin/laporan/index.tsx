@@ -247,7 +247,7 @@ export default function AdminLaporanIndex({ laporans, filters, kelas_list, guru_
                         <EmptyState icon={ClipboardList} title={`Tidak ada laporan ${activeTab}`} description="Coba ubah filter atau tunggu laporan masuk dari guru." />
                     ) : (
                         <>
-                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                            <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                                 <table className="w-full min-w-[1400px] text-sm whitespace-nowrap">
                                     <thead>
                                         <tr className="border-b bg-muted/50 text-left text-xs uppercase font-extrabold tracking-wider">

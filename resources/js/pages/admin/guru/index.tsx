@@ -54,7 +54,7 @@ export default function GuruIndex({ gurus }: { gurus: GuruItem[] }) {
                             onAction={() => router.visit('/admin/guru/create')}
                         />
                     ) : (
-                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                             <table className="w-full min-w-[650px] text-left text-sm whitespace-nowrap">
                                 <thead className="border-b bg-muted/40 text-xs">
                                 <tr>

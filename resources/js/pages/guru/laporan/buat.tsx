@@ -263,7 +263,7 @@ export default function BuatLaporan({
                             />
                         </div>
                     ) : (
-                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                             <table className="w-full min-w-[850px] text-left text-sm whitespace-nowrap">
                                 <thead>
                                     <tr className="border-b bg-muted/50 text-muted-foreground">

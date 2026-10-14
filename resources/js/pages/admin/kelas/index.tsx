@@ -315,7 +315,7 @@ export default function KelasIndex({ kelas_list }: Props) {
                             onAction={kelas_list.length === 0 ? () => setIsCreateOpen(true) : undefined}
                         />
                     ) : (
-                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto touch-pan-x">
+                        <div className="table-scroll-wrapper w-full max-w-full overflow-x-auto">
                             <table className="w-full min-w-[600px] text-left text-sm whitespace-nowrap">
                                 <thead className="border-b bg-muted/40 text-xs">
                                     <tr>
