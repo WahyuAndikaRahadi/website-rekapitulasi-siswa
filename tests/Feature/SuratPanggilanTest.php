@@ -53,7 +53,7 @@ class SuratPanggilanTest extends TestCase
         $guruUser = User::factory()->create(['role' => 'guru']);
         $this->guru = Guru::create([
             'user_id' => $guruUser->id,
-            'nama'    => 'Drs. Kiagus Abdurachman',
+            'nama'    => 'Pesta br. Tarigan',
             'nip'     => '196805121994121002',
         ]);
     }
@@ -71,7 +71,7 @@ class SuratPanggilanTest extends TestCase
             'nomor_urut'        => $data1['nomor_urut'],
             'tahun'             => 2026,
             'murid_id'          => $this->murid->id,
-            'nama_guru_menemui' => 'Drs. Kiagus Abdurachman',
+            'nama_guru_menemui' => 'Pesta br. Tarigan',
             'panggilan_ke'      => 1,
             'perihal'           => 'Panggilan I (Satu)',
             'tanggal_panggilan' => '2026-09-25',
@@ -100,7 +100,7 @@ class SuratPanggilanTest extends TestCase
         $response = $this->actingAs($this->admin)->post('/admin/surat-panggilan', [
             'murid_id'          => $this->murid->id,
             'guru_id'           => $this->guru->id,
-            'nama_guru_menemui' => 'Drs. Kiagus Abdurachman',
+            'nama_guru_menemui' => 'Pesta br. Tarigan',
             'tanggal_panggilan' => '2026-09-25',
             'waktu'             => 'Pukul 09.00 WIB',
             'tempat'            => 'Ruang BK SMK Negeri 69 Jakarta',
@@ -115,7 +115,7 @@ class SuratPanggilanTest extends TestCase
             'murid_id'          => $this->murid->id,
             'panggilan_ke'      => 1,
             'perihal'           => 'Panggilan I (Satu)',
-            'nama_guru_menemui' => 'Drs. Kiagus Abdurachman',
+            'nama_guru_menemui' => 'Pesta br. Tarigan',
         ]);
     }
 
@@ -127,7 +127,7 @@ class SuratPanggilanTest extends TestCase
             'tahun'             => 2026,
             'murid_id'          => $this->murid->id,
             'guru_id'           => $this->guru->id,
-            'nama_guru_menemui' => 'Drs. Kiagus Abdurachman',
+            'nama_guru_menemui' => 'Pesta br. Tarigan',
             'panggilan_ke'      => 1,
             'perihal'           => 'Panggilan I (Satu)',
             'tanggal_panggilan' => '2026-09-25',

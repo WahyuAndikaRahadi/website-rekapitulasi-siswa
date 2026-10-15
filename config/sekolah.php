@@ -27,13 +27,13 @@ return [
     'pejabat' => [
         'kepala_sekolah' => [
             'jabatan' => 'Kepala SMK Negeri 69 Jakarta',
-            'nama'    => env('KEPSEK_NAMA', 'Drs. Kiagus Abdurachman'),
-            'nip'     => env('KEPSEK_NIP', '196805121994121002'),
+            'nama'    => env('KEPSEK_NAMA', 'Yasma Isfa Endri'),
+            'nip'     => env('KEPSEK_NIP', '196711261995122001'),
         ],
         'wakil_kesiswaan' => [
             'jabatan' => 'Wakil Kesiswaan',
-            'nama'    => env('WAKASIS_NAMA', 'Wakil Kesiswaan SMKN 69'),
-            'nip'     => env('WAKASIS_NIP', '197501012000031001'),
+            'nama'    => env('WAKASIS_NAMA', 'Pesta br. Tarigan'),
+            'nip'     => env('WAKASIS_NIP', '196903312012072001'),
         ],
     ],
 

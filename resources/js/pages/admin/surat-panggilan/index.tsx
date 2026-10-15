@@ -714,7 +714,7 @@ export default function SuratPanggilanIndex({
                                     <input
                                         type="text"
                                         required
-                                        placeholder="Contoh: Drs. Kiagus Abdurachman"
+                                        placeholder="Contoh: Pesta br. Tarigan"
                                         value={form.nama_guru_menemui}
                                         onChange={(e) => setForm((prev) => ({ ...prev, nama_guru_menemui: e.target.value }))}
                                         className="h-10 w-full rounded-xl border border-slate-200 bg-slate-50/50 px-3 text-sm focus:border-[#1E5FA8] focus:ring-1 focus:ring-[#1E5FA8]"
